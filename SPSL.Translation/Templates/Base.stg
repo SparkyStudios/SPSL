@@ -1,0 +1,54 @@
+﻿group Base;
+
+// Base template for SPSL translations. Provides minimal utility functions for HLSL or GLSL shader generation.
+
+prop(p) ::= "<p.type> <p.name>"
+
+// Generates a function argument.
+arg(a) ::= "<if(a.flow)><a.flow> <endif><a.type> <a.name><if(a.value)> = <a.value><endif>"
+
+func(type, name, args, stats) ::= <<
+<func_head(type, name, args)>
+<statements_block(stats)>
+>>
+
+// Generates a function head.
+func_head(type, name, args) ::= <%
+<type> <name>(<args:arg(); separator=", ">)
+%>
+
+// Generates a function body.
+statements_block(stats) ::= <<
+{
+  <stats; separator="\n">
+}
+>>
+
+if(condition, stats) ::= <<
+if (<condition>)
+<statements_block(stats)>
+>>
+
+array_access(var, idx) ::= "<var>[<idx>]"
+
+unary_op(op, expression, isPostfix) ::= <%
+<if(isPostfix)>
+  <op><expression>
+<else>
+  <expression><op>
+<endif>
+%>
+
+binary_op(lhs, op, rhs) ::= "<lhs> <op> <rhs>"
+
+ternary_op(condition, lhs, rhs) ::= "<condition> ? <lhs> : <rhs>"
+
+cast(type, value) ::= "<type>(<value>)"
+
+invocation(function, params) ::= "<function>(<params; separator=\", \">)"
+
+variable_declaration(type, name, initializer, isArray, arraySize) ::= <%
+<type> <name>
+<if(isArray)>[<arraySize>]<endif>
+<if(initializer)> = <initializer><endif>
+%>

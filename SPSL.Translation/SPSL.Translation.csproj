@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="StringTemplate4" Version="4.0.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SPSL.Language\SPSL.Language.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\*.stg" />
+  </ItemGroup>
+</Project>

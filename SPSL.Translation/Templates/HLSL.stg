@@ -1,0 +1,34 @@
+group HLSL: Base;
+
+// SPSL translator template for HLSL
+
+// Constant Buffer
+cbuffer(name, binding, set, properties) ::= <<
+cbuffer <name> : register(b<binding>, space<set>)
+{
+  <properties:prop(); separator = ";\n">
+}
+>>
+
+// Structure
+struct(name, properties, functions) ::= <<
+struct <name>
+{
+  <properties:prop(); separator = ";\n">;
+  <if(functions)>
+
+  <functions:func(); separator = "\n\n">
+  <endif>
+};
+>>
+
+// Enumeration
+enum(name, properties) ::= <<
+<properties:{p|const <p.type> <name>_<p.name> = <p.value>}; separator = ";\n">;
+>>
+
+const_global_var(type, name, initializer) ::= "const <type> <name> = <initializer>"
+
+member_invocation(owner, function, params) ::= "<owner>.<invocation(function, params)>"
+
+new_instance(type, params) ::= "<invocation(type, params)>"

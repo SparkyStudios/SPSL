@@ -1,0 +1,28 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPSL.CommandLine", "SPSL.CommandLine\SPSL.CommandLine.csproj", "{CC27DF74-7C7C-44C6-B699-6DFFFADB2FAF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPSL.Language", "SPSL.Language\SPSL.Language.csproj", "{5D1F089B-A422-4B78-BC76-45BD707C77D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SPSL.Translation", "SPSL.Translation\SPSL.Translation.csproj", "{F5A988A2-70DD-4206-98EC-839DC310CFB0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CC27DF74-7C7C-44C6-B699-6DFFFADB2FAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC27DF74-7C7C-44C6-B699-6DFFFADB2FAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC27DF74-7C7C-44C6-B699-6DFFFADB2FAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC27DF74-7C7C-44C6-B699-6DFFFADB2FAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D1F089B-A422-4B78-BC76-45BD707C77D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D1F089B-A422-4B78-BC76-45BD707C77D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D1F089B-A422-4B78-BC76-45BD707C77D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D1F089B-A422-4B78-BC76-45BD707C77D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F5A988A2-70DD-4206-98EC-839DC310CFB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5A988A2-70DD-4206-98EC-839DC310CFB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5A988A2-70DD-4206-98EC-839DC310CFB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5A988A2-70DD-4206-98EC-839DC310CFB0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
