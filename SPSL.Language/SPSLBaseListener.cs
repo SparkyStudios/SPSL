@@ -88,6 +88,18 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitFileLevelDefinition([NotNull] SPSLParser.FileLevelDefinitionContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.globalVariable"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterGlobalVariable([NotNull] SPSLParser.GlobalVariableContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.globalVariable"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitGlobalVariable([NotNull] SPSLParser.GlobalVariableContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by the <c>Struct</c>
 	/// labeled alternative in <see cref="SPSLParser.type"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -212,6 +224,30 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitShader([NotNull] SPSLParser.ShaderContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.material"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMaterial([NotNull] SPSLParser.MaterialContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.material"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMaterial([NotNull] SPSLParser.MaterialContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.materialDefinition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMaterialDefinition([NotNull] SPSLParser.MaterialDefinitionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.materialDefinition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMaterialDefinition([NotNull] SPSLParser.MaterialDefinitionContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.shaderDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -247,6 +283,18 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitShaderMember([NotNull] SPSLParser.ShaderMemberContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.materialMember"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMaterialMember([NotNull] SPSLParser.MaterialMemberContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.materialMember"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMaterialMember([NotNull] SPSLParser.MaterialMemberContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.annotation"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -308,6 +356,18 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitParameterDirective([NotNull] SPSLParser.ParameterDirectiveContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.materialParams"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMaterialParams([NotNull] SPSLParser.MaterialParamsContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.materialParams"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.inputVarDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -332,65 +392,69 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitLocalVarDeclaration([NotNull] SPSLParser.LocalVarDeclarationContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.globalVarDeclaration"/>.
+	/// Enter a parse tree produced by <see cref="SPSLParser.bufferDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterGlobalVarDeclaration([NotNull] SPSLParser.GlobalVarDeclarationContext context) { }
+	public virtual void EnterBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.globalVarDeclaration"/>.
+	/// Exit a parse tree produced by <see cref="SPSLParser.bufferDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitGlobalVarDeclaration([NotNull] SPSLParser.GlobalVarDeclarationContext context) { }
+	public virtual void ExitBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.outputVarDeclaration"/>.
+	/// Enter a parse tree produced by <see cref="SPSLParser.bufferComponent"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterOutputVarDeclaration([NotNull] SPSLParser.OutputVarDeclarationContext context) { }
+	public virtual void EnterBufferComponent([NotNull] SPSLParser.BufferComponentContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.outputVarDeclaration"/>.
+	/// Exit a parse tree produced by <see cref="SPSLParser.bufferComponent"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitOutputVarDeclaration([NotNull] SPSLParser.OutputVarDeclarationContext context) { }
+	public virtual void ExitBufferComponent([NotNull] SPSLParser.BufferComponentContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.blockDefinition"/>.
+	/// Enter a parse tree produced by the <c>StructProperty</c>
+	/// labeled alternative in <see cref="SPSLParser.structComponent"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterBlockDefinition([NotNull] SPSLParser.BlockDefinitionContext context) { }
+	public virtual void EnterStructProperty([NotNull] SPSLParser.StructPropertyContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.blockDefinition"/>.
+	/// Exit a parse tree produced by the <c>StructProperty</c>
+	/// labeled alternative in <see cref="SPSLParser.structComponent"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitBlockDefinition([NotNull] SPSLParser.BlockDefinitionContext context) { }
+	public virtual void ExitStructProperty([NotNull] SPSLParser.StructPropertyContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.blockComponent"/>.
+	/// Enter a parse tree produced by the <c>StructFunction</c>
+	/// labeled alternative in <see cref="SPSLParser.structComponent"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterBlockComponent([NotNull] SPSLParser.BlockComponentContext context) { }
+	public virtual void EnterStructFunction([NotNull] SPSLParser.StructFunctionContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.blockComponent"/>.
+	/// Exit a parse tree produced by the <c>StructFunction</c>
+	/// labeled alternative in <see cref="SPSLParser.structComponent"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitBlockComponent([NotNull] SPSLParser.BlockComponentContext context) { }
+	public virtual void ExitStructFunction([NotNull] SPSLParser.StructFunctionContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.enumBlockComponent"/>.
+	/// Enter a parse tree produced by <see cref="SPSLParser.enumComponent"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterEnumBlockComponent([NotNull] SPSLParser.EnumBlockComponentContext context) { }
+	public virtual void EnterEnumComponent([NotNull] SPSLParser.EnumComponentContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.enumBlockComponent"/>.
+	/// Exit a parse tree produced by <see cref="SPSLParser.enumComponent"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitEnumBlockComponent([NotNull] SPSLParser.EnumBlockComponentContext context) { }
+	public virtual void ExitEnumComponent([NotNull] SPSLParser.EnumComponentContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by the <c>TypedVariableDeclaration</c>
 	/// labeled alternative in <see cref="SPSLParser.variableDeclaration"/>.
@@ -540,6 +604,54 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitStatementBlock([NotNull] SPSLParser.StatementBlockContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.referencableExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterReferencableExpression([NotNull] SPSLParser.ReferencableExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.referencableExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitReferencableExpression([NotNull] SPSLParser.ReferencableExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.chainableExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterChainableExpression([NotNull] SPSLParser.ChainableExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.chainableExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitChainableExpression([NotNull] SPSLParser.ChainableExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.chainedExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterChainedExpression([NotNull] SPSLParser.ChainedExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.chainedExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitChainedExpression([NotNull] SPSLParser.ChainedExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.assignableChainedExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterAssignableChainedExpression([NotNull] SPSLParser.AssignableChainedExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.assignableChainedExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitAssignableChainedExpression([NotNull] SPSLParser.AssignableChainedExpressionContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.propertyMemberReferenceExpression"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -648,6 +760,42 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitCaseStatement([NotNull] SPSLParser.CaseStatementContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.whileStatement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterWhileStatement([NotNull] SPSLParser.WhileStatementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.whileStatement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitWhileStatement([NotNull] SPSLParser.WhileStatementContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.forStatement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterForStatement([NotNull] SPSLParser.ForStatementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.forStatement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitForStatement([NotNull] SPSLParser.ForStatementContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.doWhileStatement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterDoWhileStatement([NotNull] SPSLParser.DoWhileStatementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.doWhileStatement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitDoWhileStatement([NotNull] SPSLParser.DoWhileStatementContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.parenthesizedExpression"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -683,6 +831,18 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitParametersList([NotNull] SPSLParser.ParametersListContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.contextAccessExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterContextAccessExpression([NotNull] SPSLParser.ContextAccessExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.contextAccessExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitContextAccessExpression([NotNull] SPSLParser.ContextAccessExpressionContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.basicExpression"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -807,6 +967,20 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitCastExpression([NotNull] SPSLParser.CastExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>SignedExpression</c>
+	/// labeled alternative in <see cref="SPSLParser.expressionStatement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterSignedExpression([NotNull] SPSLParser.SignedExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>SignedExpression</c>
+	/// labeled alternative in <see cref="SPSLParser.expressionStatement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitSignedExpression([NotNull] SPSLParser.SignedExpressionContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.arrayAccessExpression"/>.
 	/// <para>The default implementation does nothing.</para>

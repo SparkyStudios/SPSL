@@ -3,5 +3,5 @@
 /// <summary>
 /// Represent any kind of statement.
 /// </summary>
-public interface IStatement : IBlockChild
+public interface IStatement
 { }

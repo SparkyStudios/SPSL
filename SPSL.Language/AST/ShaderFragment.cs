@@ -14,6 +14,10 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     public OrderedSet<NamespacedReference> ExtendedInterfaces { get; }
 
+    public OrderedSet<NamespacedReference> ImportedShaderFragments { get; } = new();
+
+    public IEnumerable<GlobalVariable> GlobalVariables => Children.OfType<GlobalVariable>();
+
     public IEnumerable<ShaderFunction> Functions => Children.OfType<ShaderFunction>();
 
     #endregion
@@ -56,14 +60,30 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     #region Methods
 
-    public void AddExtendedInterface(NamespacedReference @interface)
+    public void Extends(NamespacedReference @interface)
     {
         ExtendedInterfaces.Add(@interface);
     }
 
-    public void AddExtendedInterface(string @interface)
+    public void Extends(string @interface)
     {
         ExtendedInterfaces.Add(new NamespacedReference(@interface));
+    }
+
+    public void Uses(NamespacedReference name)
+    {
+        ImportedShaderFragments.Add(name);
+    }
+
+    public void Uses(IEnumerable<NamespacedReference> names)
+    {
+        foreach (var name in names)
+            Uses(name);
+    }
+
+    public void AddGlobalVariable(GlobalVariable variable)
+    {
+        Children.Add(variable);
     }
 
     public void AddFunction(ShaderFunction function)

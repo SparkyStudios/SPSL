@@ -26,6 +26,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             case SPSLParser.StatementBlockContext _:
             case SPSLParser.IfStatementContext _:
             case SPSLParser.SwitchStatementContext _:
+            case SPSLParser.WhileStatementContext _:
 
             case SPSLParser.BreakStatementContext _:
             case SPSLParser.ReturnStatementContext _:
@@ -67,6 +68,9 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         if (context.SwitchStatement != null)
             return context.SwitchStatement.Accept(this)!;
 
+        if (context.WhileStatement != null)
+            return context.WhileStatement.Accept(this)!;
+
         throw new NotSupportedException();
     }
 
@@ -106,11 +110,12 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             declarations.Add
             (
                 new VariableDeclarationStatement
-                (
-                    type,
-                    (BasicExpression)identifier.Accept(expressionVisitor)!,
-                    value
-                )
+                {
+                    IsConst = context.IsConst,
+                    Type = type,
+                    Name = (BasicExpression)identifier.Accept(expressionVisitor)!,
+                    Initializer = value
+                }
             );
         }
 
@@ -122,11 +127,11 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         ExpressionVisitor visitor = new();
 
         return new VariableDeclarationStatement
-        (
-            new UnknownDataType(),
-            (BasicExpression)context.Declaration.Identifier.Accept(visitor)!,
-            context.Declaration.Expression.Accept(visitor)
-        );
+        {
+            Type = new UnknownDataType(),
+            Name = (BasicExpression)context.Declaration.Identifier.Accept(visitor)!,
+            Initializer = context.Declaration.Expression.Accept(visitor)
+        };
     }
 
     public override IStatement VisitStatementBlock(SPSLParser.StatementBlockContext context)
@@ -145,7 +150,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
         IfStatement.IfStatementConditionBlock @if = new()
         {
-            Condition = context.Expression.Expression.Accept(expressionVisitor)!,
+            Condition = context.Expression.Accept(expressionVisitor)!,
             Block = (StatementBlock)context.Block.Accept(this)!
         };
 
@@ -157,7 +162,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             (
                 new IfStatement.IfStatementConditionBlock
                 {
-                    Condition = ctx.Expression.Expression.Accept(expressionVisitor)!,
+                    Condition = ctx.Expression.Accept(expressionVisitor)!,
                     Block = (StatementBlock)ctx.Block.Accept(this)!,
                 }
             );
@@ -168,6 +173,17 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             @else = (StatementBlock?)context.Else.Block.Accept(this);
 
         return new IfStatement(@if, elif, @else);
+    }
+
+    public override IStatement VisitWhileStatement(SPSLParser.WhileStatementContext context)
+    {
+        ExpressionVisitor expressionVisitor = new();
+
+        return new WhileStatement
+        {
+            Condition = context.Expression.Accept(expressionVisitor)!,
+            Block = (StatementBlock)context.Block.Accept(this)!
+        };
     }
 
     public override IStatement VisitBreakStatement(SPSLParser.BreakStatementContext context)

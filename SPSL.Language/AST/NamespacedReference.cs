@@ -40,30 +40,6 @@ public class NamespacedReference : IEquatable<NamespacedReference>
 
     #region Method
 
-    private INamespaceChild? ResolveInternal(Namespace ns, string root)
-    {
-        if (root == string.Empty)
-            return null;
-
-        var pos = root.IndexOf('/');
-
-        if (pos < 0) return ns.GetChild(root);
-
-        var name = root[..pos];
-        return name.StartsWith(ns.FullName) ? ns.GetChild(name[ns.FullName.Length..]) : null;
-    }
-
-    /// <summary>
-    /// Tries to get the referenced object from the given <paramref name="ns">namespace</paramref>. If the object
-    /// doesn't exist, returns <see langword="null"/>.
-    /// </summary>
-    /// <param name="ns">The <see cref="Namespace"/> to get the reference from.</param>
-    /// <returns>The referenced object.</returns>
-    public INamespaceChild? Resolve(Namespace ns)
-    {
-        return ResolveInternal(ns, Name);
-    }
-
     public bool Equals(NamespacedReference? other)
     {
         return other != null && Name.Equals(other.Name);

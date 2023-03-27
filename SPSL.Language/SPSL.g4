@@ -42,6 +42,15 @@ KEYWORD_SHADER
 KEYWORD_INTERFACE
   : 'interface'
   ;
+KEYWORD_MATERIAL
+  : 'material'
+  ;
+KEYWORD_PARTIAL
+  : 'partial'
+  ;
+KEYWORD_PARAMS
+  : 'params'
+  ;
 KEYWORD_TYPE
   : 'type'
   ;
@@ -78,8 +87,8 @@ KEYWORD_INPUT
 KEYWORD_OUTPUT
   : 'output'
   ;
-KEYWORD_BLOCK
-  : 'block'
+KEYWORD_BUFFER
+  : 'buffer'
   ;
 KEYWORD_LOCAL
   : 'local'
@@ -433,15 +442,20 @@ namespacedTypeName
   ;
 
 fileLevelDefinition
-  : type
+  : globalVariable
+  | type
   | interface
   | shaderFragment
   | shader
   ;
 
+globalVariable locals[bool IsStatic]
+  : (KEYWORD_STATIC {$IsStatic = true;})? KEYWORD_CONST Type = dataType Definition = variableDeclarationAssignment TOK_SEMICOLON
+  ;
+
 type
-  : DOC_COMMENT* Definition = structDefinition TOK_OPEN_BRACE (DOC_COMMENT* blockComponent)* TOK_CLOSE_BRACE   # Struct
-  | DOC_COMMENT* Definition = enumDefinition TOK_OPEN_BRACE (DOC_COMMENT* enumBlockComponent)* TOK_CLOSE_BRACE # Enum
+  : DOC_COMMENT* Definition = structDefinition TOK_OPEN_BRACE (DOC_COMMENT* structComponent)* TOK_CLOSE_BRACE # Struct
+  | DOC_COMMENT* Definition = enumDefinition TOK_OPEN_BRACE (DOC_COMMENT* enumComponent)* TOK_CLOSE_BRACE     # Enum
   ;
 
 structDefinition
@@ -453,7 +467,7 @@ enumDefinition
   ;
 
 interface
-  : DOC_COMMENT* Definition = interfaceDefinition TOK_OPEN_BRACE (DOC_COMMENT* functionHead)* TOK_CLOSE_BRACE
+  : DOC_COMMENT* Definition = interfaceDefinition TOK_OPEN_BRACE (DOC_COMMENT* functionHead TOK_SEMICOLON)* TOK_CLOSE_BRACE
   ;
 
 interfaceDefinition
@@ -465,7 +479,9 @@ interfacesList
   ;
 
 shaderFragment
-  : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (DOC_COMMENT* shaderFunction)* TOK_CLOSE_BRACE
+  : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
+    DOC_COMMENT* (bufferDefinition | globalVariable | type | shaderFunction)
+  )* TOK_CLOSE_BRACE
   ;
 
 shaderFragmentDefinition
@@ -474,6 +490,16 @@ shaderFragmentDefinition
 
 shader
   : DOC_COMMENT* Definition = shaderDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (DOC_COMMENT* shaderMember)* (DOC_COMMENT* shaderFunction)* TOK_CLOSE_BRACE
+  ;
+
+material
+  : DOC_COMMENT* Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (DOC_COMMENT* materialMember)* (DOC_COMMENT* shaderFunction)* TOK_CLOSE_BRACE
+  ;
+
+materialDefinition locals[bool IsAbstract]
+  : (KEYWORD_ABSTRACT {$IsAbstract = true;})? KEYWORD_MATERIAL Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedMaterial = namespacedTypeName)? (
+    KEYWORD_IMPLEMENTS Interfaces = interfacesList
+  )?
   ;
 
 shaderDefinition locals[bool IsAbstract]
@@ -489,14 +515,17 @@ useDirective
 shaderMember
   : inputVarDefinition
   | localVarDeclaration
-  | globalVarDeclaration
-  | outputVarDeclaration
-  | blockDefinition
+  | bufferDefinition
+  | type
+  ;
+
+materialMember
+  : materialParams
+  | localVarDeclaration
   | type
   ;
 
 // ----- Annotations -----
-
 annotation
   : TOK_AT Name = IDENTIFIER (TOK_OPEN_PAREN ( constantExpression (TOK_COMMA constantExpression)*)? TOK_CLOSE_PAREN)?
   ;
@@ -524,43 +553,42 @@ parameterDirective
 
 // ----------------------
 
+materialParams locals[bool IsPartial]
+  : annotation* (KEYWORD_PARTIAL {$IsPartial = true;})? KEYWORD_PARAMS Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent* TOK_CLOSE_BRACE
+  ;
+
 // Vertex array variables
 inputVarDefinition
-  : Annotations = annotation* KEYWORD_INPUT Type = dataType IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_SEMICOLON
+  : annotation* KEYWORD_INPUT Type = dataType IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_SEMICOLON
   ;
 
 // Shader variables
 localVarDeclaration
-  : KEYWORD_LOCAL Type = dataType IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_SEMICOLON
-  ;
-
-// Uniform variables for GLSL
-globalVarDeclaration
-  : Annotations = annotation* KEYWORD_GLOBAL Type = dataType IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_SEMICOLON
-  ;
-
-// Shader output
-outputVarDeclaration
-  : Annotations = annotation* KEYWORD_OUTPUT Type = dataType IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_SEMICOLON
+  : annotation* KEYWORD_LOCAL Type = dataType IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_SEMICOLON
   ;
 
 // Uniform block for GLSL CBuffer for HLSL
-blockDefinition
-  : Annotations = annotation* Type = (KEYWORD_OUTPUT | KEYWORD_INPUT | KEYWORD_GLOBAL) KEYWORD_BLOCK Name = IDENTIFIER TOK_OPEN_BRACE blockComponent* TOK_CLOSE_BRACE
+bufferDefinition
+  : annotation* KEYWORD_BUFFER Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent* TOK_CLOSE_BRACE
   ;
 
-blockComponent
-  : Annotations = annotation* Type = dataType Name = IDENTIFIER TOK_SEMICOLON
+bufferComponent
+  : annotation* Type = dataType Name = IDENTIFIER TOK_SEMICOLON
   ;
 
-enumBlockComponent
+structComponent
+  : annotation* Type = dataType Name = IDENTIFIER TOK_SEMICOLON # StructProperty
+  | annotation* Function = function                             # StructFunction
+  ;
+
+enumComponent
   : Name = IDENTIFIER (OP_ASSIGN Value = constantExpression)? TOK_COMMA
   ;
 
 // Inner function variables
-variableDeclaration
-  : Type = dataType variableIdentity (TOK_COMMA variableIdentity)* # TypedVariableDeclaration
-  | KEYWORD_VAR Declaration = variableDeclarationAssignment        # UntypedVariableDeclaration
+variableDeclaration locals[bool IsConst]
+  : (KEYWORD_CONST {$IsConst = true;})? Type = dataType variableIdentity (TOK_COMMA variableIdentity)* # TypedVariableDeclaration
+  | KEYWORD_VAR Declaration = variableDeclarationAssignment                                            # UntypedVariableDeclaration
   ;
 
 variableDeclarationAssignment
@@ -573,7 +601,7 @@ variableIdentity locals[bool IsAssignment]
   ;
 
 shaderFunction locals[bool IsOverride]
-  : Annotations = annotation* (KEYWORD_OVERRIDE {$IsOverride = true;})? Function = function
+  : annotation* (KEYWORD_OVERRIDE {$IsOverride = true;})? Function = function
   ;
 
 function
@@ -593,7 +621,7 @@ argList
   ;
 
 argDef
-  : Flow = (KEYWORD_IN | KEYWORD_OUT | KEYWORD_INOUT)? Type = dataType Name = IDENTIFIER
+  : Flow = (KEYWORD_IN | KEYWORD_OUT | KEYWORD_INOUT | KEYWORD_CONST)? Type = dataType Name = IDENTIFIER
   ;
 
 functionBody
@@ -604,8 +632,29 @@ statementBlock
   : TOK_OPEN_BRACE statement* TOK_CLOSE_BRACE
   ;
 
+referencableExpression
+  : basicExpression
+  | parenthesizedExpression
+  | invocationExpression
+  | propertyMemberReferenceExpression
+  | methodMemberReferenceExpression
+  ;
+
+chainableExpression
+  : basicExpression
+  | invocationExpression
+  ;
+
+chainedExpression
+  : Target = referencableExpression (TOK_DOT chainableExpression)+
+  ;
+
+assignableChainedExpression
+  : Target = referencableExpression (TOK_DOT basicExpression)+
+  ;
+
 propertyMemberReferenceExpression
-  : Target = (KEYWORD_THIS | KEYWORD_BASE | IDENTIFIER) TOK_DOT Member = IDENTIFIER
+  : Target = (KEYWORD_THIS | KEYWORD_BASE | IDENTIFIER) TOK_DOT Member = basicExpression
   ;
 
 methodMemberReferenceExpression
@@ -622,11 +671,11 @@ invocationExpression
   ;
 
 ifStatement
-  : KEYWORD_IF Expression = parenthesizedExpression Block = statementBlock elifStatement* Else = elseStatement?
+  : KEYWORD_IF TOK_OPEN_PAREN Expression = expressionStatement TOK_CLOSE_PAREN Block = statementBlock elifStatement* Else = elseStatement?
   ;
 
 elifStatement
-  : (KEYWORD_ELIF | KEYWORD_ELSE KEYWORD_IF) Expression = parenthesizedExpression Block = statementBlock
+  : (KEYWORD_ELIF | KEYWORD_ELSE KEYWORD_IF) TOK_OPEN_PAREN Expression = expressionStatement TOK_CLOSE_PAREN Block = statementBlock
   ;
 
 elseStatement
@@ -634,11 +683,23 @@ elseStatement
   ;
 
 switchStatement
-  : KEYWORD_SWITCH Expression = parenthesizedExpression TOK_OPEN_BRACE caseStatement* TOK_CLOSE_BRACE
+  : KEYWORD_SWITCH TOK_OPEN_PAREN Expression = expressionStatement TOK_CLOSE_PAREN TOK_OPEN_BRACE caseStatement* TOK_CLOSE_BRACE
   ;
 
 caseStatement
   : KEYWORD_CASE Expression = constantExpression TOK_COLON TOK_OPEN_BRACE? Statements = stayControlFlowStatement* leaveControlFlowStatement TOK_CLOSE_BRACE?
+  ;
+
+whileStatement
+  : KEYWORD_WHILE TOK_OPEN_PAREN Expression = expressionStatement TOK_CLOSE_PAREN Block = statementBlock
+  ;
+
+forStatement
+  : KEYWORD_FOR TOK_OPEN_PAREN Initialization = expressionStatement TOK_SEMICOLON Condition = expressionStatement TOK_SEMICOLON Iteration = expressionStatement TOK_CLOSE_PAREN Block = statementBlock
+  ;
+
+doWhileStatement
+  : KEYWORD_DO Block = statementBlock KEYWORD_WHILE Expression = parenthesizedExpression
   ;
 
 parenthesizedExpression
@@ -653,6 +714,10 @@ parametersList
   : expressionStatement (TOK_COMMA expressionStatement)*
   ;
 
+contextAccessExpression
+  : Indentifier = (KEYWORD_BASE | KEYWORD_THIS)
+  ;
+
 basicExpression
   : Identifier = IDENTIFIER
   ;
@@ -663,12 +728,14 @@ expressionStatement
   | primitiveExpression                                                                                                                   # Expression
   | constantExpression                                                                                                                    # Expression
   | memberReferenceExpression                                                                                                             # Expression
+  | chainedExpression                                                                                                                     # Expression
   | invocationExpression                                                                                                                  # Expression
   | arrayAccessExpression                                                                                                                 # Expression
   | newInstanceExpression                                                                                                                 # Expression
   | TOK_EXCLAMATION Expression = expressionStatement                                                                                      # NegateOperationExpression
   | Expression = assignableExpression Operator = ( OP_INCREMENT | OP_DECREMENT)                                                           # PostfixUnaryOperationExpression
   | Operator = (OP_INCREMENT | OP_DECREMENT) Expression = assignableExpression                                                            # PrefixUnaryOperationExpression
+  | Operator = (OP_MINUS | OP_PLUS) Expression = expressionStatement                                                                      # SignedExpression
   | Left = expressionStatement Operator = OP_LEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression
   | Left = expressionStatement Operator = OP_GEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression
   | Left = expressionStatement Operator = OP_LESSER_THAN Right = expressionStatement                                                      # BinaryOperationExpression
@@ -711,6 +778,7 @@ assignableExpression
   : arrayAccessExpression
   | basicExpression
   | propertyMemberReferenceExpression
+  | assignableChainedExpression
   ;
 
 returnStatement
@@ -742,6 +810,9 @@ stayControlFlowStatement
   | StatementBlock = statementBlock
   | IfStatement = ifStatement
   | SwitchStatement = switchStatement
+  | WhileStatement = whileStatement
+  | ForStatement = forStatement
+  | DoWhileStatement = doWhileStatement
   ;
 
 statement

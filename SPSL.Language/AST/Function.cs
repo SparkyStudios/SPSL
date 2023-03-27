@@ -25,4 +25,10 @@ public class Function : IBlockChild
     }
 
     #endregion
+
+    #region IBlockChild Implementation
+
+    string IBlockChild.Name { get => Head.Name; set => Head.Name = value; }
+
+    #endregion
 }

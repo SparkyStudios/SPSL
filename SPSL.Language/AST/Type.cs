@@ -1,9 +1,11 @@
+using SPSL.Language.Utils;
+
 namespace SPSL.Language.AST;
 
 /// <summary>
 /// Represent an SPSL type.
 /// </summary>
-public class Type : INamespaceChild
+public class Type : INamespaceChild, IShaderMember
 {
     #region Properties
 
@@ -18,7 +20,12 @@ public class Type : INamespaceChild
     /// <summary>
     /// The collection of members in this types.
     /// </summary>
-    public HashSet<TypeMember> Members { get; }
+    public OrderedSet<TypeProperty> Properties { get; }
+
+    /// <summary>
+    /// The collection of functions in this types. Only available for struct types.
+    /// </summary>
+    public OrderedSet<TypeFunction> Functions { get; }
 
     /// <summary>
     /// The type which this one extends, if any.
@@ -37,7 +44,8 @@ public class Type : INamespaceChild
         Name = string.Empty;
         Kind = TypeKind.Unknown;
         ExtendedType = NamespacedReference.Null;
-        Members = new HashSet<TypeMember>();
+        Properties = new();
+        Functions = new();
     }
 
     /// <summary>
@@ -46,12 +54,12 @@ public class Type : INamespaceChild
     /// <param name="kind">The type kind.</param>
     /// <param name="name">The type name.</param>
     /// <param name="members">The collection of type members.</param>
-    public Type(TypeKind kind, string name, params TypeMember[] members)
+    public Type(TypeKind kind, string name, params TypeProperty[] members)
         : this()
     {
         Kind = kind;
         Name = name;
-        Members = new HashSet<TypeMember>(members);
+        Properties = new(members);
     }
 
     /// <summary>
@@ -60,12 +68,12 @@ public class Type : INamespaceChild
     /// <param name="kind">The type kind.</param>
     /// <param name="name">The type name.</param>
     /// <param name="members">The collection of type members.</param>
-    public Type(TypeKind kind, string name, IEnumerable<TypeMember> members)
+    public Type(TypeKind kind, string name, IEnumerable<TypeProperty> members)
         : this()
     {
         Kind = kind;
         Name = name;
-        Members = new HashSet<TypeMember>(members);
+        Properties = new(members);
     }
 
     #endregion
@@ -73,12 +81,21 @@ public class Type : INamespaceChild
     #region Methods
 
     /// <summary>
-    /// Adds a new member to this type.
+    /// Adds a new property to this type.
     /// </summary>
-    /// <param name="member">The member definition.</param>
-    public void AddMember(TypeMember member)
+    /// <param name="property">The property definition.</param>
+    public void AddProperty(TypeProperty property)
     {
-        Members.Add(member);
+        Properties.Add(property);
+    }
+
+    /// <summary>
+    /// Adds a new function to this type. Only available for struct types.
+    /// </summary>
+    /// <param name="function">The function definition.</param>
+    public void AddFunction(TypeFunction function)
+    {
+        Functions.Add(function);
     }
 
     #endregion

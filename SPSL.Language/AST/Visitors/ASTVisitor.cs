@@ -8,14 +8,16 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
 {
     private Namespace _currentNamespace = new(Empty);
 
+    public readonly OrderedSet<string> Imports = new();
+
     protected override AST DefaultResult => new();
 
-    private static NamespacedReference ParseNamespacedTypeName(SPSLParser.NamespacedTypeNameContext? context)
+    internal static NamespacedReference ParseNamespacedTypeName(SPSLParser.NamespacedTypeNameContext? context)
     {
         return context is not null ? new NamespacedReference(context.GetText()) : NamespacedReference.Null;
     }
 
-    private static ShaderFunction ParseShaderFunction(SPSLParser.ShaderFunctionContext context)
+    internal static ShaderFunction ParseShaderFunction(SPSLParser.ShaderFunctionContext context)
     {
         return new ShaderFunction(ParseFunction(context.Function))
         {
@@ -23,12 +25,12 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         };
     }
 
-    private static Function ParseFunction(SPSLParser.FunctionContext context)
+    internal static Function ParseFunction(SPSLParser.FunctionContext context)
     {
         return new Function(ParseFunctionHead(context.Head), ParseFunctionBody(context.Body));
     }
 
-    private static FunctionHead ParseFunctionHead(SPSLParser.FunctionHeadContext context)
+    internal static FunctionHead ParseFunctionHead(SPSLParser.FunctionHeadContext context)
     {
         return new FunctionHead
         (
@@ -38,7 +40,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         );
     }
 
-    private static FunctionSignature ParseFunctionSignature(SPSLParser.FunctionSignatureContext context)
+    internal static FunctionSignature ParseFunctionSignature(SPSLParser.FunctionSignatureContext context)
     {
         FunctionSignature signature = new();
 
@@ -55,6 +57,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
                         "in" => DataFlow.In,
                         "out" => DataFlow.Out,
                         "inout" => DataFlow.InOut,
+                        "const" => DataFlow.Const,
                         _ => DataFlow.Unspecified
                     },
                     arg.Type.Accept(new DataTypeVisitor()),
@@ -66,7 +69,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         return signature;
     }
 
-    private static StatementBlock ParseFunctionBody(SPSLParser.FunctionBodyContext context)
+    internal static StatementBlock ParseFunctionBody(SPSLParser.FunctionBodyContext context)
     {
         OrderedSet<IStatement> statements = new();
         StatementVisitor statementVisitor = new();
@@ -79,6 +82,23 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
 
         return new StatementBlock(statements);
     }
+
+    internal static GlobalVariable ParseGlobalVariable(SPSLParser.GlobalVariableContext context)
+    {
+        return new
+        (
+            context.IsStatic,
+            context.Type.Accept(new DataTypeVisitor()),
+            context.Definition.Expression.Accept(new ExpressionVisitor())!
+        )
+        {
+            Name = context.Definition.Identifier.Identifier.Text,
+        };
+    }
+
+    internal static TypeProperty ParseBufferComponent(SPSLParser.BufferComponentContext context)
+        => new TypeProperty(context.Type.Accept(new DataTypeVisitor()), context.Name.Text);
+
 
     protected TypeKind GetTypeKind(string type)
     {
@@ -118,8 +138,6 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
             case SPSLParser.DirectiveContext _:
             // Not parsed
             case SPSLParser.NamespacedTypeNameContext _:
-            // Not parsed
-            case SPSLParser.UseDirectiveContext _:
             // Not parsed
             case SPSLParser.EnumContext _:
             // Not parsed
@@ -174,61 +192,25 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
 
     public override AST VisitUseDirective(SPSLParser.UseDirectiveContext context)
     {
-        return base.VisitUseDirective(context);
+        Imports.Add(context.namespacedTypeName().GetText());
+        return DefaultResult.AddNamespace(_currentNamespace);
+    }
+
+    public override AST VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
+    {
+        _currentNamespace.AddChild(ParseGlobalVariable(context));
+        return DefaultResult.AddNamespace(_currentNamespace);
     }
 
     public override AST VisitStruct(SPSLParser.StructContext context)
     {
-        TypeKind tKind = TypeKind.Struct;
-        var tName = context.Definition.Name.Text;
-        Type type = new(tKind, tName)
-        {
-            ExtendedType = ParseNamespacedTypeName(context.Definition.ExtendedType),
-        };
-
-        // Register struct members
-        foreach (SPSLParser.BlockComponentContext member in context.blockComponent())
-        {
-            var mType = member.Type.Accept(new DataTypeVisitor());
-            var mName = member.Name.Text;
-            type.AddMember(new TypeMember(mType, mName));
-        }
-
-        _currentNamespace.AddChild(type);
-
+        _currentNamespace.AddChild(context.Accept(new TypeVisitor())!);
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
     public override AST VisitEnum(SPSLParser.EnumContext context)
     {
-        TypeKind tKind = TypeKind.Enum;
-        var tName = context.Definition.Name.Text;
-        Type type = new(tKind, tName);
-
-        uint lastValue = 0;
-
-        // Register enum members
-        foreach (SPSLParser.EnumBlockComponentContext member in context.enumBlockComponent())
-        {
-            var mName = member.Name.Text;
-            IConstantExpression? value = (member.Value?.Accept(new ExpressionVisitor())) as IConstantExpression;
-
-            if (value is not null && value is ILiteral constant)
-            {
-                lastValue = constant switch
-                {
-                    IntegerLiteral integer => (uint)integer.Value,
-                    UnsignedIntegerLiteral integer => integer.Value,
-                    _ => throw new NotSupportedException("The specified enum value is not supported. Only integer values are accepted.")
-                };
-            }
-
-            type.AddMember(new TypeMember(new PrimitiveDataType(PrimitiveDataTypeKind.UnsignedInteger), mName) { Initializer = new UnsignedIntegerLiteral(lastValue) });
-            lastValue++;
-        }
-
-        _currentNamespace.AddChild(type);
-
+        _currentNamespace.AddChild(context.Accept(new TypeVisitor())!);
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
@@ -262,6 +244,8 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
 
     public override AST VisitShaderFragment(SPSLParser.ShaderFragmentContext context)
     {
+        // --- Definition
+
         var fName = context.Definition.Name.Text;
         ShaderFragment fragment = new(fName)
         {
@@ -271,7 +255,19 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         if (context.Definition.ExtendedInterfaces != null)
             foreach (SPSLParser.NamespacedTypeNameContext nsd in context.Definition.ExtendedInterfaces
                          .namespacedTypeName())
-                fragment.AddExtendedInterface(nsd.GetText());
+                fragment.Extends(nsd.GetText());
+
+        // --- Use Directives
+
+        foreach (SPSLParser.UseDirectiveContext use in context.useDirective())
+            fragment.Uses(ParseNamespacedTypeName(use.Name));
+
+        // --- Global variables
+
+        foreach (SPSLParser.GlobalVariableContext variable in context.globalVariable())
+            fragment.AddGlobalVariable(ParseGlobalVariable(variable));
+
+        // --- Functions
 
         foreach (SPSLParser.ShaderFunctionContext function in context.shaderFunction())
             fragment.AddFunction(ParseShaderFunction(function));
@@ -302,20 +298,20 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
             foreach (SPSLParser.NamespacedTypeNameContext @interface in context.Definition.Interfaces.namespacedTypeName())
                 shader.Implements(ParseNamespacedTypeName(@interface));
 
-
         // --- Use Directives
 
-        foreach (SPSLParser.UseDirectiveContext shaderFragment in context.useDirective())
-            shader.Uses(ParseNamespacedTypeName(shaderFragment.Name));
+        foreach (SPSLParser.UseDirectiveContext use in context.useDirective())
+            shader.Uses(ParseNamespacedTypeName(use.Name));
 
         // --- Shader Members
+
+        foreach (SPSLParser.ShaderMemberContext member in context.shaderMember())
+            shader.Children.Add(member.Accept(new ShaderMemberVisitor())!);
 
         // --- Shader Functions
 
         foreach (SPSLParser.ShaderFunctionContext function in context.shaderFunction())
-        {
             shader.Children.Add(ParseShaderFunction(function));
-        }
 
         _currentNamespace.AddChild(shader);
 

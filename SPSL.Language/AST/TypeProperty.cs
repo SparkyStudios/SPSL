@@ -1,9 +1,11 @@
+using SPSL.Language.Utils;
+
 namespace SPSL.Language.AST;
 
 /// <summary>
 /// Represent a member of an <see cref="Language.AST.Type"/>.
 /// </summary>
-public class TypeMember
+public class TypeProperty : IAnnotable
 {
     #region Properties
 
@@ -19,21 +21,26 @@ public class TypeMember
 
     public IConstantExpression? Initializer { get; set; }
 
-
     #endregion
 
     #region Constructors
 
     /// <summary>
-    /// Initialize a new instance of <see cref="TypeMember"/>.
+    /// Initialize a new instance of <see cref="TypeProperty"/>.
     /// </summary>
     /// <param name="type">The member type.</param>
     /// <param name="name">The member name.</param>
-    public TypeMember(IDataType type, string name)
+    public TypeProperty(IDataType type, string name)
     {
         Type = type;
         Name = name;
     }
+
+    #endregion
+
+    #region IAnnotable Implementation
+
+    public OrderedSet<Annotation> Annotations { get; } = new();
 
     #endregion
 }

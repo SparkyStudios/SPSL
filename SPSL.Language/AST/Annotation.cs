@@ -7,6 +7,7 @@ public record Annotation
     #region Properties
 
     public string Name { get; init; } = null!;
+
     public OrderedSet<IExpression> Arguments { get; init; } = new();
 
     #endregion

@@ -14,15 +14,15 @@ public class IfStatement : IStatement
         #region Properties
 
         /// <summary>
-        /// The if statement condition.
+        /// The if statement's condition.
         /// </summary>
-        public IExpression Condition { get; set; } = null!;
+        public IExpression Condition { get; init; } = null!;
 
         /// <summary>
         /// The set of statement to execute if the <see cref="Condition"/>
         /// is evaluated to <c>true</c>
         /// </summary>
-        public StatementBlock Block { get; set; } = null!;
+        public StatementBlock Block { get; init; } = null!;
 
         #endregion
     }
@@ -59,7 +59,7 @@ public class IfStatement : IStatement
     public IfStatement(IfStatementConditionBlock @if, IEnumerable<IfStatementConditionBlock>? elif = null, StatementBlock? @else = null)
     {
         If = @if;
-        Elif = new OrderedSet<IfStatementConditionBlock>(elif);
+        Elif = new(elif);
         Else = @else;
     }
 

@@ -18,10 +18,13 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return node is SPSLParser.ExpressionStatementContext or SPSLParser.BasicExpressionContext
             or SPSLParser.ParenthesizedExpressionContext or SPSLParser.PrimitiveExpressionContext
-            or SPSLParser.ConstantExpressionContext or SPSLParser.MemberReferenceExpressionContext
+            or SPSLParser.ConstantExpressionContext or SPSLParser.MethodMemberReferenceExpressionContext
             or SPSLParser.InvocationExpressionContext or SPSLParser.ArrayAccessExpressionContext
             or SPSLParser.NewInstanceExpressionContext or SPSLParser.AssignableExpressionContext
-            or SPSLParser.MethodMemberReferenceExpressionContext or SPSLParser.PropertyMemberReferenceExpressionContext;
+            or SPSLParser.ChainedExpressionContext or SPSLParser.AssignableChainedExpressionContext
+            or SPSLParser.ChainableExpressionContext or SPSLParser.PropertyMemberReferenceExpressionContext
+            or SPSLParser.ContextAccessExpressionContext or SPSLParser.MemberReferenceExpressionContext
+            or SPSLParser.ReferencableExpressionContext;
     }
 
     public override IExpression VisitBasicExpression(SPSLParser.BasicExpressionContext context)
@@ -54,14 +57,46 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     public override IExpression VisitPropertyMemberReferenceExpression(
         SPSLParser.PropertyMemberReferenceExpressionContext context)
     {
-        return new PropertyMemberReferenceExpression(context.Target.Text, context.Member.Text);
+        return new PropertyMemberReferenceExpression
+        (
+            context.Target.Text,
+            context.Member.Identifier.Text
+        );
     }
 
     public override IExpression VisitMethodMemberReferenceExpression(
         SPSLParser.MethodMemberReferenceExpressionContext context)
     {
-        return new MethodMemberReferenceExpression(context.Target.Text,
-            (InvocationExpression)context.Member.Accept(this)!);
+        return new MethodMemberReferenceExpression
+        (
+            context.Target.Text,
+            (InvocationExpression)context.Member.Accept(this)!
+        );
+    }
+
+    public override IExpression VisitChainedExpression(
+        SPSLParser.ChainedExpressionContext context)
+    {
+        return new ChainedExpression
+        (
+            context.Target.Accept(this)!,
+            context.chainableExpression().Select(member => member.Accept(this)!)
+        );
+    }
+
+    public override IExpression VisitAssignableChainedExpression(
+        SPSLParser.AssignableChainedExpressionContext context)
+    {
+        return new ChainedExpression
+        (
+            context.Target.Accept(this)!,
+            context.basicExpression().Select(member => member.Accept(this)!)
+        );
+    }
+
+    public override IExpression VisitContextAccessExpression(SPSLParser.ContextAccessExpressionContext context)
+    {
+        return new ContextAccessExpression(context.Indentifier.Text);
     }
 
     public override IExpression VisitInvocationExpression(SPSLParser.InvocationExpressionContext context)
@@ -98,16 +133,23 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         return new NegateOperationExpression(context.Expression.Accept(this)!);
     }
 
-    public override IExpression VisitPostfixUnaryOperationExpression(SPSLParser.PostfixUnaryOperationExpressionContext context)
+    public override IExpression VisitPostfixUnaryOperationExpression(
+        SPSLParser.PostfixUnaryOperationExpressionContext context)
     {
         return new UnaryOperationExpression((IAssignableExpression)context.Expression.Accept(this)!,
             context.Operator.Text, true);
     }
 
-    public override IExpression VisitPrefixUnaryOperationExpression(SPSLParser.PrefixUnaryOperationExpressionContext context)
+    public override IExpression VisitPrefixUnaryOperationExpression(
+        SPSLParser.PrefixUnaryOperationExpressionContext context)
     {
         return new UnaryOperationExpression((IAssignableExpression)context.Expression.Accept(this)!,
             context.Operator.Text, false);
+    }
+
+    public override IExpression VisitSignedExpression(SPSLParser.SignedExpressionContext context)
+    {
+        return new SignedExpression(context.Operator.Text, context.Expression.Accept(this)!);
     }
 
     public override IExpression VisitBinaryOperationExpression(SPSLParser.BinaryOperationExpressionContext context)

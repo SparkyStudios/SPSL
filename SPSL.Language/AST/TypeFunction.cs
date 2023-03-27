@@ -2,11 +2,12 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
-public class ShaderFunction : IAnnotable, IBlockChild
+/// <summary>
+/// Represents a function inside a struct.
+/// </summary>
+public class TypeFunction : IAnnotable, IBlockChild
 {
     #region Properties
-
-    public bool IsOverride { get; set; }
 
     public Function Function { get; set; }
 
@@ -14,10 +15,9 @@ public class ShaderFunction : IAnnotable, IBlockChild
 
     #region Construtors
 
-    public ShaderFunction(Function function)
+    public TypeFunction(Function function)
     {
         Annotations = new OrderedSet<Annotation>();
-        IsOverride = false;
         Function = function;
     }
 
@@ -34,5 +34,4 @@ public class ShaderFunction : IAnnotable, IBlockChild
     public string Name { get => ((IBlockChild)Function).Name; set => ((IBlockChild)Function).Name = value; }
 
     #endregion
-
 }

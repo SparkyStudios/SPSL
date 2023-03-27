@@ -38,15 +38,6 @@ public class AST : IEnumerable<Namespace>
         return this;
     }
 
-    public override string ToString()
-    {
-        IEnumerable<Namespace> namespaces = _namespaces.Values.Select(n => n.Root);
-        foreach (Namespace ns in namespaces)
-            return ns.ToString();
-
-        return string.Empty;
-    }
-
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();

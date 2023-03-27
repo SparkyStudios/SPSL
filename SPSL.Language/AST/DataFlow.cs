@@ -5,5 +5,6 @@ public enum DataFlow
     Unspecified,
     In,
     Out,
-    InOut
+    InOut,
+    Const
 }

@@ -60,6 +60,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitFileLevelDefinition([NotNull] SPSLParser.FileLevelDefinitionContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.globalVariable"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitGlobalVariable([NotNull] SPSLParser.GlobalVariableContext context);
+	/// <summary>
 	/// Visit a parse tree produced by the <c>Struct</c>
 	/// labeled alternative in <see cref="SPSLParser.type"/>.
 	/// </summary>
@@ -122,6 +128,18 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitShader([NotNull] SPSLParser.ShaderContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.material"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterial([NotNull] SPSLParser.MaterialContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialDefinition([NotNull] SPSLParser.MaterialDefinitionContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.shaderDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -139,6 +157,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitShaderMember([NotNull] SPSLParser.ShaderMemberContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialMember"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialMember([NotNull] SPSLParser.MaterialMemberContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.annotation"/>.
 	/// </summary>
@@ -170,6 +194,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitParameterDirective([NotNull] SPSLParser.ParameterDirectiveContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialParams"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.inputVarDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -182,35 +212,37 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitLocalVarDeclaration([NotNull] SPSLParser.LocalVarDeclarationContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.globalVarDeclaration"/>.
+	/// Visit a parse tree produced by <see cref="SPSLParser.bufferDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitGlobalVarDeclaration([NotNull] SPSLParser.GlobalVarDeclarationContext context);
+	Result VisitBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.outputVarDeclaration"/>.
+	/// Visit a parse tree produced by <see cref="SPSLParser.bufferComponent"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitOutputVarDeclaration([NotNull] SPSLParser.OutputVarDeclarationContext context);
+	Result VisitBufferComponent([NotNull] SPSLParser.BufferComponentContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.blockDefinition"/>.
+	/// Visit a parse tree produced by the <c>StructProperty</c>
+	/// labeled alternative in <see cref="SPSLParser.structComponent"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitBlockDefinition([NotNull] SPSLParser.BlockDefinitionContext context);
+	Result VisitStructProperty([NotNull] SPSLParser.StructPropertyContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.blockComponent"/>.
+	/// Visit a parse tree produced by the <c>StructFunction</c>
+	/// labeled alternative in <see cref="SPSLParser.structComponent"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitBlockComponent([NotNull] SPSLParser.BlockComponentContext context);
+	Result VisitStructFunction([NotNull] SPSLParser.StructFunctionContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.enumBlockComponent"/>.
+	/// Visit a parse tree produced by <see cref="SPSLParser.enumComponent"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitEnumBlockComponent([NotNull] SPSLParser.EnumBlockComponentContext context);
+	Result VisitEnumComponent([NotNull] SPSLParser.EnumComponentContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>TypedVariableDeclaration</c>
 	/// labeled alternative in <see cref="SPSLParser.variableDeclaration"/>.
@@ -286,6 +318,30 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitStatementBlock([NotNull] SPSLParser.StatementBlockContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.referencableExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitReferencableExpression([NotNull] SPSLParser.ReferencableExpressionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.chainableExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitChainableExpression([NotNull] SPSLParser.ChainableExpressionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.chainedExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitChainedExpression([NotNull] SPSLParser.ChainedExpressionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.assignableChainedExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitAssignableChainedExpression([NotNull] SPSLParser.AssignableChainedExpressionContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.propertyMemberReferenceExpression"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -340,6 +396,24 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitCaseStatement([NotNull] SPSLParser.CaseStatementContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.whileStatement"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitWhileStatement([NotNull] SPSLParser.WhileStatementContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.forStatement"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitForStatement([NotNull] SPSLParser.ForStatementContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.doWhileStatement"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitDoWhileStatement([NotNull] SPSLParser.DoWhileStatementContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.parenthesizedExpression"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -357,6 +431,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitParametersList([NotNull] SPSLParser.ParametersListContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.contextAccessExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitContextAccessExpression([NotNull] SPSLParser.ContextAccessExpressionContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.basicExpression"/>.
 	/// </summary>
@@ -419,6 +499,13 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitCastExpression([NotNull] SPSLParser.CastExpressionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>SignedExpression</c>
+	/// labeled alternative in <see cref="SPSLParser.expressionStatement"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitSignedExpression([NotNull] SPSLParser.SignedExpressionContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.arrayAccessExpression"/>.
 	/// </summary>

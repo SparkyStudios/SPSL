@@ -7,12 +7,6 @@ namespace SPSL.Language.AST;
 /// </summary>
 public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 {
-    #region Fields
-
-    private HashSet<Namespace> _importedNamespaces;
-
-    #endregion
-
     #region Properties
 
     /// <summary>
@@ -35,11 +29,6 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
             return fullName;
         }
     }
-
-    /// <summary>
-    /// Gets the list of namespace imported to this namespace.
-    /// </summary>
-    public IReadOnlySet<Namespace> Imports => _importedNamespaces;
 
     /// <summary>
     /// Gets all registered children of this namespace.
@@ -80,8 +69,6 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
     /// <param name="name">The name of this namespace.</param>
     public Namespace(string name)
     {
-        _importedNamespaces = new HashSet<Namespace>();
-
         Name = name;
         Children = new HashSet<INamespaceChild>();
     }
@@ -131,27 +118,8 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
             foreach (Namespace ns in Namespaces.Where(ns => ns.Name == nsName))
                 return ns.GetChild(name[(pos + 1)..]);
         }
-        else
-        {
-            foreach (INamespaceChild child in Children.Where(child => child.Name == name))
-                return child;
-        }
 
-        // Try in imported namespaces
-        return Imports.Select(ns => ns.GetChild(name)).FirstOrDefault();
-    }
-
-    /// <summary>
-    /// Adds the given namespace reference as an import for this namespace. This will made types
-    /// from this namespace available in the current namespace.
-    /// </summary>
-    /// <param name="ns">The namespace to import in this one.</param>
-    public void Use(Namespace ns)
-    {
-        if (ns == this)
-            return;
-
-        _importedNamespaces.Add(ns);
+        return Children.Where(child => child.Name == name).FirstOrDefault();
     }
 
     public override string ToString()

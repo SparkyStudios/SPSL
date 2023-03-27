@@ -16,12 +16,9 @@ public class IntegerLiteral : ILiteral
         set => ((ILiteral)this).Value = value;
     }
 
-    #endregion
+    public bool IsOctalConstant { get; init; } = false;
 
-    #region ILiteral Implementation
-
-    /// <inheritdoc cref="ILiteral.Value"/>
-    object ILiteral.Value { get; set; } = null!;
+    public bool IsHexConstant { get; init; } = false;
 
     #endregion
 
@@ -35,6 +32,13 @@ public class IntegerLiteral : ILiteral
     {
         Value = value;
     }
+
+    #endregion
+
+    #region ILiteral Implementation
+
+    /// <inheritdoc cref="ILiteral.Value"/>
+    object ILiteral.Value { get; set; } = null!;
 
     #endregion
 }
