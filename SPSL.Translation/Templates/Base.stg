@@ -2,15 +2,11 @@
 
 // Base template for SPSL translations. Provides minimal utility functions for HLSL or GLSL shader generation.
 
+// Generates a struct property.
 prop(p) ::= "<p.type> <p.name>"
 
 // Generates a function argument.
 arg(a) ::= "<if(a.flow)><a.flow> <endif><a.type> <a.name><if(a.value)> = <a.value><endif>"
-
-func(type, name, args, stats) ::= <<
-<func_head(type, name, args)>
-<statements_block(stats)>
->>
 
 // Generates a function head.
 func_head(type, name, args) ::= <%
@@ -24,30 +20,48 @@ statements_block(stats) ::= <<
 }
 >>
 
+// Generates a function.
+func(type, name, args, stats) ::= <<
+<func_head(type, name, args)>
+<statements_block(stats)>
+>>
+
+// Generates a if condition block.
 if(condition, stats) ::= <<
 if (<condition>)
 <statements_block(stats)>
 >>
 
+// Generates a while loop.
+while(condition, stats) ::= <<
+while (<condition>)
+<statements_block(stats)>
+>>
+
+// Generates an array access statement.
 array_access(var, idx) ::= "<var>[<idx>]"
 
+// Generates a postfixed or prefixed unary operation.
 unary_op(op, expression, isPostfix) ::= <%
 <if(isPostfix)>
-  <op><expression>
-<else>
   <expression><op>
+<else>
+  <op><expression>
 <endif>
 %>
 
+// Generates a simple binary operation.
 binary_op(lhs, op, rhs) ::= "<lhs> <op> <rhs>"
 
+// Generates a ternary conditional expression.
 ternary_op(condition, lhs, rhs) ::= "<condition> ? <lhs> : <rhs>"
 
-cast(type, value) ::= "<type>(<value>)"
-
+// Generates a function call expression.
 invocation(function, params) ::= "<function>(<params; separator=\", \">)"
 
-variable_declaration(type, name, initializer, isArray, arraySize) ::= <%
+// Generates a variable declaration expression.
+variable_declaration(isConst, type, name, initializer, isArray, arraySize) ::= <%
+<if(isConst)>const <endif>
 <type> <name>
 <if(isArray)>[<arraySize>]<endif>
 <if(initializer)> = <initializer><endif>

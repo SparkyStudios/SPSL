@@ -4,19 +4,21 @@ using SPSL.Language;
 using SPSL.Language.AST;
 using SPSL.Translation.Common;
 
+using Buffer = SPSL.Language.AST.Buffer;
+using Type = SPSL.Language.AST.Type;
+
 namespace SPSL.Translation.HLSL;
 
 public class Translator
 {
-
     private static string TranslateOp(string op)
     {
-        switch (op)
+        return op switch
         {
-            case "and": return "&&";
-            case "or": return "||";
-            default: return op;
-        }
+            "and" => "&&",
+            "or" => "||",
+            _ => op
+        };
     }
 
     private static string TranslateBuiltInType(BuiltInDataTypeKind type)
@@ -72,11 +74,69 @@ public class Translator
         };
     }
 
-    private TemplateGroupString _hlslTemplate;
-    private TemplateGroupString _baseTemplate;
+    private static INamespaceChild? Resolve(string root, Namespace ns, AST ast)
+    {
+        if (root == string.Empty)
+            return null;
+
+        var pos = root.IndexOf('/');
+
+        if (pos < 0)
+        {
+            if (ns.GetChild(root) is INamespaceChild namespaceChild)
+                return namespaceChild;
+
+            return ast
+                .Select(n => n.FullName != ns.FullName && n.GetChild(root) is INamespaceChild c ? c : null)
+                .Where(c => c is not null)
+                .FirstOrDefault();
+        }
+
+        var name = root[..pos];
+
+        if (name.StartsWith(ns.FullName))
+            return ns.GetChild(name[ns.FullName.Length..]);
+
+        foreach (var n in ast.Where(n => n.FullName != ns.FullName))
+            if (name.StartsWith(n.FullName))
+                return ns.GetChild(name[n.FullName.Length..]);
+
+        return null;
+    }
+
+    private static readonly HashSet<Tuple<string?, string>> _processedFragments = new();
+
+    private readonly TemplateGroupString _hlslTemplate;
+    private readonly TemplateGroupString _baseTemplate;
 
 
     private string _currentBase = string.Empty;
+
+    private string TranslateShaderFragment(NamespacedReference name, Namespace ns, AST ast,
+        IDictionary<string, uint>? conflicts, HashSet<IBlockChild>? overriddenFunctions)
+    {
+        StringBuilder output = new();
+
+        INamespaceChild? child = Resolve(name.Name, ns, ast);
+        if (child is ShaderFragment fragment)
+        {
+            if (!_processedFragments.Contains(new(fragment.Parent?.FullName, fragment.Name)))
+            {
+                output.Append(Translate(fragment, ns, ast, overriddenFunctions, conflicts));
+                _processedFragments.Add(new(fragment.Parent?.FullName, fragment.Name));
+            }
+        }
+        else
+        {
+            output.AppendLine("// <spsl-error>");
+            output.AppendLine(
+                $"// Shader fragment not found: {name.Name}. Make sure it exists or his namespace is imported.");
+            output.AppendLine("// </spsl-error>");
+            output.AppendLine();
+        }
+
+        return output.ToString();
+    }
 
     public Translator()
     {
@@ -84,12 +144,12 @@ public class Translator
         var baseTemplate = "SPSL.Translation.Templates.HLSL.stg";
 
         using (Stream? stream = GetType().Assembly.GetManifestResourceStream(hlslTemplate))
-        using (StreamReader reader = new StreamReader(stream!))
-            _hlslTemplate = new TemplateGroupString("HLSL", reader.ReadToEnd());
+        using (StreamReader reader = new(stream!))
+            _hlslTemplate = new("HLSL", reader.ReadToEnd());
 
         using (Stream? stream = GetType().Assembly.GetManifestResourceStream(baseTemplate))
-        using (StreamReader reader = new StreamReader(stream!))
-            _baseTemplate = new TemplateGroupString("Base", reader.ReadToEnd());
+        using (StreamReader reader = new(stream!))
+            _baseTemplate = new("Base", reader.ReadToEnd());
 
         _hlslTemplate.ImportTemplates(_baseTemplate);
     }
@@ -125,47 +185,88 @@ public class Translator
     {
         StringBuilder output = new();
 
-        foreach (INamespaceChild child in ns)
+        foreach (INamespaceChild namespaceChild in ns.Where(child => child is GlobalVariable))
         {
-            if (child is Language.AST.Type type)
-                output.Append(Translate(type, ns, ast));
+            var child = (GlobalVariable)namespaceChild;
+            output.Append(Translate(child, ns, ast));
         }
 
-        foreach (INamespaceChild child in ns)
+        foreach (INamespaceChild namespaceChild in ns.Where(child => child is Type { Kind: TypeKind.Enum }))
         {
-            if (child is Language.AST.Shader shader && shader.IsAbstract is false)
-                output.Append(Translate(shader, ns, ast));
+            var child = (Type)namespaceChild;
+            output.Append(Translate(child, ns, ast));
+        }
+
+        foreach (INamespaceChild namespaceChild in ns.Where(child => child is Type { Kind: TypeKind.Struct }))
+        {
+            var child = (Type)namespaceChild;
+            output.Append(Translate(child, ns, ast));
+        }
+
+        foreach (INamespaceChild namespaceChild in ns.Where(child => child is Shader { IsAbstract: false }))
+        {
+            var child = (Shader)namespaceChild;
+            output.Append(Translate(child, ns, ast));
         }
 
         return output.ToString();
     }
 
-    public string Translate(Language.AST.Type type, Namespace ns, AST ast)
+    public string Translate(GlobalVariable global, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        // TODO: Handle name conflicts between namespaces
+
+        Template template = _hlslTemplate.GetInstanceOf("const_global_var");
+        template.Add("isStatic", global.IsStatic);
+        template.Add("type", Translate(global.Type, ns, ast));
+        template.Add("name", global.Name);
+        template.Add("initializer", Translate(global.Initializer, ns, ast));
+
+        output.AppendLine(template.Render());
+        return output.ToString();
+    }
+
+    public string Translate(Type type, Namespace ns, AST ast)
     {
         StringBuilder output = new();
 
         switch (type.Kind)
         {
-            case Language.AST.TypeKind.Struct:
+            case TypeKind.Struct:
                 {
+                    output.AppendLine();
                     Template template = _hlslTemplate.GetInstanceOf("struct");
                     template.Add("name", type.Name);
-                    foreach (TypeMember member in type.Members)
-                        template.Add("properties", new Prop(Translate(member.Type, ns, ast), member.Name));
+                    foreach (TypeProperty property in type.Properties)
+                        template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name));
+                    foreach (TypeFunction function in type.Functions)
+                        template.Add("functions", Translate(function.Function, ns, ast));
 
                     output.AppendLine(template.Render());
-                    output.AppendLine();
                     break;
                 }
-            case Language.AST.TypeKind.Enum:
+            case TypeKind.Enum:
                 {
+                    output.AppendLine();
                     Template template = _hlslTemplate.GetInstanceOf("enum");
                     template.Add("name", type.Name);
-                    foreach (TypeMember member in type.Members)
-                        template.Add("properties", new Prop(Translate(member.Type, ns, ast), member.Name, member.Initializer != null ? Translate(member.Initializer, ns, ast) : null));
+                    foreach (TypeProperty member in type.Properties)
+                    {
+                        template.Add
+                        (
+                            "properties",
+                            new Prop
+                            (
+                                Translate(member.Type, ns, ast),
+                                member.Name,
+                                member.Initializer != null ? Translate(member.Initializer, ns, ast) : null
+                            )
+                        );
+                    }
 
                     output.AppendLine(template.Render());
-                    output.AppendLine();
                     break;
                 }
         }
@@ -173,38 +274,81 @@ public class Translator
         return output.ToString();
     }
 
-    public string Translate(ShaderFragment fragment, Namespace ns, AST ast, IEnumerable<ShaderFunction>? shouldOverride = null, IDictionary<string, uint>? conflicts = null)
+    public string Translate(ShaderFragment fragment, Namespace ns, AST ast,
+        IEnumerable<IBlockChild>? shouldOverride = null, IDictionary<string, uint>? conflicts = null)
     {
         StringBuilder output = new();
-        HashSet<ShaderFunction> overriddenFunctions = new();
+        HashSet<IBlockChild> overriddenChildren = new();
 
         foreach (IBlockChild child in fragment.Children)
-            if (child is ShaderFunction function && function.IsOverride)
-                overriddenFunctions.Add(function);
+            if ((child is ShaderFunction function && function.IsOverride) || child is GlobalVariable)
+                overriddenChildren.Add(child);
 
         if (fragment.ExtendedShaderFragment != NamespacedReference.Null)
+            output.Append(TranslateShaderFragment(fragment.ExtendedShaderFragment, ns, ast, conflicts,
+                overriddenChildren));
+
+        if (fragment.ImportedShaderFragments.Count > 0)
         {
-            INamespaceChild? parent = fragment.ExtendedShaderFragment.Resolve(ns);
-            if (parent is ShaderFragment parentShaderFragment)
+            Dictionary<string, uint> fragmentChildren = new();
+
+            foreach (NamespacedReference import in fragment.ImportedShaderFragments)
             {
-                output.Append(Translate(parentShaderFragment, ns, ast, overriddenFunctions, conflicts));
+                if (import == NamespacedReference.Null)
+                    continue;
+
+                INamespaceChild? frag = Resolve(import.Name, ns, ast);
+                if (frag is ShaderFragment shaderFragment)
+                {
+                    foreach (IBlockChild child in shaderFragment.Children)
+                    {
+                        string name = child.Name;
+
+                        if (child is ShaderFunction function)
+                        {
+                            name = Translate(function.Function.Head, ns, ast);
+                        }
+
+                        if (fragmentChildren.ContainsKey(name))
+                            fragmentChildren[name] += 1;
+                        else
+                            fragmentChildren.Add(name, 1);
+                    }
+                }
             }
-            else
+
+            foreach (NamespacedReference import in fragment.ImportedShaderFragments)
             {
-                output.AppendLine("// <spsl-error>");
-                output.AppendLine($"// Shader fragment not found: {fragment.ExtendedShaderFragment.Name}. Make sure it exists or his namespace is imported.");
-                output.AppendLine("// </spsl-error>");
-                output.AppendLine();
+                if (import == NamespacedReference.Null)
+                    continue;
+
+                output.Append(TranslateShaderFragment(import, ns, ast, fragmentChildren, null));
             }
         }
 
         _currentBase = Translate(fragment.ExtendedShaderFragment, ns, ast);
+
+        foreach (GlobalVariable variable in fragment.GlobalVariables)
+        {
+            var name = variable.Name;
+            if (shouldOverride?.SingleOrDefault(m =>
+                    m is GlobalVariable globalVariable && globalVariable.Name.Equals(variable.Name)) != null ||
+                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
+                variable.Name = $"{fragment.Name}_{variable.Name}";
+
+            output.Append(Translate(variable, ns, ast));
+        }
+
+        output.AppendLine();
+
         foreach (ShaderFunction function in fragment.Functions)
         {
-            if ((shouldOverride is not null && shouldOverride.SingleOrDefault((m) => m.Function.Head.Equals(function.Function.Head)) is not null) ||
-                (conflicts is not null && conflicts.ContainsKey(function.Function.Head.Name) && conflicts[function.Function.Head.Name] > 1))
+            var name = Translate(function.Function.Head, ns, ast);
+            if (shouldOverride?.SingleOrDefault(m =>
+                    m is ShaderFunction shaderFunction &&
+                    shaderFunction.Function.Head.Equals(function.Function.Head)) != null ||
+                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
                 function.Function.Head.Name = $"{fragment.Name}_{function.Function.Head.Name}";
-
 
             output.AppendLine(Translate(function, ns, ast));
         }
@@ -212,34 +356,35 @@ public class Translator
         return output.ToString();
     }
 
-    public string Translate(Shader shader, Namespace ns, AST ast, IEnumerable<ShaderFunction>? shouldOverride = null)
+    public string Translate(Shader shader, Namespace ns, AST ast, IEnumerable<IBlockChild>? shouldOverride = null)
     {
         // 1. Process base shaders recursively
         //    - Rename overridden methods with BaseShader_MethodName
         // 2. Process shader fragments recursively
-        //    - Latest shader fragment functions got predominance on previous ones if they have the same name.
+        //    - Latest shader fragment functions got predominance on previous ones if they have the same signature.
         // 3. Process this shader
         //    - Calls to this are removed
         //    - Calls to base are renamed with the parent shader name
 
         StringBuilder output = new();
-        HashSet<ShaderFunction> overriddenFunctions = new();
+        HashSet<IBlockChild> overriddenChildren = new();
 
         foreach (IBlockChild child in shader.Children)
             if (child is ShaderFunction function && function.IsOverride)
-                overriddenFunctions.Add(function);
+                overriddenChildren.Add(function);
 
         if (shader.ExtendedShader != NamespacedReference.Null)
         {
-            INamespaceChild? parent = shader.ExtendedShader.Resolve(ns);
+            INamespaceChild? parent = Resolve(shader.ExtendedShader.Name, ns, ast);
             if (parent is Shader parentShader)
             {
-                output.Append(Translate(parentShader, ns, ast, overriddenFunctions));
+                output.Append(Translate(parentShader, ns, ast, overriddenChildren));
             }
             else
             {
                 output.AppendLine("// <spsl-error>");
-                output.AppendLine($"// Shader not found: {shader.ExtendedShader.Name}. Make sure it exists or his namespace is imported.");
+                output.AppendLine(
+                    $"// Shader not found: {shader.ExtendedShader.Name}. Make sure it exists or his namespace is imported.");
                 output.AppendLine("// </spsl-error>");
                 output.AppendLine();
             }
@@ -247,40 +392,38 @@ public class Translator
 
         if (shader.ImportedShaderFragments.Count > 0)
         {
-            Dictionary<string, uint> fragmentFunctions = new();
+            Dictionary<string, uint> fragmentChildren = new();
 
             foreach (NamespacedReference fragment in shader.ImportedShaderFragments)
             {
                 if (fragment == NamespacedReference.Null)
                     continue;
 
-                INamespaceChild? frag = fragment.Resolve(ns);
-                if (frag is ShaderFragment shaderFragment)
-                    foreach (IBlockChild child in shaderFragment.Children)
-                        if (child is ShaderFunction function)
-                            if (fragmentFunctions.ContainsKey(function.Function.Head.Name))
-                                fragmentFunctions[function.Function.Head.Name] += 1;
-                            else
-                                fragmentFunctions.Add(function.Function.Head.Name, 1);
+                INamespaceChild? frag = Resolve(fragment.Name, ns, ast);
+                if (frag is not ShaderFragment shaderFragment) continue;
+
+                foreach (IBlockChild child in shaderFragment.Children)
+                {
+                    var name = child.Name;
+
+                    if (child is ShaderFunction function)
+                    {
+                        name = Translate(function.Function.Head, ns, ast);
+                    }
+
+                    if (fragmentChildren.ContainsKey(name))
+                        fragmentChildren[name] += 1;
+                    else
+                        fragmentChildren.Add(name, 1);
+                }
             }
 
-            foreach (NamespacedReference fragment in shader.ImportedShaderFragments)
+            foreach (NamespacedReference import in shader.ImportedShaderFragments)
             {
-                if (fragment == NamespacedReference.Null)
+                if (import == NamespacedReference.Null)
                     continue;
 
-                INamespaceChild? frag = fragment.Resolve(ns);
-                if (frag is ShaderFragment shaderFragment)
-                {
-                    output.Append(Translate(shaderFragment, ns, ast, null, fragmentFunctions));
-                }
-                else
-                {
-                    output.AppendLine("// <spsl-error>");
-                    output.AppendLine($"// Shader fragment not found: {fragment.Name}. Make sure it exists or his namespace is imported.");
-                    output.AppendLine("// </spsl-error>");
-                    output.AppendLine();
-                }
+                output.Append(TranslateShaderFragment(import, ns, ast, fragmentChildren, null));
             }
         }
 
@@ -289,12 +432,13 @@ public class Translator
         foreach (IBlockChild child in shader.Children)
         {
             if (child is ShaderFunction shaderFunction)
-                if (shouldOverride is not null && shouldOverride.SingleOrDefault((m) => m.Function.Head.Equals(shaderFunction.Function.Head)) is not null)
+                if (shouldOverride?.SingleOrDefault(m =>
+                        m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
                     shaderFunction.Function.Head.Name = $"{shader.Name}_{shaderFunction.Function.Head.Name}";
 
-            string code = child switch
+            var code = child switch
             {
-                IStatement statement => Translate(statement, ns, ast),
+                IShaderMember member => Translate(member, ns, ast),
                 Function function => Translate(function, ns, ast),
                 ShaderFunction sf => Translate(sf, ns, ast),
                 _ => string.Empty,
@@ -306,11 +450,69 @@ public class Translator
         return output.ToString();
     }
 
+    public string Translate(IShaderMember member, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        var code = member switch
+        {
+            Buffer buffer => Translate(buffer, ns, ast),
+            Type type => Translate(type, ns, ast),
+            _ => string.Empty,
+        };
+
+        output.Append(code);
+
+        return output.ToString();
+    }
+
+    public string Translate(Buffer buffer, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        output.AppendLine();
+        Template template = _hlslTemplate.GetInstanceOf("cbuffer");
+        template.Add("name", buffer.Name);
+
+        var binding = "0";
+        var set = "0";
+
+        foreach (Annotation annotation in buffer.Annotations)
+        {
+            if (annotation.Name != "register")
+                continue;
+
+            if (annotation.Arguments.Count != 2)
+            {
+                output.Clear();
+
+                output.AppendLine("// <spsl-error>");
+                output.AppendLine("// Invalid usage of the @register(<binding>, <set>) annotation.");
+                output.AppendLine("// </spsl-error>");
+                output.AppendLine();
+
+                return output.ToString();
+            }
+
+            binding = Translate(annotation.Arguments[0], ns, ast);
+            set = Translate(annotation.Arguments[1], ns, ast);
+        }
+
+        template.Add("binding", binding);
+        template.Add("set", set);
+
+        foreach (TypeProperty property in buffer.Properties)
+            template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name));
+
+        output.Append(template.Render());
+        return output.ToString();
+    }
+
     public string Translate(ShaderFunction function, Namespace ns, AST ast)
     {
         StringBuilder output = new();
 
-        output.Append(Translate(function.Function, ns, ast));
+        output.AppendLine(Translate(function.Function, ns, ast));
 
         return output.ToString();
     }
@@ -338,6 +540,7 @@ public class Translator
                 DataFlow.In => "in",
                 DataFlow.InOut => "inout",
                 DataFlow.Out => "out",
+                DataFlow.Const => "const",
                 _ => null
             }, Translate(arg.Type, ns, ast), arg.Name));
         }
@@ -350,7 +553,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        string code = dataType switch
+        var code = dataType switch
         {
             BuiltInDataType builtInType => Translate(builtInType, ns, ast),
             PrimitiveDataType primitiveType => Translate(primitiveType, ns, ast),
@@ -403,7 +606,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        string code = expression switch
+        var code = expression switch
         {
             IConstantExpression constantExpression => Translate(constantExpression, ns, ast),
             ArrayAccessExpression arrayAccessExpression => Translate(arrayAccessExpression, ns, ast),
@@ -412,13 +615,17 @@ public class Translator
             BinaryOperationExpression binaryExpression => Translate(binaryExpression, ns, ast),
             CastExpression castExpression => Translate(castExpression, ns, ast),
             InvocationExpression invocationExpression => Translate(invocationExpression, ns, ast),
-            MethodMemberReferenceExpression methodMemberReferenceExpression => Translate(methodMemberReferenceExpression, ns, ast),
+            MethodMemberReferenceExpression methodMemberReferenceExpression => Translate(
+                methodMemberReferenceExpression, ns, ast),
             NegateOperationExpression negateOperationExpression => Translate(negateOperationExpression, ns, ast),
             NewInstanceExpression newInstanceExpression => Translate(newInstanceExpression, ns, ast),
             ParenthesizedExpression parenthesizedExpression => Translate(parenthesizedExpression, ns, ast),
-            PropertyMemberReferenceExpression propertyMemberReferenceExpression => Translate(propertyMemberReferenceExpression, ns, ast),
+            PropertyMemberReferenceExpression propertyMemberReferenceExpression => Translate(
+                propertyMemberReferenceExpression, ns, ast),
             TernaryOperationExpression ternaryOperationExpression => Translate(ternaryOperationExpression, ns, ast),
             UnaryOperationExpression unaryExpression => Translate(unaryExpression, ns, ast),
+            SignedExpression signedExpression => Translate(signedExpression, ns, ast),
+            ChainedExpression chainedMemberReferenceExpression => Translate(chainedMemberReferenceExpression, ns, ast),
             _ => string.Empty
         };
 
@@ -430,10 +637,11 @@ public class Translator
     {
         StringBuilder output = new();
 
-        string code = constantExpression switch
+        var code = constantExpression switch
         {
             IPrimitiveExpression primitiveExpression => Translate(primitiveExpression, ns, ast),
-            UserDefinedConstantExpression userDefinedConstantExpression => Translate(userDefinedConstantExpression, ns, ast),
+            UserDefinedConstantExpression userDefinedConstantExpression => Translate(userDefinedConstantExpression, ns,
+                ast),
             _ => string.Empty,
         };
 
@@ -445,7 +653,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        string code = primitiveExpression switch
+        var code = primitiveExpression switch
         {
             ILiteral literal => Translate(literal, ns, ast),
             _ => string.Empty
@@ -459,7 +667,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        string code = literal switch
+        var code = literal switch
         {
             BoolLiteral boolLiteral => Translate(boolLiteral, ns, ast),
             DoubleLiteral doubleLiteral => Translate(doubleLiteral, ns, ast),
@@ -478,7 +686,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append(boolLiteral.Value.ToString());
+        output.Append(boolLiteral.Value);
 
         return output.ToString();
     }
@@ -487,7 +695,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append(doubleLiteral.Value.ToString());
+        output.Append(doubleLiteral.Value);
 
         return output.ToString();
     }
@@ -496,7 +704,12 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append(floatLiteral.Value.ToString());
+        output.Append(floatLiteral.Value);
+
+        if (Math.Abs((int)floatLiteral.Value - floatLiteral.Value) == 0)
+            output.Append(".0");
+
+        output.Append('f');
 
         return output.ToString();
     }
@@ -505,7 +718,13 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append(integerLiteral.Value.ToString());
+        if (integerLiteral.IsHexConstant)
+            output.Append("0x");
+
+        if (integerLiteral.IsOctalConstant)
+            output.Append('0');
+
+        output.Append(Convert.ToString(integerLiteral.Value, integerLiteral.IsHexConstant ? 16 : integerLiteral.IsOctalConstant ? 8 : 10));
 
         return output.ToString();
     }
@@ -523,7 +742,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append(unsignedIntegerLiteral.Value.ToString());
+        output.Append(unsignedIntegerLiteral.Value);
 
         return output.ToString();
     }
@@ -584,7 +803,6 @@ public class Translator
             template.Add("function", "pow");
             template.Add("params", Translate(binaryExpression.Left, ns, ast));
             template.Add("params", Translate(binaryExpression.Right, ns, ast));
-
         }
         else
         {
@@ -624,29 +842,49 @@ public class Translator
         return output.ToString();
     }
 
+    public string Translate(ChainedExpression chainedMemberReferenceExpression, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        output.Append(Translate(chainedMemberReferenceExpression.Target, ns, ast));
+        output.Append('.');
+        output.Append
+        (
+            string.Join
+            (
+                '.',
+                chainedMemberReferenceExpression.Members.Select(expression => Translate(expression, ns, ast))
+            )
+        );
+
+        return output.ToString();
+    }
+
     public string Translate(MethodMemberReferenceExpression methodMemberReferenceExpression, Namespace ns, AST ast)
     {
         StringBuilder output = new();
 
         Template template;
 
-        // Calls to this are ignored
-        if (methodMemberReferenceExpression.Target == "this")
+        switch (methodMemberReferenceExpression.Target)
         {
-            template = _hlslTemplate.GetInstanceOf("invocation");
-            template.Add("function", methodMemberReferenceExpression.Member.Name);
-        }
-        // Calls to base are renamed
-        else if (methodMemberReferenceExpression.Target == "base")
-        {
-            template = _hlslTemplate.GetInstanceOf("invocation");
-            template.Add("function", $"{_currentBase}_{methodMemberReferenceExpression.Member.Name}");
-        }
-        else
-        {
-            template = _hlslTemplate.GetInstanceOf("member_invocation");
-            template.Add("owner", methodMemberReferenceExpression.Target);
-            template.Add("function", methodMemberReferenceExpression.Member.Name);
+            // Calls to this are ignored
+            case "this":
+                template = _hlslTemplate.GetInstanceOf("invocation");
+                template.Add("function", methodMemberReferenceExpression.Member.Name);
+                break;
+
+            // Calls to base are renamed
+            case "base":
+                template = _hlslTemplate.GetInstanceOf("invocation");
+                template.Add("function", $"{_currentBase}_{methodMemberReferenceExpression.Member.Name}");
+                break;
+
+            default:
+                template = _hlslTemplate.GetInstanceOf("member_invocation");
+                template.Add("owner", methodMemberReferenceExpression.Target);
+                template.Add("function", methodMemberReferenceExpression.Member.Name);
+                break;
         }
 
         foreach (InvocationParameter parameter in methodMemberReferenceExpression.Member.Parameters)
@@ -660,7 +898,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append("!");
+        output.Append('!');
         output.Append(Translate(negateOperationExpression.Expression, ns, ast));
 
         return output.ToString();
@@ -684,9 +922,9 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append("(");
+        output.Append('(');
         output.Append(Translate(parenthesizedExpression.Expression, ns, ast));
-        output.Append(")");
+        output.Append(')');
 
         return output.ToString();
     }
@@ -695,19 +933,21 @@ public class Translator
     {
         StringBuilder output = new();
 
-        // Calls to this are ignored
-        if (propertyMemberReferenceExpression.Target == "this")
+        switch (propertyMemberReferenceExpression.Target)
         {
-            output.Append(propertyMemberReferenceExpression.Member);
-        }
-        // Calls to base are renamed
-        else if (propertyMemberReferenceExpression.Target == "base")
-        {
-            output.Append($"{_currentBase}_{propertyMemberReferenceExpression.Member}");
-        }
-        else
-        {
-            output.Append($"{propertyMemberReferenceExpression.Target}.{propertyMemberReferenceExpression.Member}");
+            // Calls to this are ignored
+            case "this":
+                output.Append(propertyMemberReferenceExpression.Member);
+                break;
+
+            // Calls to base are renamed
+            case "base":
+                output.Append($"{_currentBase}_{propertyMemberReferenceExpression.Member}");
+                break;
+
+            default:
+                output.Append($"{propertyMemberReferenceExpression.Target}.{propertyMemberReferenceExpression.Member}");
+                break;
         }
 
         return output.ToString();
@@ -739,16 +979,27 @@ public class Translator
         return output.ToString();
     }
 
-    private string Translate(VariableDeclarationStatement variableDeclarationStatement, Namespace ns, AST ast)
+    public string Translate(SignedExpression signedExpression, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        output.Append(signedExpression.Sign);
+        output.Append(Translate(signedExpression.Expression, ns, ast));
+
+        return output.ToString();
+    }
+
+    public string Translate(VariableDeclarationStatement variableDeclarationStatement, Namespace ns, AST ast)
     {
         StringBuilder output = new();
 
         Template template = _hlslTemplate.GetInstanceOf("variable_declaration");
+        template.Add("isConst", variableDeclarationStatement.IsConst);
         template.Add("type", Translate(variableDeclarationStatement.Type, ns, ast));
         template.Add("name", Translate(variableDeclarationStatement.Name, ns, ast));
 
         if (variableDeclarationStatement.Initializer != null)
-            template.Add("initializer", Translate(variableDeclarationStatement.Initializer, ns, ast));
+            template.Add("initializer", Translate(variableDeclarationStatement.Initializer!, ns, ast));
 
         template.Add("isArray", variableDeclarationStatement.Type.IsArray);
         template.Add("arraySize", variableDeclarationStatement.Type.ArraySize);
@@ -761,50 +1012,48 @@ public class Translator
     {
         StringBuilder output = new();
 
-        bool needComma = true;
-        if (statement is BreakStatement breakStatement)
-        {
-            output.Append(Translate(breakStatement, ns, ast));
-        }
-        else if (statement is ContinueStatement continueStatement)
-        {
-            output.Append(Translate(continueStatement, ns, ast));
-        }
-        else if (statement is DiscardStatement discardStatement)
-        {
-            output.Append(Translate(discardStatement, ns, ast));
-        }
-        else if (statement is ExpressionStatement expressionStatement)
-        {
-            output.Append(Translate(expressionStatement, ns, ast));
-        }
-        else if (statement is IfStatement ifStatement)
-        {
-            output.Append(Translate(ifStatement, ns, ast));
-            needComma = false;
-        }
-        else if (statement is ReturnStatement ret)
-        {
-            output.Append(Translate(ret, ns, ast));
-        }
-        else if (statement is StatementBlock block)
-        {
-            output.Append(Translate(block, ns, ast));
-            needComma = false;
-        }
-        else if (statement is StatementCollection statementCollection)
-        {
-            output.Append(Translate(statementCollection, ns, ast));
-            needComma = false;
-        }
-        else if (statement is VariableDeclarationStatement variableDeclarationStatement)
-        {
-            output.Append(Translate(variableDeclarationStatement, ns, ast));
-        }
+        var needComma = true;
 
+        switch (statement)
+        {
+            case BreakStatement breakStatement:
+                output.Append(Translate(breakStatement, ns, ast));
+                break;
+            case ContinueStatement continueStatement:
+                output.Append(Translate(continueStatement, ns, ast));
+                break;
+            case DiscardStatement discardStatement:
+                output.Append(Translate(discardStatement, ns, ast));
+                break;
+            case ExpressionStatement expressionStatement:
+                output.Append(Translate(expressionStatement, ns, ast));
+                break;
+            case IfStatement ifStatement:
+                output.Append(Translate(ifStatement, ns, ast));
+                needComma = false;
+                break;
+            case WhileStatement whileStatement:
+                output.Append(Translate(whileStatement, ns, ast));
+                needComma = false;
+                break;
+            case ReturnStatement ret:
+                output.Append(Translate(ret, ns, ast));
+                break;
+            case StatementBlock block:
+                output.Append(Translate(block, ns, ast));
+                needComma = false;
+                break;
+            case StatementCollection statementCollection:
+                output.Append(Translate(statementCollection, ns, ast));
+                needComma = false;
+                break;
+            case VariableDeclarationStatement variableDeclarationStatement:
+                output.Append(Translate(variableDeclarationStatement, ns, ast));
+                break;
+        }
 
         if (needComma)
-            output.Append(";");
+            output.Append(';');
 
         return output.ToString();
     }
@@ -871,6 +1120,18 @@ public class Translator
         return output.ToString();
     }
 
+    public string Translate(WhileStatement whileStatement, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        output.Append("while (");
+        output.Append(Translate(whileStatement.Condition, ns, ast));
+        output.AppendLine(")");
+        output.Append(Translate(whileStatement.Block, ns, ast));
+
+        return output.ToString();
+    }
+
     public string Translate(ReturnStatement ret, Namespace ns, AST ast)
     {
         StringBuilder output = new();
@@ -879,7 +1140,7 @@ public class Translator
 
         if (ret.Expression != null)
         {
-            output.Append(" ");
+            output.Append(' ');
             output.Append(Translate(ret.Expression, ns, ast));
         }
 
@@ -889,10 +1150,8 @@ public class Translator
     public string Translate(StatementCollection statementCollection, Namespace ns, AST ast)
     {
         StringBuilder output = new();
-        List<string> statements = new();
-
-        foreach (IStatement statement in statementCollection.Statements)
-            statements.Add(Translate(statement, ns, ast));
+        IEnumerable<string> statements =
+            statementCollection.Statements.Select(statement => Translate(statement, ns, ast));
 
         output.Append(string.Join('\n', statements));
         return output.ToString();
@@ -903,13 +1162,10 @@ public class Translator
         StringBuilder output = new();
 
         Template template = _hlslTemplate.GetInstanceOf("statements_block");
-        foreach (IBlockChild child in body.Children)
-        {
-            if (child is IStatement statement)
-                template.Add("stats", Translate(statement, ns, ast));
-        }
+        foreach (IStatement statement in body.Children)
+            template.Add("stats", Translate(statement, ns, ast));
 
-        output.AppendLine(template.Render());
+        output.Append(template.Render());
         return output.ToString();
     }
 
@@ -983,18 +1239,11 @@ public class Translator
             output.Append("TextureCubeArray");
         else
         {
-            var type = reference.Resolve(ns);
-            if (type is Language.AST.Type spslType)
-            {
-                if (spslType.Kind == TypeKind.Enum)
-                    output.Append("uint");
-                else
-                    output.Append(spslType.Name);
-            }
+            INamespaceChild? type = Resolve(reference.Name, ns, ast);
+            if (type is Type spslType)
+                output.Append(spslType.Kind == TypeKind.Enum ? "uint" : spslType.Name);
             else
-            {
                 output.Append(reference.Name.Replace('\\', '_'));
-            }
         }
 
         return output.ToString();

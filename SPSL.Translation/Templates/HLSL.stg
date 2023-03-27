@@ -6,18 +6,20 @@ group HLSL: Base;
 cbuffer(name, binding, set, properties) ::= <<
 cbuffer <name> : register(b<binding>, space<set>)
 {
-  <properties:prop(); separator = ";\n">
-}
+  <properties:prop(); separator = ";\n">;
+};
 >>
 
 // Structure
 struct(name, properties, functions) ::= <<
 struct <name>
 {
+  <if(properties)>
   <properties:prop(); separator = ";\n">;
+  <endif>
   <if(functions)>
 
-  <functions:func(); separator = "\n\n">
+  <functions; separator = "\n\n">
   <endif>
 };
 >>
@@ -27,7 +29,13 @@ enum(name, properties) ::= <<
 <properties:{p|const <p.type> <name>_<p.name> = <p.value>}; separator = ";\n">;
 >>
 
-const_global_var(type, name, initializer) ::= "const <type> <name> = <initializer>"
+// Global Variable
+const_global_var(isStatic, type, name, initializer) ::= <<
+<if(isStatic)>static <endif>const <type> <name> = <initializer>;
+>>
+
+// Type cast
+cast(type, value) ::= "(<type>)<value>"
 
 member_invocation(owner, function, params) ::= "<owner>.<invocation(function, params)>"
 
