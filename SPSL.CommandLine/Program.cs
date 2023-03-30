@@ -1,11 +1,14 @@
 ﻿using Antlr4.Runtime;
+using CommandLine;
 using SPSL.CommandLine;
 using SPSL.Language;
 using SPSL.Language.AST;
 using SPSL.Language.AST.Visitors;
-using CommandLine;
+using SPSL.Translation.HLSL;
 
-HashSet<string> _importedNamespaces = new();
+using Parser = CommandLine.Parser;
+
+HashSet<string> importedNamespaces = new();
 
 void SetupParser(ParserSettings settings)
 {
@@ -18,7 +21,7 @@ void SetupParser(ParserSettings settings)
 
 void RunOptions(Options opts)
 {
-    if (opts.Shader && opts.NodeGraph)
+    if (opts is { Shader: true, NodeGraph: true })
     {
         Console.Error.WriteLine("Cannot specify both --shader and --node-graph.");
         Environment.Exit(1);
@@ -61,11 +64,11 @@ void RunOptions(Options opts)
             // ---- Translate to HLSL
             case Generator.HLSL:
                 {
-                    SPSL.Translation.HLSL.Translator hlsl = new();
+                    Translator hlsl = new();
 
                     string code = hlsl.Translate(ast);
 
-                    using var stream = new System.IO.StreamWriter(Path.Join(opts.OutputDirectory, $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.hlsl"));
+                    using var stream = new StreamWriter(Path.Join(opts.OutputDirectory, $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.hlsl"));
                     stream.Write(code);
                 }
                 break;
@@ -76,14 +79,39 @@ void RunOptions(Options opts)
 AST ParseDirectory(string path, IEnumerable<string> libraryPaths)
 {
     AST ast = new();
+    IEnumerable<string> paths = libraryPaths as string[] ?? libraryPaths.ToArray();
 
-    foreach (var libraryPath in libraryPaths)
+    foreach (var libraryPath in paths.Select(p => Path.GetFullPath(p)))
     {
         if (!Directory.Exists(libraryPath))
             continue;
 
         foreach (var file in Directory.GetFiles(Path.Join(libraryPath, path), "*.spsli", SearchOption.AllDirectories))
-            ast.Merge(ParseFile(file, libraryPaths));
+        {
+            var ns = Path.GetDirectoryName(file)![(libraryPath.Length + 1)..];
+            var pos = ns.LastIndexOf('\\');
+
+            var parsed = ParseFile(file, libraryPaths);
+
+            if (pos >= 0)
+            {
+                var parent = ns[..pos];
+                ns = ns[(pos + 1)..];
+
+                if (ast.FirstOrDefault(n => n.FullName == parent) is { } parentNode)
+                {
+                    parsed[ns].Parent = parentNode;
+
+                    if (parentNode.Namespaces.FirstOrDefault(n => n.FullName == parsed[ns].FullName) is { } parentNamespace)
+                        parentNamespace.Merge(parsed[ns]);
+                    else
+                        parentNode.Children.Add(parsed[ns]);
+                }
+            }
+
+            importedNamespaces.Add(ns);
+            ast.Merge(parsed);
+        }
     }
 
     return ast;
@@ -91,7 +119,8 @@ AST ParseDirectory(string path, IEnumerable<string> libraryPaths)
 
 AST ParseFile(string path, IEnumerable<string> libraryPaths)
 {
-    using var spsl = new System.IO.StreamReader(path);
+    using var spsl = new StreamReader(path);
+    IEnumerable<string> enumerable = libraryPaths as string[] ?? libraryPaths.ToArray();
 
     // ---- Build AST
 
@@ -106,16 +135,16 @@ AST ParseFile(string path, IEnumerable<string> libraryPaths)
 
     AST ast = shaderVisitor.Visit(parser.file());
 
-    foreach (var import in shaderVisitor.Imports.Where(i => !_importedNamespaces.Contains(i)))
+    foreach (var import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
     {
-        ast.Merge(ParseDirectory(import, libraryPaths));
-        _importedNamespaces.Add(import);
+        ast.Merge(ParseDirectory(import, enumerable));
+        importedNamespaces.Add(import);
     }
 
     return ast;
 }
 
-CommandLine.Parser parser = new(SetupParser);
+Parser parser = new(SetupParser);
 
 parser.ParseArguments<Options>(args)
   .WithParsed(RunOptions);

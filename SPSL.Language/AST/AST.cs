@@ -6,6 +6,11 @@ public class AST : IEnumerable<Namespace>
 {
     private Dictionary<string, Namespace> _namespaces = new Dictionary<string, Namespace>();
 
+    public Namespace this[string name]
+    {
+        get => _namespaces[name];
+    }
+
     public AST AddNamespace(Namespace ns)
     {
         if (_namespaces.ContainsKey(ns.FullName))
