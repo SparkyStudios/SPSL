@@ -79,7 +79,7 @@ public class Translator
         if (root == string.Empty)
             return null;
 
-        var pos = root.IndexOf('/');
+        var pos = root.IndexOf('\\');
 
         if (pos < 0)
         {
@@ -92,14 +92,12 @@ public class Translator
                 .FirstOrDefault();
         }
 
-        var name = root[..pos];
-
-        if (name.StartsWith(ns.FullName))
-            return ns.GetChild(name[ns.FullName.Length..]);
+        if (ns.FullName != string.Empty && root.StartsWith(ns.FullName))
+            return ns.GetChild(root[ns.FullName.Length..].TrimStart('\\'));
 
         foreach (var n in ast.Where(n => n.FullName != ns.FullName))
-            if (name.StartsWith(n.FullName))
-                return ns.GetChild(name[n.FullName.Length..]);
+            if (root.StartsWith(n.FullName))
+                return n.GetChild(root[n.FullName.Length..].TrimStart('\\'));
 
         return null;
     }
