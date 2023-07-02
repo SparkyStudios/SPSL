@@ -71,6 +71,9 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         if (context.WhileStatement != null)
             return context.WhileStatement.Accept(this)!;
 
+        if (context.PermuteStatement != null)
+            return context.PermuteStatement.Accept(this)!;
+
         throw new NotSupportedException();
     }
 
@@ -184,6 +187,26 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             Condition = context.Expression.Accept(expressionVisitor)!,
             Block = (StatementBlock)context.Block.Accept(this)!
         };
+    }
+
+    public override IStatement VisitPermuteStatement(SPSLParser.PermuteStatementContext context)
+    {
+        ExpressionVisitor expressionVisitor = new();
+
+        BinaryOperationExpression condition = new
+        (
+            context.Identifier.Accept(expressionVisitor)!,
+            context.Operator.Text,
+            context.Value.Accept(expressionVisitor)!
+        );
+
+        var block = (StatementBlock)context.Block.Accept(this)!;
+
+        StatementBlock? @else = null;
+        if (context.Else != null)
+            @else = (StatementBlock?)context.Else.Block.Accept(this);
+
+        return new PermuteStatement(condition, block, @else);
     }
 
     public override IStatement VisitBreakStatement(SPSLParser.BreakStatementContext context)

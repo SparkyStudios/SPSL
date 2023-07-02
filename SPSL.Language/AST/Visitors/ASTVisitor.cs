@@ -196,6 +196,58 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
+    public override AST VisitPermutationVariableBool(SPSLParser.PermutationVariableBoolContext context)
+    {
+        _currentNamespace.AddChild
+        (
+            new PermutationVariable
+            (
+                PermutationVariable.VariableType.Bool,
+                new BoolLiteral(bool.Parse(context.Value.Text))
+            )
+            {
+                Name = context.Identifier.GetText(),
+            }
+        );
+
+        return DefaultResult.AddNamespace(_currentNamespace);
+    }
+
+    public override AST VisitPermutationVariableEnum(SPSLParser.PermutationVariableEnumContext context)
+    {
+        _currentNamespace.AddChild
+        (
+            new PermutationVariable
+            (
+                PermutationVariable.VariableType.Enum,
+                context.Value.Accept(new ExpressionVisitor())!
+            )
+            {
+                EnumerationValues = context.IDENTIFIER().Select(id => id.GetText()).ToArray(),
+                Name = context.Identifier.GetText(),
+            }
+        );
+
+        return DefaultResult.AddNamespace(_currentNamespace);
+    }
+
+    public override AST VisitPermutationVariableInteger(SPSLParser.PermutationVariableIntegerContext context)
+    {
+        _currentNamespace.AddChild
+        (
+            new PermutationVariable
+            (
+                PermutationVariable.VariableType.Integer,
+                new IntegerLiteral(int.Parse(context.Value.Text))
+            )
+            {
+                Name = context.Identifier.GetText(),
+            }
+        );
+
+        return DefaultResult.AddNamespace(_currentNamespace);
+    }
+
     public override AST VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
     {
         _currentNamespace.AddChild(ParseGlobalVariable(context));
@@ -301,7 +353,8 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         };
 
         if (context.Definition.Interfaces is not null)
-            foreach (SPSLParser.NamespacedTypeNameContext @interface in context.Definition.Interfaces.namespacedTypeName())
+            foreach (SPSLParser.NamespacedTypeNameContext @interface in
+                     context.Definition.Interfaces.namespacedTypeName())
                 shader.Implements(ParseNamespacedTypeName(@interface));
 
         // --- Use Directives

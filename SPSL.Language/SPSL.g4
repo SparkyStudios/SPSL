@@ -156,6 +156,12 @@ KEYWORD_STATIC
 KEYWORD_CONST
   : 'const'
   ;
+KEYWORD_PERMUTATION
+  : 'permutation'
+  ;
+KEYWORD_PERMUTE
+  : 'permute'
+  ;
 
 TYPE_VOID
   : 'void'
@@ -443,14 +449,34 @@ namespacedTypeName
 
 fileLevelDefinition
   : globalVariable
+  | permutationVariable
   | type
   | interface
   | shaderFragment
   | shader
   ;
 
-globalVariable locals[bool IsStatic]
+globalVariable
+  locals[bool IsStatic]
   : (KEYWORD_STATIC {$IsStatic = true;})? KEYWORD_CONST Type = dataType Definition = variableDeclarationAssignment TOK_SEMICOLON
+  ;
+
+permutationVariableBool
+  : KEYWORD_PERMUTATION TYPE_BOOL Identifier = basicExpression OP_ASSIGN Value = BoolLiteral TOK_SEMICOLON
+  ;
+
+permutationVariableEnum
+  : KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_CLOSE_BRACE OP_ASSIGN Value = basicExpression TOK_SEMICOLON
+  ;
+
+permutationVariableInteger
+  : KEYWORD_PERMUTATION TYPE_INT Identifier = basicExpression OP_ASSIGN Value = IntegerLiteral TOK_SEMICOLON
+  ;
+
+permutationVariable
+  : permutationVariableBool
+  | permutationVariableEnum
+  | permutationVariableInteger
   ;
 
 type
@@ -480,32 +506,42 @@ interfacesList
 
 shaderFragment
   : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
-    DOC_COMMENT* (bufferDefinition | globalVariable | type | shaderFunction)
+    DOC_COMMENT* ( bufferDefinition | globalVariable | type | shaderFunction)
   )* TOK_CLOSE_BRACE
   ;
 
 shaderFragmentDefinition
-  : KEYWORD_FRAGMENT Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedFragment = namespacedTypeName)? (KEYWORD_IMPLEMENTS ExtendedInterfaces = interfacesList)?
-  ;
-
-shader
-  : DOC_COMMENT* Definition = shaderDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (DOC_COMMENT* shaderMember)* (DOC_COMMENT* shaderFunction)* TOK_CLOSE_BRACE
-  ;
-
-material
-  : DOC_COMMENT* Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (DOC_COMMENT* materialMember)* (DOC_COMMENT* shaderFunction)* TOK_CLOSE_BRACE
-  ;
-
-materialDefinition locals[bool IsAbstract]
-  : (KEYWORD_ABSTRACT {$IsAbstract = true;})? KEYWORD_MATERIAL Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedMaterial = namespacedTypeName)? (
-    KEYWORD_IMPLEMENTS Interfaces = interfacesList
+  : KEYWORD_FRAGMENT Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedFragment = namespacedTypeName)? (
+    KEYWORD_IMPLEMENTS ExtendedInterfaces = interfacesList
   )?
   ;
 
-shaderDefinition locals[bool IsAbstract]
-  : (KEYWORD_ABSTRACT {$IsAbstract = true;})? (Type = (KEYWORD_VERTEX | KEYWORD_PIXEL | KEYWORD_GEOMETRY | KEYWORD_HULL | KEYWORD_DOMAIN | KEYWORD_COMPUTE))? KEYWORD_SHADER Name = IDENTIFIER (
-    KEYWORD_EXTENDS ExtendedShader = namespacedTypeName
+shader
+  : DOC_COMMENT* Definition = shaderDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (DOC_COMMENT* shaderMember)* (
+    DOC_COMMENT* shaderFunction
+  )* TOK_CLOSE_BRACE
+  ;
+
+material
+  : DOC_COMMENT* Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
+    DOC_COMMENT* materialMember
+  )* (DOC_COMMENT* shaderFunction)* TOK_CLOSE_BRACE
+  ;
+
+materialDefinition
+  locals[bool IsAbstract]
+  : (KEYWORD_ABSTRACT {$IsAbstract = true;})? KEYWORD_MATERIAL Name = IDENTIFIER (
+    KEYWORD_EXTENDS ExtendedMaterial = namespacedTypeName
   )? (KEYWORD_IMPLEMENTS Interfaces = interfacesList)?
+  ;
+
+shaderDefinition
+  locals[bool IsAbstract]
+  : (KEYWORD_ABSTRACT {$IsAbstract = true;})? (
+    Type = (KEYWORD_VERTEX | KEYWORD_PIXEL | KEYWORD_GEOMETRY | KEYWORD_HULL | KEYWORD_DOMAIN | KEYWORD_COMPUTE)
+  )? KEYWORD_SHADER Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedShader = namespacedTypeName)? (
+    KEYWORD_IMPLEMENTS Interfaces = interfacesList
+  )?
   ;
 
 useDirective
@@ -527,7 +563,7 @@ materialMember
 
 // ----- Annotations -----
 annotation
-  : TOK_AT Name = IDENTIFIER (TOK_OPEN_PAREN ( constantExpression (TOK_COMMA constantExpression)*)? TOK_CLOSE_PAREN)?
+  : TOK_AT Name = IDENTIFIER (TOK_OPEN_PAREN (constantExpression ( TOK_COMMA constantExpression)*)? TOK_CLOSE_PAREN)?
   ;
 
 // ----------------------
@@ -553,7 +589,8 @@ parameterDirective
 
 // ----------------------
 
-materialParams locals[bool IsPartial]
+materialParams
+  locals[bool IsPartial]
   : annotation* (KEYWORD_PARTIAL {$IsPartial = true;})? KEYWORD_PARAMS Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent* TOK_CLOSE_BRACE
   ;
 
@@ -586,21 +623,24 @@ enumComponent
   ;
 
 // Inner function variables
-variableDeclaration locals[bool IsConst]
-  : (KEYWORD_CONST {$IsConst = true;})? Type = dataType variableIdentity (TOK_COMMA variableIdentity)* # TypedVariableDeclaration
-  | KEYWORD_VAR Declaration = variableDeclarationAssignment                                            # UntypedVariableDeclaration
+variableDeclaration
+  locals[bool IsConst]
+  : (KEYWORD_CONST                                          {$IsConst = true;})? Type = dataType variableIdentity (TOK_COMMA variableIdentity)* # TypedVariableDeclaration
+  | KEYWORD_VAR Declaration = variableDeclarationAssignment # UntypedVariableDeclaration
   ;
 
 variableDeclarationAssignment
   : Identifier = basicExpression OP_ASSIGN Expression = expressionStatement
   ;
 
-variableIdentity locals[bool IsAssignment]
+variableIdentity
+  locals[bool IsAssignment]
   : Identifier = basicExpression
   | Declaration = variableDeclarationAssignment {$IsAssignment = true;}
   ;
 
-shaderFunction locals[bool IsOverride]
+shaderFunction
+  locals[bool IsOverride]
   : annotation* (KEYWORD_OVERRIDE {$IsOverride = true;})? Function = function
   ;
 
@@ -670,6 +710,17 @@ invocationExpression
   : Name = namespacedTypeName TOK_OPEN_PAREN Parameters = parametersList? TOK_CLOSE_PAREN
   ;
 
+permuteStatement
+  : KEYWORD_PERMUTE TOK_OPEN_PAREN Identifier = basicExpression Operator = (
+    OP_EQUAL
+    | OP_GREATER_THAN
+    | OP_GEQ_THAN
+    | OP_LESSER_THAN
+    | OP_LEQ_THAN
+    | OP_DIFFERENT
+  ) Value = constantExpression TOK_CLOSE_PAREN Block = statementBlock Else = elseStatement?
+  ;
+
 ifStatement
   : KEYWORD_IF TOK_OPEN_PAREN Expression = expressionStatement TOK_CLOSE_PAREN Block = statementBlock elifStatement* Else = elseStatement?
   ;
@@ -695,7 +746,8 @@ whileStatement
   ;
 
 forStatement
-  : KEYWORD_FOR TOK_OPEN_PAREN Initialization = expressionStatement TOK_SEMICOLON Condition = expressionStatement TOK_SEMICOLON Iteration = expressionStatement TOK_CLOSE_PAREN Block = statementBlock
+  : KEYWORD_FOR TOK_OPEN_PAREN Initialization = expressionStatement TOK_SEMICOLON Condition = expressionStatement TOK_SEMICOLON Iteration = expressionStatement TOK_CLOSE_PAREN
+    Block = statementBlock
   ;
 
 doWhileStatement
@@ -733,7 +785,7 @@ expressionStatement
   | arrayAccessExpression                                                                                                                 # Expression
   | newInstanceExpression                                                                                                                 # Expression
   | TOK_EXCLAMATION Expression = expressionStatement                                                                                      # NegateOperationExpression
-  | Expression = assignableExpression Operator = ( OP_INCREMENT | OP_DECREMENT)                                                           # PostfixUnaryOperationExpression
+  | Expression = assignableExpression Operator = (OP_INCREMENT | OP_DECREMENT)                                                            # PostfixUnaryOperationExpression
   | Operator = (OP_INCREMENT | OP_DECREMENT) Expression = assignableExpression                                                            # PrefixUnaryOperationExpression
   | Operator = (OP_MINUS | OP_PLUS) Expression = expressionStatement                                                                      # SignedExpression
   | Left = expressionStatement Operator = OP_LEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression
@@ -813,6 +865,7 @@ stayControlFlowStatement
   | WhileStatement = whileStatement
   | ForStatement = forStatement
   | DoWhileStatement = doWhileStatement
+  | PermuteStatement = permuteStatement
   ;
 
 statement
@@ -835,9 +888,10 @@ constantExpression
   ;
 
 // ----- Types -----
-dataType locals[bool IsArray, DataTypeKind DataType]
-  : primitiveDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET {$IsArray = true;})? {$DataType = DataTypeKind.Primitive;}
-  | builtinDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET {$IsArray = true;})? {$DataType = DataTypeKind.BuiltIn;}
+dataType
+  locals[bool IsArray, DataTypeKind DataType]
+  : primitiveDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET   {$IsArray = true;})? {$DataType = DataTypeKind.Primitive;}
+  | builtinDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET     {$IsArray = true;})? {$DataType = DataTypeKind.BuiltIn;}
   | userDefinedDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET {$IsArray = true;})? {$DataType = DataTypeKind.UserDefined;}
   ;
 
@@ -911,12 +965,6 @@ LINE_COMMENT
   : LineComment -> channel (HIDDEN)
   ;
 
-// --------------- Identifiers ---------------
-
-IDENTIFIER
-  : NonDigit (NonDigit | DecimalDigit)*
-  ;
-
 // --------------- Literals ---------------
 
 BoolLiteral
@@ -929,7 +977,10 @@ DoubleLiteral
   ;
 
 FloatLiteral
-  : (OP_PLUS | OP_MINUS)? (FractionalConstant ExponentPart? FloatingSuffix? | DecimalDigit+ ExponentPart FloatingSuffix?)
+  : (OP_PLUS | OP_MINUS)? (
+    FractionalConstant ExponentPart? FloatingSuffix?
+    | DecimalDigit+ ExponentPart FloatingSuffix?
+  )
   ;
 
 IntegerLiteral
@@ -941,7 +992,13 @@ UnsignedIntegerLiteral
   ;
 
 StringLiteral
-  : '"' . '"'
+  : '"' .*? '"'
+  ;
+
+// --------------- Identifiers ---------------
+
+IDENTIFIER
+  : NonDigit (NonDigit | DecimalDigit)*
   ;
 
 // --------------- Whitespace and comments ---------------
@@ -968,7 +1025,7 @@ fragment DocComment
   ;
 
 fragment LineComment
-  : '//' ~ [\r\n]*
+  : '//' ~[\r\n]*
   ;
 
 // --------------- Numbers ---------------

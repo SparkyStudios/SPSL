@@ -66,3 +66,6 @@ variable_declaration(isConst, type, name, initializer, isArray, arraySize) ::= <
 <if(isArray)>[<arraySize>]<endif>
 <if(initializer)> = <initializer><endif>
 %>
+
+// Shader macro
+macro(m) ::= "#define <m.name> <m.value>"

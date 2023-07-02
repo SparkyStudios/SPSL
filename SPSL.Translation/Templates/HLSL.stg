@@ -40,3 +40,22 @@ cast(type, value) ::= "(<type>)<value>"
 member_invocation(owner, function, params) ::= "<owner>.<invocation(function, params)>"
 
 new_instance(type, params) ::= "<invocation(type, params)>"
+
+// Permutation Variable
+permutation_var(m, enum_values) ::= <<
+<if(enum_values)>
+<enum_values:macro(); separator = "\n">
+<endif>
+<m:macro()>
+>>
+
+// Permute block
+permute_block(condition, block, otherwise) ::= <<
+#if <condition>
+<block>
+<if(otherwise)>
+#else
+<otherwise>
+<endif>
+#endif
+>>

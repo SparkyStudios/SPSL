@@ -182,20 +182,34 @@ public class Translator
     {
         StringBuilder output = new();
 
+        foreach (INamespaceChild namespaceChild in ns.Where(child => child is PermutationVariable))
+        {
+            output.AppendLine();
+
+            var child = (PermutationVariable)namespaceChild;
+            output.Append(Translate(child, ns, ast));
+        }
+
         foreach (INamespaceChild namespaceChild in ns.Where(child => child is GlobalVariable))
         {
+            output.AppendLine();
+
             var child = (GlobalVariable)namespaceChild;
             output.Append(Translate(child, ns, ast));
         }
 
         foreach (INamespaceChild namespaceChild in ns.Where(child => child is Type { Kind: TypeKind.Enum }))
         {
+            output.AppendLine();
+
             var child = (Type)namespaceChild;
             output.Append(Translate(child, ns, ast));
         }
 
         foreach (INamespaceChild namespaceChild in ns.Where(child => child is Type { Kind: TypeKind.Struct }))
         {
+            output.AppendLine();
+
             var child = (Type)namespaceChild;
             output.Append(Translate(child, ns, ast));
         }
@@ -206,6 +220,26 @@ public class Translator
             output.Append(Translate(child, ns, ast));
         }
 
+        return output.ToString();
+    }
+
+    public string Translate(PermutationVariable permutationVariable, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        Template template = _hlslTemplate.GetInstanceOf("permutation_var");
+        template.Add("m", new Macro(permutationVariable.Name, Translate(permutationVariable.Initializer, ns, ast)));
+
+        if (permutationVariable.Type == PermutationVariable.VariableType.Enum)
+        {
+            for (int i = 0; i < permutationVariable.EnumerationValues.Length; i++)
+            {
+                string item = permutationVariable.EnumerationValues[i];
+                template.Add("enum_values", new Macro(item, i.ToString()));
+            }
+        }
+
+        output.Append(template.Render());
         return output.ToString();
     }
 
@@ -221,7 +255,7 @@ public class Translator
         template.Add("name", global.Name);
         template.Add("initializer", Translate(global.Initializer, ns, ast));
 
-        output.AppendLine(template.Render());
+        output.Append(template.Render());
         return output.ToString();
     }
 
@@ -716,7 +750,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append(boolLiteral.Value);
+        output.Append(boolLiteral.Value.ToString().ToLower());
 
         return output.ToString();
     }
@@ -1020,25 +1054,6 @@ public class Translator
         return output.ToString();
     }
 
-    public string Translate(VariableDeclarationStatement variableDeclarationStatement, Namespace ns, AST ast)
-    {
-        StringBuilder output = new();
-
-        Template template = _hlslTemplate.GetInstanceOf("variable_declaration");
-        template.Add("isConst", variableDeclarationStatement.IsConst);
-        template.Add("type", Translate(variableDeclarationStatement.Type, ns, ast));
-        template.Add("name", Translate(variableDeclarationStatement.Name, ns, ast));
-
-        if (variableDeclarationStatement.Initializer != null)
-            template.Add("initializer", Translate(variableDeclarationStatement.Initializer!, ns, ast));
-
-        template.Add("isArray", variableDeclarationStatement.Type.IsArray);
-        template.Add("arraySize", variableDeclarationStatement.Type.ArraySize);
-
-        output.Append(template.Render());
-        return output.ToString();
-    }
-
     public string Translate(IStatement statement, Namespace ns, AST ast)
     {
         StringBuilder output = new();
@@ -1080,6 +1095,10 @@ public class Translator
                 break;
             case VariableDeclarationStatement variableDeclarationStatement:
                 output.Append(Translate(variableDeclarationStatement, ns, ast));
+                break;
+            case PermuteStatement permuteStatement:
+                output.Append(Translate(permuteStatement, ns, ast));
+                needComma = false;
                 break;
         }
 
@@ -1178,6 +1197,18 @@ public class Translator
         return output.ToString();
     }
 
+    public string Translate(StatementBlock body, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        Template template = _hlslTemplate.GetInstanceOf("statements_block");
+        foreach (IStatement statement in body.Children)
+            template.Add("stats", Translate(statement, ns, ast));
+
+        output.Append(template.Render());
+        return output.ToString();
+    }
+
     public string Translate(StatementCollection statementCollection, Namespace ns, AST ast)
     {
         StringBuilder output = new();
@@ -1188,13 +1219,35 @@ public class Translator
         return output.ToString();
     }
 
-    public string Translate(StatementBlock body, Namespace ns, AST ast)
+    public string Translate(VariableDeclarationStatement variableDeclarationStatement, Namespace ns, AST ast)
     {
         StringBuilder output = new();
 
-        Template template = _hlslTemplate.GetInstanceOf("statements_block");
-        foreach (IStatement statement in body.Children)
-            template.Add("stats", Translate(statement, ns, ast));
+        Template template = _hlslTemplate.GetInstanceOf("variable_declaration");
+        template.Add("isConst", variableDeclarationStatement.IsConst);
+        template.Add("type", Translate(variableDeclarationStatement.Type, ns, ast));
+        template.Add("name", Translate(variableDeclarationStatement.Name, ns, ast));
+
+        if (variableDeclarationStatement.Initializer != null)
+            template.Add("initializer", Translate(variableDeclarationStatement.Initializer!, ns, ast));
+
+        template.Add("isArray", variableDeclarationStatement.Type.IsArray);
+        template.Add("arraySize", variableDeclarationStatement.Type.ArraySize);
+
+        output.Append(template.Render());
+        return output.ToString();
+    }
+
+    public string Translate(PermuteStatement permuteStatement, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        Template template = _hlslTemplate.GetInstanceOf("permute_block");
+        template.Add("condition", Translate(permuteStatement.Condition, ns, ast));
+        template.Add("block", Translate(permuteStatement.Block, ns, ast));
+
+        if (permuteStatement.Else != null && permuteStatement.Else.Children.Count > 0)
+            template.Add("otherwise", Translate(permuteStatement.Else, ns, ast));
 
         output.Append(template.Render());
         return output.ToString();
