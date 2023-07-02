@@ -19,10 +19,24 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
 
     internal static ShaderFunction ParseShaderFunction(SPSLParser.ShaderFunctionContext context)
     {
-        return new ShaderFunction(ParseFunction(context.Function))
+        var function = new ShaderFunction(ParseFunction(context.Function))
         {
             IsOverride = context.IsOverride
         };
+        
+        foreach (SPSLParser.AnnotationContext annotation in context.annotation())
+        {
+            function.Annotations.Add
+            (
+                new Annotation
+                {
+                    Name = annotation.Name.Text,
+                    Arguments = new(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
+                }
+            );
+        }
+
+        return function;
     }
 
     internal static Function ParseFunction(SPSLParser.FunctionContext context)
@@ -109,22 +123,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
             _ => throw new ArgumentException("The given SPSL type is not recognized."),
         };
     }
-
-    protected ShaderType GetShaderType(string type)
-    {
-        return type.ToLower() switch
-        {
-            "vertex" => ShaderType.Vertex,
-            "fragment" => ShaderType.Pixel,
-            "pixel" => ShaderType.Pixel,
-            "geometry" => ShaderType.Geometry,
-            "hull" => ShaderType.Hull,
-            "domain" => ShaderType.Domain,
-            "compute" => ShaderType.Compute,
-            _ => throw new ArgumentException("The given SPSL shader type is not recognized."),
-        };
-    }
-
+    
     protected override AST AggregateResult(AST aggregate, AST nextResult)
     {
         return aggregate.Merge(nextResult);
@@ -337,42 +336,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
 
     public override AST VisitShader(SPSLParser.ShaderContext context)
     {
-        // --- Shader Definition
-
-        ShaderType sType = context.Definition.Type switch
-        {
-            null => ShaderType.Unspecified,
-            _ => GetShaderType(context.Definition.Type.Text)
-        };
-        var sName = context.Definition.Name.Text;
-
-        Shader shader = new(sType, sName)
-        {
-            IsAbstract = context.Definition.IsAbstract,
-            ExtendedShader = ParseNamespacedTypeName(context.Definition.ExtendedShader)
-        };
-
-        if (context.Definition.Interfaces is not null)
-            foreach (SPSLParser.NamespacedTypeNameContext @interface in
-                     context.Definition.Interfaces.namespacedTypeName())
-                shader.Implements(ParseNamespacedTypeName(@interface));
-
-        // --- Use Directives
-
-        foreach (SPSLParser.UseDirectiveContext use in context.useDirective())
-            shader.Uses(ParseNamespacedTypeName(use.Name));
-
-        // --- Shader Members
-
-        foreach (SPSLParser.ShaderMemberContext member in context.shaderMember())
-            shader.Children.Add(member.Accept(new ShaderMemberVisitor())!);
-
-        // --- Shader Functions
-
-        foreach (SPSLParser.ShaderFunctionContext function in context.shaderFunction())
-            shader.Children.Add(ParseShaderFunction(function));
-
-        _currentNamespace.AddChild(shader);
+        _currentNamespace.AddChild(context.Accept(new ShaderVisitor())!);
 
         return DefaultResult.AddNamespace(_currentNamespace);
     }

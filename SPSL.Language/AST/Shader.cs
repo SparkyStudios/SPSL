@@ -4,6 +4,17 @@ namespace SPSL.Language.AST;
 
 public class Shader : INamespaceChild, IBlock
 {
+    #region Nested Types
+
+    public struct ComputeShaderParams
+    {
+        public uint ThreadCountX;
+        public uint ThreadCountY;
+        public uint ThreadCountZ;
+    }
+
+    #endregion
+    
     #region Properties
 
     public bool IsAbstract { get; set; }
@@ -16,6 +27,8 @@ public class Shader : INamespaceChild, IBlock
 
     public OrderedSet<NamespacedReference> ImportedShaderFragments { get; } = new();
 
+    public ComputeShaderParams ComputeParams { get; }
+    
     #endregion
 
     #region Constructors
@@ -24,6 +37,13 @@ public class Shader : INamespaceChild, IBlock
     {
         Type = type;
         Name = name;
+    }
+
+    public Shader(string name, ComputeShaderParams @params)
+    {
+        Type = ShaderType.Compute;
+        Name = name;
+        ComputeParams = @params;
     }
 
     #endregion

@@ -108,6 +108,7 @@ public class Translator
 
 
     private string _currentBase = string.Empty;
+    private Shader _currentShader = null!;
 
     private string TranslateShaderFragment(NamespacedReference name, Namespace ns, AST ast,
         IDictionary<string, uint>? conflicts, HashSet<IBlockChild>? overriddenFunctions)
@@ -405,6 +406,8 @@ public class Translator
 
     public string Translate(Shader shader, Namespace ns, AST ast, IEnumerable<IBlockChild>? shouldOverride = null)
     {
+        _currentShader = shader;
+
         // 1. Process base shaders recursively
         //    - Rename overridden methods with BaseShader_MethodName
         // 2. Process shader fragments recursively
@@ -426,6 +429,9 @@ public class Translator
             if (parent is Shader parentShader)
             {
                 output.Append(Translate(parentShader, ns, ast, overriddenChildren));
+
+                // Set back the current shader
+                _currentShader = shader;
             }
             else
             {
@@ -573,6 +579,16 @@ public class Translator
     public string Translate(ShaderFunction function, Namespace ns, AST ast)
     {
         StringBuilder output = new();
+
+        if (function.Annotations.Where(a => a.Name == "entry").Any())
+        {
+            if (_currentShader.Type == ShaderType.Compute)
+            {
+                // Compute shader entry points need the numthreads attribute
+                output.AppendLine();
+                output.AppendFormat("[[numthreads({0}, {1}, {2})]]", _currentShader.ComputeParams.ThreadCountX, _currentShader.ComputeParams.ThreadCountY, _currentShader.ComputeParams.ThreadCountZ);
+            }
+        }
 
         output.Append(Translate(function.Function, ns, ast));
 

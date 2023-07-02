@@ -251,7 +251,8 @@ public partial class SPSLBaseVisitor<Result> : AbstractParseTreeVisitor<Result>,
 	/// <return>The visitor result.</return>
 	public virtual Result VisitMaterialDefinition([NotNull] SPSLParser.MaterialDefinitionContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.shaderDefinition"/>.
+	/// Visit a parse tree produced by the <c>GenericShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -259,7 +260,18 @@ public partial class SPSLBaseVisitor<Result> : AbstractParseTreeVisitor<Result>,
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitShaderDefinition([NotNull] SPSLParser.ShaderDefinitionContext context) { return VisitChildren(context); }
+	public virtual Result VisitGenericShaderDefinition([NotNull] SPSLParser.GenericShaderDefinitionContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ComputeShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.useDirective"/>.
 	/// <para>

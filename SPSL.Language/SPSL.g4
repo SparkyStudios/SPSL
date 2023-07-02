@@ -541,7 +541,11 @@ shaderDefinition
     Type = (KEYWORD_VERTEX | KEYWORD_PIXEL | KEYWORD_GEOMETRY | KEYWORD_HULL | KEYWORD_DOMAIN | KEYWORD_COMPUTE)
   )? KEYWORD_SHADER Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedShader = namespacedTypeName)? (
     KEYWORD_IMPLEMENTS Interfaces = interfacesList
-  )?
+  )?                  # GenericShaderDefinition
+  | (KEYWORD_ABSTRACT {$IsAbstract = true;})? Type = KEYWORD_COMPUTE KEYWORD_SHADER Name = IDENTIFIER OP_LESSER_THAN ThreadCountX = IntegerLiteral TOK_COMMA ThreadCountY =
+    IntegerLiteral TOK_COMMA ThreadCountZ = IntegerLiteral OP_GREATER_THAN (
+    KEYWORD_EXTENDS ExtendedShader = namespacedTypeName
+  )? (KEYWORD_IMPLEMENTS Interfaces = interfacesList)? # ComputeShaderDefinition
   ;
 
 useDirective

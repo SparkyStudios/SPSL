@@ -164,11 +164,19 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitMaterialDefinition([NotNull] SPSLParser.MaterialDefinitionContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.shaderDefinition"/>.
+	/// Visit a parse tree produced by the <c>GenericShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitShaderDefinition([NotNull] SPSLParser.ShaderDefinitionContext context);
+	Result VisitGenericShaderDefinition([NotNull] SPSLParser.GenericShaderDefinitionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ComputeShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.useDirective"/>.
 	/// </summary>

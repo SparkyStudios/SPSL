@@ -296,17 +296,33 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitMaterialDefinition([NotNull] SPSLParser.MaterialDefinitionContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.shaderDefinition"/>.
+	/// Enter a parse tree produced by the <c>GenericShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterShaderDefinition([NotNull] SPSLParser.ShaderDefinitionContext context) { }
+	public virtual void EnterGenericShaderDefinition([NotNull] SPSLParser.GenericShaderDefinitionContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.shaderDefinition"/>.
+	/// Exit a parse tree produced by the <c>GenericShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitShaderDefinition([NotNull] SPSLParser.ShaderDefinitionContext context) { }
+	public virtual void ExitGenericShaderDefinition([NotNull] SPSLParser.GenericShaderDefinitionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>ComputeShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ComputeShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.useDirective"/>.
 	/// <para>The default implementation does nothing.</para>
