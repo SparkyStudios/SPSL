@@ -73,7 +73,17 @@ void RunOptions(Options opts)
                 }
                 break;
         }
+
+        return;
     }
+
+    if (opts.NodeGraph)
+    {
+        Console.WriteLine("Node Graph compiler is not yet implemented.");
+        return;
+    }
+
+    Console.Error.WriteLine("You must provide either --shader (to compile a shader file) or --node-graph (to compile a node graph file). Use --help to get help.");
 }
 
 AST ParseDirectory(string path, IEnumerable<string> libraryPaths)
@@ -81,7 +91,7 @@ AST ParseDirectory(string path, IEnumerable<string> libraryPaths)
     AST ast = new();
     IEnumerable<string> paths = libraryPaths as string[] ?? libraryPaths.ToArray();
 
-    foreach (var libraryPath in paths.Select(p => Path.GetFullPath(p)))
+    foreach (var libraryPath in paths.Select(Path.GetFullPath))
     {
         if (!Directory.Exists(libraryPath))
             continue;
@@ -91,7 +101,7 @@ AST ParseDirectory(string path, IEnumerable<string> libraryPaths)
             var ns = Path.GetDirectoryName(file)![(libraryPath.Length + 1)..];
             var pos = ns.LastIndexOf('\\');
 
-            var parsed = ParseFile(file, libraryPaths);
+            var parsed = ParseFile(file, paths);
 
             if (pos >= 0)
             {
@@ -120,7 +130,7 @@ AST ParseDirectory(string path, IEnumerable<string> libraryPaths)
 AST ParseFile(string path, IEnumerable<string> libraryPaths)
 {
     using var spsl = new StreamReader(path);
-    IEnumerable<string> enumerable = libraryPaths as string[] ?? libraryPaths.ToArray();
+    IEnumerable<string> paths = libraryPaths as string[] ?? libraryPaths.ToArray();
 
     // ---- Build AST
 
@@ -137,7 +147,7 @@ AST ParseFile(string path, IEnumerable<string> libraryPaths)
 
     foreach (var import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
     {
-        ast.Merge(ParseDirectory(import, enumerable));
+        ast.Merge(ParseDirectory(import, paths));
         importedNamespaces.Add(import);
     }
 

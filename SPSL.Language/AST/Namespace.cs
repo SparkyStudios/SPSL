@@ -119,7 +119,7 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
                 return ns.GetChild(name[(pos + 1)..]);
         }
 
-        return Children.Where(child => child.Name == name).FirstOrDefault();
+        return Children.FirstOrDefault(child => child.Name == name);
     }
 
     public override string ToString()
@@ -152,7 +152,7 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
     public Namespace? Parent { get; set; }
 
     /// <summary>
-    /// The namespace's name.
+    /// The namespace name.
     /// </summary>
     public string Name { get; set; }
 

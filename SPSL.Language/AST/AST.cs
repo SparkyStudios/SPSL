@@ -4,17 +4,14 @@ namespace SPSL.Language.AST;
 
 public class AST : IEnumerable<Namespace>
 {
-    private Dictionary<string, Namespace> _namespaces = new Dictionary<string, Namespace>();
+    private readonly Dictionary<string, Namespace> _namespaces = new();
 
-    public Namespace this[string name]
-    {
-        get => _namespaces[name];
-    }
+    public Namespace this[string name] => _namespaces[name];
 
     public AST AddNamespace(Namespace ns)
     {
-        if (_namespaces.ContainsKey(ns.FullName))
-            _namespaces[ns.FullName].Merge(ns);
+        if (_namespaces.TryGetValue(ns.FullName, out var found))
+            found.Merge(ns);
         else
             _namespaces.Add(ns.FullName, ns);
 
@@ -29,10 +26,7 @@ public class AST : IEnumerable<Namespace>
 
     public Namespace? GetNamespace(string name)
     {
-        if (_namespaces.ContainsKey(name))
-            return _namespaces[name];
-
-        return null;
+        return _namespaces.TryGetValue(name, out var found) ? found : null;
     }
 
     public AST Merge(AST ast)

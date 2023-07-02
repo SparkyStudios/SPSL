@@ -267,6 +267,12 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         foreach (SPSLParser.GlobalVariableContext variable in context.globalVariable())
             fragment.AddGlobalVariable(ParseGlobalVariable(variable));
 
+        // --- Buffers
+
+        foreach (SPSLParser.BufferDefinitionContext buffer in context.bufferDefinition())
+            if (buffer.Accept(new ShaderMemberVisitor()) is Buffer shaderBuffer)
+                fragment.AddBuffer(shaderBuffer);
+
         // --- Functions
 
         foreach (SPSLParser.ShaderFunctionContext function in context.shaderFunction())

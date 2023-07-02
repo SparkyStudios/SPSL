@@ -18,6 +18,8 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     public IEnumerable<GlobalVariable> GlobalVariables => Children.OfType<GlobalVariable>();
 
+    public IEnumerable<Buffer> Buffers => Children.OfType<Buffer>();
+
     public IEnumerable<ShaderFunction> Functions => Children.OfType<ShaderFunction>();
 
     #endregion
@@ -84,6 +86,11 @@ public class ShaderFragment : INamespaceChild, IBlock
     public void AddGlobalVariable(GlobalVariable variable)
     {
         Children.Add(variable);
+    }
+
+    public void AddBuffer(Buffer buffer)
+    {
+        Children.Add(buffer);
     }
 
     public void AddFunction(ShaderFunction function)

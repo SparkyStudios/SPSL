@@ -3,7 +3,6 @@ using Antlr4.StringTemplate;
 using SPSL.Language;
 using SPSL.Language.AST;
 using SPSL.Translation.Common;
-
 using Buffer = SPSL.Language.AST.Buffer;
 using Type = SPSL.Language.AST.Type;
 
@@ -120,7 +119,7 @@ public class Translator
         {
             if (!_processedFragments.Contains(new(fragment.Parent?.FullName, fragment.Name)))
             {
-                output.Append(Translate(fragment, ns, ast, overriddenFunctions, conflicts));
+                output.AppendLine(Translate(fragment, ns, ast, overriddenFunctions, conflicts));
                 _processedFragments.Add(new(fragment.Parent?.FullName, fragment.Name));
             }
         }
@@ -242,7 +241,7 @@ public class Translator
                     foreach (TypeFunction function in type.Functions)
                         template.Add("functions", Translate(function.Function, ns, ast));
 
-                    output.AppendLine(template.Render());
+                    output.Append(template.Render());
                     break;
                 }
             case TypeKind.Enum:
@@ -264,7 +263,7 @@ public class Translator
                         );
                     }
 
-                    output.AppendLine(template.Render());
+                    output.Append(template.Render());
                     break;
                 }
         }
@@ -328,6 +327,8 @@ public class Translator
 
         foreach (GlobalVariable variable in fragment.GlobalVariables)
         {
+            output.AppendLine();
+
             var name = variable.Name;
             if (shouldOverride?.SingleOrDefault(m =>
                     m is GlobalVariable globalVariable && globalVariable.Name.Equals(variable.Name)) != null ||
@@ -337,10 +338,24 @@ public class Translator
             output.Append(Translate(variable, ns, ast));
         }
 
-        output.AppendLine();
+        foreach (Buffer buffer in fragment.Buffers)
+        {
+            output.AppendLine();
+
+            var name = buffer.Name;
+            if (shouldOverride?.SingleOrDefault(m =>
+                    m is Buffer shaderBuffer &&
+                    shaderBuffer.Name.Equals(buffer.Name)) != null ||
+                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
+                buffer.Name = $"{fragment.Name}_{buffer.Name}";
+
+            output.Append(Translate(buffer, ns, ast));
+        }
 
         foreach (ShaderFunction function in fragment.Functions)
         {
+            output.AppendLine();
+
             var name = Translate(function.Function.Head, ns, ast);
             if (shouldOverride?.SingleOrDefault(m =>
                     m is ShaderFunction shaderFunction &&
@@ -348,7 +363,7 @@ public class Translator
                 (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
                 function.Function.Head.Name = $"{fragment.Name}_{function.Function.Head.Name}";
 
-            output.AppendLine(Translate(function, ns, ast));
+            output.Append(Translate(function, ns, ast));
         }
 
         return output.ToString();
@@ -426,6 +441,21 @@ public class Translator
         }
 
         _currentBase = Translate(shader.ExtendedShader, ns, ast);
+
+        output.AppendLine();
+
+        foreach (IBlockChild child in shader.Children)
+        {
+            if (child is ShaderFunction shaderFunction)
+            {
+                if (shouldOverride?.SingleOrDefault(m =>
+                        m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
+                    shaderFunction.Function.Head.Name = $"{shader.Name}_{shaderFunction.Function.Head.Name}";
+
+                output.Append(Translate(shaderFunction.Function.Head, ns, ast));
+                output.AppendLine(";");
+            }
+        }
 
         foreach (IBlockChild child in shader.Children)
         {
@@ -510,7 +540,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.AppendLine(Translate(function.Function, ns, ast));
+        output.Append(Translate(function.Function, ns, ast));
 
         return output.ToString();
     }
@@ -518,7 +548,9 @@ public class Translator
     public string Translate(Function function, Namespace ns, AST ast)
     {
         StringBuilder output = new();
-        output.Append(Translate(function.Head, ns, ast));
+        output.AppendLine();
+
+        output.AppendLine(Translate(function.Head, ns, ast));
         output.Append(Translate(function.Body, ns, ast));
 
         return output.ToString();
@@ -543,7 +575,7 @@ public class Translator
             }, Translate(arg.Type, ns, ast), arg.Name));
         }
 
-        output.AppendLine(template.Render());
+        output.Append(template.Render());
         return output.ToString();
     }
 
@@ -722,7 +754,8 @@ public class Translator
         if (integerLiteral.IsOctalConstant)
             output.Append('0');
 
-        output.Append(Convert.ToString(integerLiteral.Value, integerLiteral.IsHexConstant ? 16 : integerLiteral.IsOctalConstant ? 8 : 10));
+        output.Append(Convert.ToString(integerLiteral.Value,
+            integerLiteral.IsHexConstant ? 16 : integerLiteral.IsOctalConstant ? 8 : 10));
 
         return output.ToString();
     }
