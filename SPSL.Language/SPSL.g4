@@ -506,7 +506,7 @@ interfacesList
 
 shaderFragment
   : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
-    DOC_COMMENT* ( bufferDefinition | globalVariable | type | shaderFunction)
+    DOC_COMMENT* (bufferDefinition | permutationVariable | globalVariable | type | shaderFunction)
   )* TOK_CLOSE_BRACE
   ;
 

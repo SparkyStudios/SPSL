@@ -23,7 +23,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         {
             IsOverride = context.IsOverride
         };
-        
+
         foreach (SPSLParser.AnnotationContext annotation in context.annotation())
         {
             function.Annotations.Add
@@ -110,6 +110,57 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         };
     }
 
+    internal static PermutationVariable ParsePermutationVariable(SPSLParser.PermutationVariableContext context)
+    {
+        if (context.permutationVariableBool() != null)
+            return ParsePermutationVariable(context.permutationVariableBool());
+
+        if (context.permutationVariableEnum() != null)
+            return ParsePermutationVariable(context.permutationVariableEnum());
+
+        if (context.permutationVariableInteger() != null)
+            return ParsePermutationVariable(context.permutationVariableInteger());
+
+        throw new ArgumentException("The provided context is not valid.");
+    }
+
+    internal static PermutationVariable ParsePermutationVariable(SPSLParser.PermutationVariableBoolContext context)
+    {
+        return new PermutationVariable
+        (
+            PermutationVariable.VariableType.Bool,
+            new BoolLiteral(bool.Parse(context.Value.Text))
+        )
+        {
+            Name = context.Identifier.GetText(),
+        };
+    }
+
+    internal static PermutationVariable ParsePermutationVariable(SPSLParser.PermutationVariableEnumContext context)
+    {
+        return new PermutationVariable
+        (
+            PermutationVariable.VariableType.Enum,
+            context.Value.Accept(new ExpressionVisitor())!
+        )
+        {
+            EnumerationValues = context.IDENTIFIER().Select(id => id.GetText()).ToArray(),
+            Name = context.Identifier.GetText(),
+        };
+    }
+
+    internal static PermutationVariable ParsePermutationVariable(SPSLParser.PermutationVariableIntegerContext context)
+    {
+        return new PermutationVariable
+        (
+            PermutationVariable.VariableType.Integer,
+            new IntegerLiteral(int.Parse(context.Value.Text))
+        )
+        {
+            Name = context.Identifier.GetText(),
+        };
+    }
+
     internal static TypeProperty ParseBufferComponent(SPSLParser.BufferComponentContext context)
         => new TypeProperty(context.Type.Accept(new DataTypeVisitor()), context.Name.Text);
 
@@ -123,7 +174,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
             _ => throw new ArgumentException("The given SPSL type is not recognized."),
         };
     }
-    
+
     protected override AST AggregateResult(AST aggregate, AST nextResult)
     {
         return aggregate.Merge(nextResult);
@@ -150,19 +201,6 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
             default:
                 return base.ShouldVisitNextChild(node, currentResult);
         }
-    }
-
-    public override AST VisitChildren(IRuleNode node)
-    {
-        AST result = DefaultResult;
-
-        for (int i = 0, l = node.ChildCount; i < l && ShouldVisitNextChild(node, result); ++i)
-        {
-            AST nextResult = node.GetChild(i).Accept(this);
-            result = AggregateResult(result, nextResult);
-        }
-
-        return result;
     }
 
     public override AST VisitFile(SPSLParser.FileContext context)
@@ -197,52 +235,21 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
 
     public override AST VisitPermutationVariableBool(SPSLParser.PermutationVariableBoolContext context)
     {
-        _currentNamespace.AddChild
-        (
-            new PermutationVariable
-            (
-                PermutationVariable.VariableType.Bool,
-                new BoolLiteral(bool.Parse(context.Value.Text))
-            )
-            {
-                Name = context.Identifier.GetText(),
-            }
-        );
+        _currentNamespace.AddChild(ParsePermutationVariable(context));
 
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
     public override AST VisitPermutationVariableEnum(SPSLParser.PermutationVariableEnumContext context)
     {
-        _currentNamespace.AddChild
-        (
-            new PermutationVariable
-            (
-                PermutationVariable.VariableType.Enum,
-                context.Value.Accept(new ExpressionVisitor())!
-            )
-            {
-                EnumerationValues = context.IDENTIFIER().Select(id => id.GetText()).ToArray(),
-                Name = context.Identifier.GetText(),
-            }
-        );
+        _currentNamespace.AddChild(ParsePermutationVariable(context));
 
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
     public override AST VisitPermutationVariableInteger(SPSLParser.PermutationVariableIntegerContext context)
     {
-        _currentNamespace.AddChild
-        (
-            new PermutationVariable
-            (
-                PermutationVariable.VariableType.Integer,
-                new IntegerLiteral(int.Parse(context.Value.Text))
-            )
-            {
-                Name = context.Identifier.GetText(),
-            }
-        );
+        _currentNamespace.AddChild(ParsePermutationVariable(context));
 
         return DefaultResult.AddNamespace(_currentNamespace);
     }
@@ -317,6 +324,11 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
 
         foreach (SPSLParser.GlobalVariableContext variable in context.globalVariable())
             fragment.AddGlobalVariable(ParseGlobalVariable(variable));
+
+        // --- Permutation variables
+
+        foreach (SPSLParser.PermutationVariableContext variable in context.permutationVariable())
+            fragment.AddPermutationVariable(ParsePermutationVariable(variable));
 
         // --- Buffers
 

@@ -263,12 +263,12 @@ public class Translator
     public string Translate(Type type, Namespace ns, AST ast)
     {
         StringBuilder output = new();
+        output.AppendLine();
 
         switch (type.Kind)
         {
             case TypeKind.Struct:
                 {
-                    output.AppendLine();
                     Template template = _hlslTemplate.GetInstanceOf("struct");
                     template.Add("name", type.Name);
                     foreach (TypeProperty property in type.Properties)
@@ -281,7 +281,6 @@ public class Translator
                 }
             case TypeKind.Enum:
                 {
-                    output.AppendLine();
                     Template template = _hlslTemplate.GetInstanceOf("enum");
                     template.Add("name", type.Name);
                     foreach (TypeProperty member in type.Properties)
@@ -359,6 +358,19 @@ public class Translator
         }
 
         _currentBase = Translate(fragment.ExtendedShaderFragment, ns, ast);
+
+        foreach (PermutationVariable permutation in fragment.PermutationVariables)
+        {
+            output.AppendLine();
+
+            var name = permutation.Name;
+            if (shouldOverride?.SingleOrDefault(m =>
+                    m is PermutationVariable permutationVariable && permutationVariable.Name.Equals(permutation.Name)) != null ||
+                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
+                permutation.Name = $"{fragment.Name}_{permutation.Name}";
+
+            output.Append(Translate(permutation, ns, ast));
+        }
 
         foreach (GlobalVariable variable in fragment.GlobalVariables)
         {
@@ -596,6 +608,7 @@ public class Translator
             template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name));
 
         output.Append(template.Render());
+
         return output.ToString();
     }
 

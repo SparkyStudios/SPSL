@@ -368,6 +368,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitChainedExpression([NotNull] SPSLParser.ChainedExpressionContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.assignableChainableExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitAssignableChainableExpression([NotNull] SPSLParser.AssignableChainableExpressionContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.assignableChainedExpression"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

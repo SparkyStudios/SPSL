@@ -3,7 +3,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// An SPSL shader permutation variable.
 /// </summary>
-public class PermutationVariable : INamespaceChild
+public class PermutationVariable : INamespaceChild, IBlockChild
 {
     public enum VariableType
     {
@@ -11,9 +11,9 @@ public class PermutationVariable : INamespaceChild
         Enum,
         Integer
     }
-    
+
     #region Properties
-    
+
     /// <summary>
     /// The type of the variable.
     /// </summary>
@@ -28,7 +28,7 @@ public class PermutationVariable : INamespaceChild
     /// An array of enumeration values in case of an enumerated permutation value.
     /// </summary>
     public string[] EnumerationValues { get; set; } = Array.Empty<string>();
-    
+
     #endregion
 
     #region Constructors

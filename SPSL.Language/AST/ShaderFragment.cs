@@ -18,6 +18,8 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     public IEnumerable<GlobalVariable> GlobalVariables => Children.OfType<GlobalVariable>();
 
+    public IEnumerable<PermutationVariable> PermutationVariables => Children.OfType<PermutationVariable>();
+
     public IEnumerable<Buffer> Buffers => Children.OfType<Buffer>();
 
     public IEnumerable<ShaderFunction> Functions => Children.OfType<ShaderFunction>();
@@ -86,6 +88,11 @@ public class ShaderFragment : INamespaceChild, IBlock
     public void AddGlobalVariable(GlobalVariable variable)
     {
         Children.Add(variable);
+    }
+
+    public void AddPermutationVariable(PermutationVariable permutation)
+    {
+        Children.Add(permutation);
     }
 
     public void AddBuffer(Buffer buffer)

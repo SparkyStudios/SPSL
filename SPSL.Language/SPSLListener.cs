@@ -591,6 +591,16 @@ public interface ISPSLListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitChainedExpression([NotNull] SPSLParser.ChainedExpressionContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.assignableChainableExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterAssignableChainableExpression([NotNull] SPSLParser.AssignableChainableExpressionContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.assignableChainableExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitAssignableChainableExpression([NotNull] SPSLParser.AssignableChainableExpressionContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.assignableChainedExpression"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

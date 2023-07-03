@@ -704,6 +704,18 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitChainedExpression([NotNull] SPSLParser.ChainedExpressionContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.assignableChainableExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterAssignableChainableExpression([NotNull] SPSLParser.AssignableChainableExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.assignableChainableExpression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitAssignableChainableExpression([NotNull] SPSLParser.AssignableChainableExpressionContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.assignableChainedExpression"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
