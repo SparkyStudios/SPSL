@@ -603,13 +603,68 @@ public class Translator
     {
         StringBuilder output = new();
 
-        if (function.Annotations.Where(a => a.Name == "entry").Any())
+        if (function.Annotations.Where(a => a.Name == "entry").Any() || function.Name == _currentShader.Name)
         {
             if (_currentShader.Type == ShaderType.Compute)
             {
-                // Compute shader entry points need the numthreads attribute
+                // -- Compute shader entry points need the numthreads attribute
+
                 output.AppendLine();
                 output.AppendFormat("[[numthreads({0}, {1}, {2})]]", _currentShader.ComputeParams.ThreadCountX, _currentShader.ComputeParams.ThreadCountY, _currentShader.ComputeParams.ThreadCountZ);
+
+                // -- Ensure that we have all our compute shader keywords as parameters
+
+                if (function.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupThreadId").Any() == false)
+                {
+                    function.Function.Head.Signature.Parameters.Add
+                    (
+                        new FunctionArgument
+                        (
+                            DataFlow.Unspecified,
+                            new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                            "sp_GroupThreadId : SV_GroupThreadID"
+                        )
+                    );
+                }
+
+                if (function.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupId").Any() == false)
+                {
+                    function.Function.Head.Signature.Parameters.Add
+                    (
+                        new FunctionArgument
+                        (
+                            DataFlow.Unspecified,
+                            new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                            "sp_GroupId : SV_GroupID"
+                        )
+                    );
+                }
+
+                if (function.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_DispatchThreadId").Any() == false)
+                {
+                    function.Function.Head.Signature.Parameters.Add
+                    (
+                        new FunctionArgument
+                        (
+                            DataFlow.Unspecified,
+                            new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                            "sp_DispatchThreadId : SV_DispatchThreadID"
+                        )
+                    );
+                }
+
+                if (function.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupIndex").Any() == false)
+                {
+                    function.Function.Head.Signature.Parameters.Add
+                    (
+                        new FunctionArgument
+                        (
+                            DataFlow.Unspecified,
+                            new PrimitiveDataType(PrimitiveDataTypeKind.UnsignedInteger),
+                            "sp_GroupIndex : SV_GroupIndex"
+                        )
+                    );
+                }
             }
         }
 
