@@ -24,7 +24,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
             or SPSLParser.ChainedExpressionContext or SPSLParser.AssignableChainedExpressionContext
             or SPSLParser.ChainableExpressionContext or SPSLParser.PropertyMemberReferenceExpressionContext
             or SPSLParser.ContextAccessExpressionContext or SPSLParser.MemberReferenceExpressionContext
-            or SPSLParser.ReferencableExpressionContext;
+            or SPSLParser.ReferencableExpressionContext or SPSLParser.AssignableChainableExpressionContext;
     }
 
     public override IExpression VisitBasicExpression(SPSLParser.BasicExpressionContext context)
@@ -90,13 +90,13 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         return new ChainedExpression
         (
             context.Target.Accept(this)!,
-            context.basicExpression().Select(member => member.Accept(this)!)
+            context.assignableChainableExpression().Select(member => member.Accept(this)!)
         );
     }
 
     public override IExpression VisitContextAccessExpression(SPSLParser.ContextAccessExpressionContext context)
     {
-        return new ContextAccessExpression(context.Indentifier.Text);
+        return new ContextAccessExpression(context.Identifier.Text);
     }
 
     public override IExpression VisitInvocationExpression(SPSLParser.InvocationExpressionContext context)

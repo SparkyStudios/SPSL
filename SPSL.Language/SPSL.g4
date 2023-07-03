@@ -683,19 +683,26 @@ referencableExpression
   | invocationExpression
   | propertyMemberReferenceExpression
   | methodMemberReferenceExpression
+  | arrayAccessExpression
   ;
 
 chainableExpression
   : basicExpression
   | invocationExpression
+  | arrayAccessExpression
   ;
 
 chainedExpression
   : Target = referencableExpression (TOK_DOT chainableExpression)+
   ;
 
+assignableChainableExpression
+  : basicExpression
+  | arrayAccessExpression
+  ;
+
 assignableChainedExpression
-  : Target = referencableExpression (TOK_DOT basicExpression)+
+  : Target = referencableExpression (TOK_DOT assignableChainableExpression)+
   ;
 
 propertyMemberReferenceExpression
@@ -772,7 +779,7 @@ parametersList
   ;
 
 contextAccessExpression
-  : Indentifier = (KEYWORD_BASE | KEYWORD_THIS)
+  : Identifier = (KEYWORD_BASE | KEYWORD_THIS)
   ;
 
 basicExpression
