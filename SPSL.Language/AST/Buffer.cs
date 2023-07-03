@@ -13,6 +13,10 @@ public class Buffer : IShaderMember, IAnnotable
 
     public string Name { get; set; }
 
+    public BufferStorage Storage { get; set; }
+
+    public BufferAccess Access { get; set; }
+
     #endregion
 
     #region Constructors

@@ -537,9 +537,32 @@ public class Translator
     public string Translate(Buffer buffer, Namespace ns, AST ast)
     {
         StringBuilder output = new();
-
         output.AppendLine();
-        Template template = _hlslTemplate.GetInstanceOf("cbuffer");
+
+        Template? template = null;
+
+        if (buffer.Access == BufferAccess.Constant)
+        {
+            template = _hlslTemplate.GetInstanceOf("cbuffer");
+        }
+        else if (buffer.Access == BufferAccess.WriteOnly || buffer.Access == BufferAccess.ReadWrite)
+        {
+            template = _hlslTemplate.GetInstanceOf("rwbuffer");
+            template.Add("isCoherent", (buffer.Storage & BufferStorage.Coherent) == BufferStorage.Coherent);
+        }
+
+        if (template == null)
+        {
+            output.Clear();
+
+            output.AppendLine("// <spsl-error>");
+            output.AppendLine("// Buffer declaration not supported by HLSL translator.");
+            output.AppendLine("// </spsl-error>");
+            output.AppendLine();
+
+            return output.ToString();
+        }
+
         template.Add("name", buffer.Name);
 
         var binding = "0";
