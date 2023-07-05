@@ -153,9 +153,6 @@ KEYWORD_DISCARD
 KEYWORD_CASE
   : 'case'
   ;
-KEYWORD_DEFAULT
-  : 'default'
-  ;
 KEYWORD_STATIC
   : 'static'
   ;
@@ -466,6 +463,7 @@ fileLevelDefinition
   | interface
   | shaderFragment
   | shader
+  | material
   ;
 
 globalVariable
@@ -584,6 +582,7 @@ shaderMember
 
 materialMember
   : materialParams
+  | materialState
   | localVarDeclaration
   | type
   ;
@@ -610,15 +609,16 @@ shaderLangDirective
   : TOK_HASHTAG 'shaderLang' ('GLSL' | 'HLSL' | 'MSL')
   ;
 
-parameterDirective
-  : TOK_HASHTAG 'shaderParam'
-  ;
-
 // ----------------------
 
 materialParams
   locals[bool IsPartial]
-  : annotation* (KEYWORD_PARTIAL {$IsPartial = true;})? KEYWORD_PARAMS Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent* TOK_CLOSE_BRACE
+  : annotation* (KEYWORD_PARTIAL {$IsPartial = true;})? KEYWORD_PARAMS Name = IDENTIFIER TOK_OPEN_BRACE materialParamsComponent* TOK_CLOSE_BRACE
+  ;
+
+materialState
+  : 'state' Name = IDENTIFIER TOK_OPEN_BRACE variableDeclarationAssignment* TOK_CLOSE_BRACE # MaterialStateBlock
+  | 'state' Name = IDENTIFIER OP_ASSIGN Value = IDENTIFIER TOK_SEMICOLON                    # MaterialStateValue
   ;
 
 // Shader variables
@@ -636,6 +636,10 @@ bufferDefinition
 
 bufferComponent
   : annotation* Type = dataType Name = IDENTIFIER TOK_SEMICOLON
+  ;
+
+materialParamsComponent
+  : annotation* Type = dataType Name = IDENTIFIER (OP_ASSIGN DefaultValue = expressionStatement)? TOK_SEMICOLON
   ;
 
 structComponent
