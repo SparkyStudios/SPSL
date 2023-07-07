@@ -330,11 +330,10 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         foreach (SPSLParser.PermutationVariableContext variable in context.permutationVariable())
             fragment.AddPermutationVariable(ParsePermutationVariable(variable));
 
-        // --- Buffers
+        // --- Shader Members
 
-        foreach (SPSLParser.BufferDefinitionContext buffer in context.bufferDefinition())
-            if (buffer.Accept(new ShaderMemberVisitor()) is Buffer shaderBuffer)
-                fragment.AddBuffer(shaderBuffer);
+        foreach (SPSLParser.ShaderMemberContext memberContext in context.shaderMember())
+            fragment.AddShaderMember(memberContext.Accept(new ShaderMemberVisitor())!);
 
         // --- Functions
 

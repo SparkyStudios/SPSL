@@ -158,6 +158,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitMaterial([NotNull] SPSLParser.MaterialContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.stream"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStream([NotNull] SPSLParser.StreamContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.materialDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -178,11 +184,24 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context);
 	/// <summary>
+	/// Visit a parse tree produced by the <c>GraphicShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitGraphicShaderDefinition([NotNull] SPSLParser.GraphicShaderDefinitionContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.useDirective"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitUseDirective([NotNull] SPSLParser.UseDirectiveContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.streamProperty"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStreamProperty([NotNull] SPSLParser.StreamPropertyContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.shaderMember"/>.
 	/// </summary>
@@ -231,12 +250,6 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.inputVarDefinition"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInputVarDefinition([NotNull] SPSLParser.InputVarDefinitionContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.localVarDeclaration"/>.
 	/// </summary>

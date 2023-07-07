@@ -9,4 +9,5 @@ public enum ShaderType
     Hull,
     Domain,
     Compute,
+    Graphic,
 }

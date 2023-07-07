@@ -98,8 +98,8 @@ AST ParseDirectory(string path, IEnumerable<string> libraryPaths)
 
         foreach (var file in Directory.GetFiles(Path.Join(libraryPath, path), "*.spsli", SearchOption.AllDirectories))
         {
-            var ns = Path.GetDirectoryName(file)![(libraryPath.Length + 1)..];
-            var pos = ns.LastIndexOf('\\');
+            var ns = Path.GetDirectoryName(file)![(libraryPath.Length + 1)..].Replace(Path.DirectorySeparatorChar.ToString(), "::");
+            var pos = ns.LastIndexOf("::", StringComparison.Ordinal);
 
             var parsed = ParseFile(file, paths);
 

@@ -239,6 +239,16 @@ public interface ISPSLListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitMaterial([NotNull] SPSLParser.MaterialContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.stream"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterStream([NotNull] SPSLParser.StreamContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.stream"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitStream([NotNull] SPSLParser.StreamContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.materialDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -273,6 +283,18 @@ public interface ISPSLListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context);
 	/// <summary>
+	/// Enter a parse tree produced by the <c>GraphicShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterGraphicShaderDefinition([NotNull] SPSLParser.GraphicShaderDefinitionContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>GraphicShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitGraphicShaderDefinition([NotNull] SPSLParser.GraphicShaderDefinitionContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.useDirective"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -282,6 +304,16 @@ public interface ISPSLListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitUseDirective([NotNull] SPSLParser.UseDirectiveContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.streamProperty"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterStreamProperty([NotNull] SPSLParser.StreamPropertyContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.streamProperty"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitStreamProperty([NotNull] SPSLParser.StreamPropertyContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.shaderMember"/>.
 	/// </summary>
@@ -362,16 +394,6 @@ public interface ISPSLListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context);
-	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.inputVarDefinition"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void EnterInputVarDefinition([NotNull] SPSLParser.InputVarDefinitionContext context);
-	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.inputVarDefinition"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void ExitInputVarDefinition([NotNull] SPSLParser.InputVarDefinitionContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.localVarDeclaration"/>.
 	/// </summary>

@@ -2,6 +2,9 @@ group HLSL: Base;
 
 // SPSL translator template for HLSL
 
+// Generates a struct property.
+prop(p) ::= "<p.type> <p.name><if(p.semantic)> : <p.semantic><endif>"
+
 // Constant Buffer
 cbuffer(name, binding, set, properties) ::= <<
 struct buffer_<name>

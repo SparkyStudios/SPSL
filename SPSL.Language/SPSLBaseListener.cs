@@ -284,6 +284,18 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitMaterial([NotNull] SPSLParser.MaterialContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.stream"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStream([NotNull] SPSLParser.StreamContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.stream"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStream([NotNull] SPSLParser.StreamContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.materialDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -324,6 +336,20 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by the <c>GraphicShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterGraphicShaderDefinition([NotNull] SPSLParser.GraphicShaderDefinitionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>GraphicShaderDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitGraphicShaderDefinition([NotNull] SPSLParser.GraphicShaderDefinitionContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.useDirective"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -335,6 +361,18 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitUseDirective([NotNull] SPSLParser.UseDirectiveContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.streamProperty"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStreamProperty([NotNull] SPSLParser.StreamPropertyContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.streamProperty"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStreamProperty([NotNull] SPSLParser.StreamPropertyContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.shaderMember"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -431,18 +469,6 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context) { }
-	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.inputVarDefinition"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void EnterInputVarDefinition([NotNull] SPSLParser.InputVarDefinitionContext context) { }
-	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.inputVarDefinition"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void ExitInputVarDefinition([NotNull] SPSLParser.InputVarDefinitionContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.localVarDeclaration"/>.
 	/// <para>The default implementation does nothing.</para>

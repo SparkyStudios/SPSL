@@ -36,6 +36,9 @@ KEYWORD_DOMAIN
 KEYWORD_COMPUTE
   : 'compute'
   ;
+KEYWORD_GRAPHIC
+  : 'graphic'
+  ;
 KEYWORD_SHADER
   : 'shader'
   ;
@@ -86,6 +89,9 @@ KEYWORD_INPUT
   ;
 KEYWORD_OUTPUT
   : 'output'
+  ;
+KEYWORD_TRANSIENT
+  : 'transient'
   ;
 KEYWORD_BUFFER
   : 'buffer'
@@ -161,6 +167,9 @@ KEYWORD_PERMUTATION
   ;
 KEYWORD_PERMUTE
   : 'permute'
+  ;
+KEYWORD_STREAM
+  : 'stream'
   ;
 
 TYPE_VOID
@@ -332,6 +341,9 @@ TOK_AT
 TOK_BACKSLASH
   : '\\'
   ;
+TOK_NAMESPACE_SEPARATOR
+  : '::'
+  ;
 
 OP_PIPE
   : '|'
@@ -444,7 +456,7 @@ namespaceDefinition
   ;
 
 namespacedTypeName
-  : IDENTIFIER (TOK_BACKSLASH IDENTIFIER)*
+  : IDENTIFIER (TOK_NAMESPACE_SEPARATOR IDENTIFIER)*
   ;
 
 fileLevelDefinition
@@ -506,7 +518,7 @@ interfacesList
 
 shaderFragment
   : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
-    DOC_COMMENT* (bufferDefinition | permutationVariable | globalVariable | type | shaderFunction)
+    DOC_COMMENT* (shaderMember | permutationVariable | globalVariable | shaderFunction)
   )* TOK_CLOSE_BRACE
   ;
 
@@ -528,6 +540,11 @@ material
   )* (DOC_COMMENT* shaderFunction)* TOK_CLOSE_BRACE
   ;
 
+stream
+  locals[bool IsPartial]
+  : DOC_COMMENT* KEYWORD_STREAM TOK_OPEN_BRACE (DOC_COMMENT* streamProperty)* TOK_CLOSE_BRACE
+  ;
+
 materialDefinition
   locals[bool IsAbstract]
   : (KEYWORD_ABSTRACT {$IsAbstract = true;})? KEYWORD_MATERIAL Name = IDENTIFIER (
@@ -538,25 +555,31 @@ materialDefinition
 shaderDefinition
   locals[bool IsAbstract]
   : (KEYWORD_ABSTRACT {$IsAbstract = true;})? (
-    Type = (KEYWORD_VERTEX | KEYWORD_PIXEL | KEYWORD_GEOMETRY | KEYWORD_HULL | KEYWORD_DOMAIN | KEYWORD_COMPUTE)
+    Type = (KEYWORD_VERTEX | KEYWORD_PIXEL | KEYWORD_GEOMETRY | KEYWORD_HULL | KEYWORD_DOMAIN)
   )? KEYWORD_SHADER Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedShader = namespacedTypeName)? (
     KEYWORD_IMPLEMENTS Interfaces = interfacesList
-  )?                  # GenericShaderDefinition
-  | (KEYWORD_ABSTRACT {$IsAbstract = true;})? Type = KEYWORD_COMPUTE KEYWORD_SHADER Name = IDENTIFIER OP_LESSER_THAN ThreadCountX = IntegerLiteral TOK_COMMA ThreadCountY =
-    IntegerLiteral TOK_COMMA ThreadCountZ = IntegerLiteral OP_GREATER_THAN (
-    KEYWORD_EXTENDS ExtendedShader = namespacedTypeName
-  )? (KEYWORD_IMPLEMENTS Interfaces = interfacesList)? # ComputeShaderDefinition
+  )? # GenericShaderDefinition
+  | Type = KEYWORD_COMPUTE KEYWORD_SHADER Name = IDENTIFIER OP_LESSER_THAN ThreadCountX = IntegerLiteral TOK_COMMA ThreadCountY = IntegerLiteral TOK_COMMA ThreadCountZ =
+    IntegerLiteral OP_GREATER_THAN (KEYWORD_EXTENDS ExtendedShader = namespacedTypeName)? (
+    KEYWORD_IMPLEMENTS Interfaces = interfacesList
+  )? # ComputeShaderDefinition
+  | Type = KEYWORD_GRAPHIC KEYWORD_SHADER Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedShader = namespacedTypeName)? (
+    KEYWORD_IMPLEMENTS Interfaces = interfacesList
+  )? # GraphicShaderDefinition
   ;
 
 useDirective
   : KEYWORD_USE Name = namespacedTypeName TOK_SEMICOLON
   ;
 
+streamProperty
+  : annotation* Flow = (KEYWORD_INPUT | KEYWORD_OUTPUT | KEYWORD_TRANSIENT) bufferComponent
+  ;
+
 shaderMember
-  : inputVarDefinition
-  | localVarDeclaration
-  | bufferDefinition
+  : bufferDefinition
   | type
+  | stream
   ;
 
 materialMember
@@ -596,11 +619,6 @@ parameterDirective
 materialParams
   locals[bool IsPartial]
   : annotation* (KEYWORD_PARTIAL {$IsPartial = true;})? KEYWORD_PARAMS Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent* TOK_CLOSE_BRACE
-  ;
-
-// Vertex array variables
-inputVarDefinition
-  : annotation* KEYWORD_INPUT Type = dataType IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_SEMICOLON
   ;
 
 // Shader variables

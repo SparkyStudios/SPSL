@@ -1,4 +1,4 @@
-﻿namespace SPSL.Language.AST.Visitors;
+namespace SPSL.Language.AST.Visitors;
 
 public class ShaderVisitor : SPSLBaseVisitor<Shader?>
 {
@@ -53,7 +53,7 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
 
         Shader shader = new(sName, @params)
         {
-            IsAbstract = context.IsAbstract,
+            IsAbstract = false,
             ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader)
         };
 

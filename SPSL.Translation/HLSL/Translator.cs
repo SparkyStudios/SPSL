@@ -4,6 +4,7 @@ using SPSL.Language;
 using SPSL.Language.AST;
 using SPSL.Translation.Common;
 using Buffer = SPSL.Language.AST.Buffer;
+using Stream = SPSL.Language.AST.Stream;
 using Type = SPSL.Language.AST.Type;
 
 namespace SPSL.Translation.HLSL;
@@ -78,7 +79,7 @@ public class Translator
         if (root == string.Empty)
             return null;
 
-        var pos = root.IndexOf('\\');
+        var pos = root.IndexOf("::");
 
         if (pos < 0)
         {
@@ -92,15 +93,16 @@ public class Translator
         }
 
         if (ns.FullName != string.Empty && root.StartsWith(ns.FullName))
-            return ns.GetChild(root[ns.FullName.Length..].TrimStart('\\'));
+            return ns.GetChild(root[ns.FullName.Length..].TrimStart(':'));
 
         foreach (var n in ast.Where(n => n.FullName != ns.FullName))
             if (root.StartsWith(n.FullName))
-                return n.GetChild(root[n.FullName.Length..].TrimStart('\\'));
+                return n.GetChild(root[n.FullName.Length..].TrimStart(':'));
 
         return null;
     }
 
+    private const string SPSL_FINAL_STREAM_POS_KEY = "__SPSL_FINAL_STREAM_OUTPUT__";
     private static readonly HashSet<Tuple<string?, string>> _processedFragments = new();
 
     private readonly TemplateGroupString _hlslTemplate;
@@ -109,6 +111,8 @@ public class Translator
 
     private string _currentBase = string.Empty;
     private Shader _currentShader = null!;
+    private Shader _currentConcreteShader = null!;
+    private Stream _finalStream = new("ShaderStream", Array.Empty<StreamProperty>());
 
     private string TranslateShaderFragment(NamespacedReference name, Namespace ns, AST ast,
         IDictionary<string, uint>? conflicts, HashSet<IBlockChild>? overriddenFunctions)
@@ -138,14 +142,14 @@ public class Translator
 
     public Translator()
     {
-        var hlslTemplate = "SPSL.Translation.Templates.Base.stg";
-        var baseTemplate = "SPSL.Translation.Templates.HLSL.stg";
+        var hlslTemplate = "SPSL.Translation.Templates.HLSL.stg";
+        var baseTemplate = "SPSL.Translation.Templates.Base.stg";
 
-        using (Stream? stream = GetType().Assembly.GetManifestResourceStream(hlslTemplate))
+        using (System.IO.Stream? stream = GetType().Assembly.GetManifestResourceStream(hlslTemplate))
         using (StreamReader reader = new(stream!))
             _hlslTemplate = new("HLSL", reader.ReadToEnd());
 
-        using (Stream? stream = GetType().Assembly.GetManifestResourceStream(baseTemplate))
+        using (System.IO.Stream? stream = GetType().Assembly.GetManifestResourceStream(baseTemplate))
         using (StreamReader reader = new(stream!))
             _baseTemplate = new("Base", reader.ReadToEnd());
 
@@ -162,7 +166,6 @@ public class Translator
 // Changes may cause incorrect behavior and will be lost if the code is
 // regenerated.
 
-
 """);
 
         foreach (Namespace ns in ast)
@@ -175,6 +178,12 @@ public class Translator
 // End of auto-generated file.
 // </auto-generated>
 """);
+
+        // Cleanup empty lines
+        output.Replace("\r\n", "\n");
+        output.Replace("\n\n\n", "\n\n");
+        output.Replace("\n\n\n", "\n");
+        output.Replace("\n\n\n", "\n\n");
 
         return output.ToString();
     }
@@ -215,11 +224,20 @@ public class Translator
             output.Append(Translate(child, ns, ast));
         }
 
+        if (ns.Where(child => child is Shader { IsAbstract: false }).Any())
+        {
+            output.AppendLine();
+            output.AppendLine(SPSL_FINAL_STREAM_POS_KEY);
+        }
+
         foreach (INamespaceChild namespaceChild in ns.Where(child => child is Shader { IsAbstract: false }))
         {
             var child = (Shader)namespaceChild;
+            _currentConcreteShader = child;
             output.Append(Translate(child, ns, ast));
         }
+
+        output.Replace(SPSL_FINAL_STREAM_POS_KEY, Translate(_finalStream, ns, ast));
 
         return output.ToString();
     }
@@ -357,6 +375,10 @@ public class Translator
             }
         }
 
+        foreach (Stream stream in fragment.Streams)
+            foreach (StreamProperty property in stream.Properties)
+                _finalStream.Properties.Add(property);
+
         _currentBase = Translate(fragment.ExtendedShaderFragment, ns, ast);
 
         foreach (PermutationVariable permutation in fragment.PermutationVariables)
@@ -397,6 +419,20 @@ public class Translator
                 buffer.Name = $"{fragment.Name}_{buffer.Name}";
 
             output.Append(Translate(buffer, ns, ast));
+        }
+
+        foreach (Type type in fragment.Types)
+        {
+            output.AppendLine();
+
+            var name = type.Name;
+            if (shouldOverride?.SingleOrDefault(m =>
+                    m is Type shaderType &&
+                    shaderType.Name.Equals(type.Name)) != null ||
+                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
+                type.Name = $"{fragment.Name}_{type.Name}";
+
+            output.Append(Translate(type, ns, ast));
         }
 
         foreach (ShaderFunction function in fragment.Functions)
@@ -496,6 +532,13 @@ public class Translator
 
         output.AppendLine();
 
+        // Streams
+        foreach (IBlockChild child in shader.Children)
+            if (child is Stream stream)
+                foreach (StreamProperty property in stream.Properties)
+                    _finalStream.Properties.Add(property);
+
+        // Functions declaration
         foreach (IBlockChild child in shader.Children)
         {
             if (child is ShaderFunction shaderFunction)
@@ -509,6 +552,7 @@ public class Translator
             }
         }
 
+        // Shader members & functions definition
         foreach (IBlockChild child in shader.Children)
         {
             if (child is ShaderFunction shaderFunction)
@@ -612,11 +656,61 @@ public class Translator
         return output.ToString();
     }
 
+    public string Translate(Stream stream, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+
+        Action<StreamProperty, Template> TranslateProperty = (property, template) =>
+        {
+            var annotation = property.Annotations.Where(a => a.Name == "semantic").SingleOrDefault();
+            var expression = annotation?.Arguments.SingleOrDefault();
+            string? semantic = expression is not null ? Translate(expression, ns, ast) : null;
+            template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name, null, semantic));
+        };
+
+        // Vertex Shader Input
+        {
+            output.AppendLine();
+            Template template = _hlslTemplate.GetInstanceOf("struct");
+            template.Add("name", $"{stream.Name}_Input");
+            foreach (StreamProperty property in stream.Inputs)
+                TranslateProperty(property, template);
+
+            output.Append(template.Render());
+        }
+
+        // Transient Shader Data / Pixel Shader Input
+        {
+            output.AppendLine();
+            Template template = _hlslTemplate.GetInstanceOf("struct");
+            template.Add("name", $"{stream.Name}_Transient");
+            foreach (StreamProperty property in stream.Transients)
+                TranslateProperty(property, template);
+
+            output.Append(template.Render());
+        }
+
+        // Pixel Shader Output
+        {
+            output.AppendLine();
+            Template template = _hlslTemplate.GetInstanceOf("struct");
+            template.Add("name", $"{stream.Name}_Output");
+            foreach (StreamProperty property in stream.Outputs)
+                TranslateProperty(property, template);
+
+            output.Append(template.Render());
+        }
+
+        return output.ToString();
+    }
+
     public string Translate(ShaderFunction function, Namespace ns, AST ast)
     {
         StringBuilder output = new();
 
-        if (function.Annotations.Where(a => a.Name == "entry").Any() || function.Name == _currentShader.Name)
+        Annotation? entry = function.Annotations.SingleOrDefault(a => a.Name == "entry");
+
+        if (entry != null || function.Name == _currentShader.Name)
         {
             if (_currentShader.Type == ShaderType.Compute)
             {
@@ -679,6 +773,12 @@ public class Translator
                     );
                 }
             }
+        }
+
+        if (entry != null)
+        {
+            if ((_currentShader.Type == ShaderType.Graphic && entry.Arguments.Where(a => Translate(a, ns, ast) == "vertex").Any()) || _currentShader.Type == ShaderType.Vertex)
+            { }
         }
 
         output.Append(Translate(function.Function, ns, ast));
@@ -1434,7 +1534,7 @@ public class Translator
             if (type is Type spslType)
                 output.Append(spslType.Kind == TypeKind.Enum ? "uint" : spslType.Name);
             else
-                output.Append(reference.Name.Replace('\\', '_'));
+                output.Append(reference.Name.Replace(':', '_'));
         }
 
         return output.ToString();

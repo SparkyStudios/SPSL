@@ -22,6 +22,10 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     public IEnumerable<Buffer> Buffers => Children.OfType<Buffer>();
 
+    public IEnumerable<Type> Types => Children.OfType<Type>();
+
+    public IEnumerable<Stream> Streams => Children.OfType<Stream>();
+
     public IEnumerable<ShaderFunction> Functions => Children.OfType<ShaderFunction>();
 
     #endregion
@@ -103,6 +107,11 @@ public class ShaderFragment : INamespaceChild, IBlock
     public void AddFunction(ShaderFunction function)
     {
         Children.Add(function);
+    }
+
+    public void AddShaderMember(IShaderMember member)
+    {
+        Children.Add(member);
     }
 
     #endregion

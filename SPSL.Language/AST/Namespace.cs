@@ -110,9 +110,9 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
     public INamespaceChild? GetChild(string name)
     {
         // If the name is namespaced
-        if (name.Contains('\\'))
+        if (name.Contains("::"))
         {
-            var pos = name.IndexOf('\\');
+            var pos = name.IndexOf("::");
             var nsName = name[..pos];
 
             foreach (Namespace ns in Namespaces.Where(ns => ns.Name == nsName))
