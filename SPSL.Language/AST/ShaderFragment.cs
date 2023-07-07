@@ -20,7 +20,9 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     public IEnumerable<PermutationVariable> PermutationVariables => Children.OfType<PermutationVariable>();
 
-    public IEnumerable<Buffer> Buffers => Children.OfType<Buffer>();
+    public IEnumerable<StructuredBuffer> StructuredBuffers => Children.OfType<StructuredBuffer>();
+
+    public IEnumerable<TypedBuffer> TypedBuffers => Children.OfType<TypedBuffer>();
 
     public IEnumerable<Type> Types => Children.OfType<Type>();
 
@@ -99,7 +101,7 @@ public class ShaderFragment : INamespaceChild, IBlock
         Children.Add(permutation);
     }
 
-    public void AddBuffer(Buffer buffer)
+    public void AddBuffer(StructuredBuffer buffer)
     {
         Children.Add(buffer);
     }

@@ -405,15 +405,29 @@ public interface ISPSLListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitLocalVarDeclaration([NotNull] SPSLParser.LocalVarDeclarationContext context);
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.bufferDefinition"/>.
+	/// Enter a parse tree produced by the <c>InPlaceStructuredBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void EnterBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context);
+	void EnterInPlaceStructuredBufferDefinition([NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context);
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.bufferDefinition"/>.
+	/// Exit a parse tree produced by the <c>InPlaceStructuredBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	void ExitBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context);
+	void ExitInPlaceStructuredBufferDefinition([NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context);
+	/// <summary>
+	/// Enter a parse tree produced by the <c>TypedBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterTypedBufferDefinition([NotNull] SPSLParser.TypedBufferDefinitionContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>TypedBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitTypedBufferDefinition([NotNull] SPSLParser.TypedBufferDefinitionContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.bufferComponent"/>.
 	/// </summary>

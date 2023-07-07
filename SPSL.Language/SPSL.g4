@@ -629,7 +629,9 @@ localVarDeclaration
 // Uniform block for GLSL CBuffer for HLSL
 bufferDefinition
   : annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite' | 'constant')? KEYWORD_BUFFER Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent*
-    TOK_CLOSE_BRACE
+    TOK_CLOSE_BRACE # InPlaceStructuredBufferDefinition
+  | annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite')? KEYWORD_BUFFER OP_LESSER_THAN Type = dataType OP_GREATER_THAN Name = IDENTIFIER
+    TOK_SEMICOLON # TypedBufferDefinition
   ;
 
 bufferComponent

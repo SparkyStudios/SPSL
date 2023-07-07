@@ -482,17 +482,33 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitLocalVarDeclaration([NotNull] SPSLParser.LocalVarDeclarationContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.bufferDefinition"/>.
+	/// Enter a parse tree produced by the <c>InPlaceStructuredBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context) { }
+	public virtual void EnterInPlaceStructuredBufferDefinition([NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.bufferDefinition"/>.
+	/// Exit a parse tree produced by the <c>InPlaceStructuredBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context) { }
+	public virtual void ExitInPlaceStructuredBufferDefinition([NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>TypedBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterTypedBufferDefinition([NotNull] SPSLParser.TypedBufferDefinitionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>TypedBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitTypedBufferDefinition([NotNull] SPSLParser.TypedBufferDefinitionContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.bufferComponent"/>.
 	/// <para>The default implementation does nothing.</para>

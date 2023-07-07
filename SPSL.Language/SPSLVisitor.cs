@@ -257,11 +257,19 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitLocalVarDeclaration([NotNull] SPSLParser.LocalVarDeclarationContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.bufferDefinition"/>.
+	/// Visit a parse tree produced by the <c>InPlaceStructuredBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context);
+	Result VisitInPlaceStructuredBufferDefinition([NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>TypedBufferDefinition</c>
+	/// labeled alternative in <see cref="SPSLParser.bufferDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitTypedBufferDefinition([NotNull] SPSLParser.TypedBufferDefinitionContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.bufferComponent"/>.
 	/// </summary>

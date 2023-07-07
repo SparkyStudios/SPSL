@@ -65,12 +65,39 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
         => node is SPSLParser.ShaderMemberContext or SPSLParser.BufferDefinitionContext
             or SPSLParser.TypeContext or SPSLParser.StructContext or SPSLParser.EnumContext;
 
-    public override IShaderMember VisitBufferDefinition([NotNull] SPSLParser.BufferDefinitionContext context)
+    public override IShaderMember VisitInPlaceStructuredBufferDefinition([NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context)
     {
-        Buffer buffer = new Buffer
+        StructuredBuffer buffer = new
         (
             context.Name.Text,
             context.bufferComponent().Select(component => ASTVisitor.ParseBufferComponent(component))
+        )
+        {
+            Storage = context.Storage == null ? BufferStorage.Undefined : ParseBufferStorage(context.Storage.Text),
+            Access = ParseBufferAccess(context.Access.Text)
+        };
+
+        foreach (SPSLParser.AnnotationContext annotation in context.annotation())
+        {
+            buffer.Annotations.Add
+            (
+                new Annotation
+                {
+                    Name = annotation.Name.Text,
+                    Arguments = new(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
+                }
+            );
+        }
+
+        return buffer;
+    }
+
+    public override IShaderMember VisitTypedBufferDefinition([NotNull] SPSLParser.TypedBufferDefinitionContext context)
+    {
+        TypedBuffer buffer = new
+        (
+            context.Name.Text,
+            context.dataType().Accept(new DataTypeVisitor())
         )
         {
             Storage = context.Storage == null ? BufferStorage.Undefined : ParseBufferStorage(context.Storage.Text),

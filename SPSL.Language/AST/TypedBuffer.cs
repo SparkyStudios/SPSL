@@ -2,14 +2,11 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
-public class Buffer : IShaderMember, IAnnotable
+public class TypedBuffer : IShaderMember, IAnnotable
 {
     #region Properties
 
-    /// <summary>
-    /// The collection of members in this types.
-    /// </summary>
-    public OrderedSet<TypeProperty> Properties { get; }
+    public IDataType DataType { get; set; }
 
     public string Name { get; set; }
 
@@ -21,10 +18,10 @@ public class Buffer : IShaderMember, IAnnotable
 
     #region Constructors
 
-    public Buffer(string name, IEnumerable<TypeProperty> properties)
+    public TypedBuffer(string name, IDataType dataType)
     {
         Name = name;
-        Properties = new(properties);
+        DataType = dataType;
     }
 
     #endregion

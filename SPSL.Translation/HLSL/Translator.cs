@@ -3,7 +3,6 @@ using Antlr4.StringTemplate;
 using SPSL.Language;
 using SPSL.Language.AST;
 using SPSL.Translation.Common;
-using Buffer = SPSL.Language.AST.Buffer;
 using Stream = SPSL.Language.AST.Stream;
 using Type = SPSL.Language.AST.Type;
 
@@ -407,20 +406,6 @@ public class Translator
             output.Append(Translate(variable, ns, ast));
         }
 
-        foreach (Buffer buffer in fragment.Buffers)
-        {
-            output.AppendLine();
-
-            var name = buffer.Name;
-            if (shouldOverride?.SingleOrDefault(m =>
-                    m is Buffer shaderBuffer &&
-                    shaderBuffer.Name.Equals(buffer.Name)) != null ||
-                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
-                buffer.Name = $"{fragment.Name}_{buffer.Name}";
-
-            output.Append(Translate(buffer, ns, ast));
-        }
-
         foreach (Type type in fragment.Types)
         {
             output.AppendLine();
@@ -433,6 +418,34 @@ public class Translator
                 type.Name = $"{fragment.Name}_{type.Name}";
 
             output.Append(Translate(type, ns, ast));
+        }
+
+        foreach (StructuredBuffer buffer in fragment.StructuredBuffers)
+        {
+            output.AppendLine();
+
+            var name = buffer.Name;
+            if (shouldOverride?.SingleOrDefault(m =>
+                    m is StructuredBuffer shaderBuffer &&
+                    shaderBuffer.Name.Equals(buffer.Name)) != null ||
+                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
+                buffer.Name = $"{fragment.Name}_{buffer.Name}";
+
+            output.Append(Translate(buffer, ns, ast));
+        }
+
+        foreach (TypedBuffer buffer in fragment.TypedBuffers)
+        {
+            output.AppendLine();
+
+            var name = buffer.Name;
+            if (shouldOverride?.SingleOrDefault(m =>
+                    m is TypedBuffer shaderBuffer &&
+                    shaderBuffer.Name.Equals(buffer.Name)) != null ||
+                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
+                buffer.Name = $"{fragment.Name}_{buffer.Name}";
+
+            output.Append(Translate(buffer, ns, ast));
         }
 
         foreach (ShaderFunction function in fragment.Functions)
@@ -541,15 +554,92 @@ public class Translator
         // Functions declaration
         foreach (IBlockChild child in shader.Children)
         {
-            if (child is ShaderFunction shaderFunction)
-            {
-                if (shouldOverride?.SingleOrDefault(m =>
-                        m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
-                    shaderFunction.Function.Head.Name = $"{shader.Name}_{shaderFunction.Function.Head.Name}";
+            if (child is not ShaderFunction shaderFunction)
+                continue;
 
-                output.Append(Translate(shaderFunction.Function.Head, ns, ast));
-                output.AppendLine(";");
+            if (shouldOverride?.SingleOrDefault(m =>
+                    m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
+                shaderFunction.Function.Head.Name = $"{shader.Name}_{shaderFunction.Function.Head.Name}";
+
+            Annotation? entry = shaderFunction.Annotations.SingleOrDefault(a => a.Name == "entry");
+
+            if (entry != null || shaderFunction.Name == _currentShader.Name)
+            {
+                if (_currentShader.Type == ShaderType.Compute)
+                {
+                    // -- Compute shader entry points need the numthreads attribute
+
+                    output.AppendLine();
+                    output.AppendFormat("[[numthreads({0}, {1}, {2})]]", _currentShader.ComputeParams.ThreadCountX, _currentShader.ComputeParams.ThreadCountY, _currentShader.ComputeParams.ThreadCountZ);
+
+                    // -- Ensure that we have all our compute shader keywords as parameters
+
+                    if (shaderFunction.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupThreadId").Any() == false)
+                    {
+                        shaderFunction.Function.Head.Signature.Parameters.Add
+                        (
+                            new FunctionArgument
+                            (
+                                DataFlow.Unspecified,
+                                new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                                "sp_GroupThreadId : SV_GroupThreadID"
+                            )
+                        );
+                    }
+
+                    if (shaderFunction.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupId").Any() == false)
+                    {
+                        shaderFunction.Function.Head.Signature.Parameters.Add
+                        (
+                            new FunctionArgument
+                            (
+                                DataFlow.Unspecified,
+                                new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                                "sp_GroupId : SV_GroupID"
+                            )
+                        );
+                    }
+
+                    if (shaderFunction.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_DispatchThreadId").Any() == false)
+                    {
+                        shaderFunction.Function.Head.Signature.Parameters.Add
+                        (
+                            new FunctionArgument
+                            (
+                                DataFlow.Unspecified,
+                                new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                                "sp_DispatchThreadId : SV_DispatchThreadID"
+                            )
+                        );
+                    }
+
+                    if (shaderFunction.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupIndex").Any() == false)
+                    {
+                        shaderFunction.Function.Head.Signature.Parameters.Add
+                        (
+                            new FunctionArgument
+                            (
+                                DataFlow.Unspecified,
+                                new PrimitiveDataType(PrimitiveDataTypeKind.UnsignedInteger),
+                                "sp_GroupIndex : SV_GroupIndex"
+                            )
+                        );
+                    }
+                }
             }
+
+            if ((entry != null && _currentShader.Type == ShaderType.Graphic && entry.Arguments.Where(a => Translate(a, ns, ast) == "vertex").Any()) || (_currentShader.Type == ShaderType.Vertex && shaderFunction.Name == _currentShader.Name))
+            {
+                // Vertex shader entry point always returns a ShaderStream_Transient struct
+                shaderFunction.Function.Head.ReturnType = new UserDefinedDataType(new("ShaderStream_Transient"));
+
+                // Vertex shader entry point always takes as arguments a single ShaderStream_Input struct
+                shaderFunction.Function.Head.Signature.Parameters.Clear();
+                shaderFunction.Function.Head.Signature.Parameters.Add(new FunctionArgument(DataFlow.In, new UserDefinedDataType(new("ShaderStream_Input")), "streams"));
+            }
+
+            output.Append(Translate(shaderFunction.Function.Head, ns, ast));
+            output.AppendLine(";");
         }
 
         // Shader members & functions definition
@@ -580,7 +670,8 @@ public class Translator
 
         var code = member switch
         {
-            Buffer buffer => Translate(buffer, ns, ast),
+            StructuredBuffer buffer => Translate(buffer, ns, ast),
+            TypedBuffer buffer => Translate(buffer, ns, ast),
             Type type => Translate(type, ns, ast),
             _ => string.Empty,
         };
@@ -590,7 +681,7 @@ public class Translator
         return output.ToString();
     }
 
-    public string Translate(Buffer buffer, Namespace ns, AST ast)
+    public string Translate(StructuredBuffer buffer, Namespace ns, AST ast)
     {
         StringBuilder output = new();
         output.AppendLine();
@@ -603,8 +694,12 @@ public class Translator
         }
         else if (buffer.Access == BufferAccess.WriteOnly || buffer.Access == BufferAccess.ReadWrite)
         {
-            template = _hlslTemplate.GetInstanceOf("rwbuffer");
+            template = _hlslTemplate.GetInstanceOf("rwsbuffer");
             template.Add("isCoherent", (buffer.Storage & BufferStorage.Coherent) == BufferStorage.Coherent);
+        }
+        else
+        {
+            template = _hlslTemplate.GetInstanceOf("sbuffer");
         }
 
         if (template == null)
@@ -621,8 +716,8 @@ public class Translator
 
         template.Add("name", buffer.Name);
 
-        var binding = "0";
-        var set = "0";
+        string? binding = null;
+        string? set = null;
 
         foreach (Annotation annotation in buffer.Annotations)
         {
@@ -650,6 +745,108 @@ public class Translator
 
         foreach (TypeProperty property in buffer.Properties)
             template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name));
+
+        output.Append(template.Render());
+
+        return output.ToString();
+    }
+
+    public string Translate(TypedBuffer buffer, Namespace ns, AST ast)
+    {
+        StringBuilder output = new();
+        output.AppendLine();
+
+        Template? template = null;
+
+        bool isStructured = buffer.DataType switch
+        {
+            PrimitiveDataType => false,
+            UserDefinedDataType => true,
+            BuiltInDataType t => t.Type switch
+            {
+                BuiltInDataTypeKind.Color3 => true,
+                BuiltInDataTypeKind.Color4 => true,
+                BuiltInDataTypeKind.Vector2b => true,
+                BuiltInDataTypeKind.Vector2f => true,
+                BuiltInDataTypeKind.Vector2i => true,
+                BuiltInDataTypeKind.Vector2ui => true,
+                BuiltInDataTypeKind.Vector3b => true,
+                BuiltInDataTypeKind.Vector3f => true,
+                BuiltInDataTypeKind.Vector3i => true,
+                BuiltInDataTypeKind.Vector3ui => true,
+                BuiltInDataTypeKind.Vector4b => true,
+                BuiltInDataTypeKind.Vector4f => true,
+                BuiltInDataTypeKind.Vector4i => true,
+                BuiltInDataTypeKind.Vector4ui => true,
+                _ => false,
+            },
+            _ => false,
+        };
+
+        if (buffer.Access == BufferAccess.Constant)
+        {
+            output.Clear();
+
+            output.AppendLine("// <spsl-error>");
+            output.AppendLine("// An SPSL TypedBuffer cannot be constant. Failed buffer name: " + buffer.Name);
+            output.AppendLine("// </spsl-error>");
+            output.AppendLine();
+
+            return output.ToString();
+        }
+        else if (buffer.Access == BufferAccess.WriteOnly || buffer.Access == BufferAccess.ReadWrite)
+        {
+            template = _hlslTemplate.GetInstanceOf("rwtbuffer");
+            template.Add("isCoherent", (buffer.Storage & BufferStorage.Coherent) == BufferStorage.Coherent);
+            template.Add("isStructured", isStructured);
+        }
+        else
+        {
+            template = _hlslTemplate.GetInstanceOf("tbuffer");
+            template.Add("isStructured", isStructured);
+        }
+
+        if (template == null)
+        {
+            output.Clear();
+
+            output.AppendLine("// <spsl-error>");
+            output.AppendLine("// Buffer declaration not supported by HLSL translator.");
+            output.AppendLine("// </spsl-error>");
+            output.AppendLine();
+
+            return output.ToString();
+        }
+
+        template.Add("name", buffer.Name);
+        template.Add("type", Translate(buffer.DataType, ns, ast));
+
+        string? binding = null;
+        string? set = null;
+
+        foreach (Annotation annotation in buffer.Annotations)
+        {
+            if (annotation.Name != "register")
+                continue;
+
+            if (annotation.Arguments.Count != 2)
+            {
+                output.Clear();
+
+                output.AppendLine("// <spsl-error>");
+                output.AppendLine("// Invalid usage of the @register(<binding>, <set>) annotation.");
+                output.AppendLine("// </spsl-error>");
+                output.AppendLine();
+
+                return output.ToString();
+            }
+
+            binding = Translate(annotation.Arguments[0], ns, ast);
+            set = Translate(annotation.Arguments[1], ns, ast);
+        }
+
+        template.Add("binding", binding);
+        template.Add("set", set);
 
         output.Append(template.Render());
 
@@ -707,79 +904,6 @@ public class Translator
     public string Translate(ShaderFunction function, Namespace ns, AST ast)
     {
         StringBuilder output = new();
-
-        Annotation? entry = function.Annotations.SingleOrDefault(a => a.Name == "entry");
-
-        if (entry != null || function.Name == _currentShader.Name)
-        {
-            if (_currentShader.Type == ShaderType.Compute)
-            {
-                // -- Compute shader entry points need the numthreads attribute
-
-                output.AppendLine();
-                output.AppendFormat("[[numthreads({0}, {1}, {2})]]", _currentShader.ComputeParams.ThreadCountX, _currentShader.ComputeParams.ThreadCountY, _currentShader.ComputeParams.ThreadCountZ);
-
-                // -- Ensure that we have all our compute shader keywords as parameters
-
-                if (function.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupThreadId").Any() == false)
-                {
-                    function.Function.Head.Signature.Parameters.Add
-                    (
-                        new FunctionArgument
-                        (
-                            DataFlow.Unspecified,
-                            new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
-                            "sp_GroupThreadId : SV_GroupThreadID"
-                        )
-                    );
-                }
-
-                if (function.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupId").Any() == false)
-                {
-                    function.Function.Head.Signature.Parameters.Add
-                    (
-                        new FunctionArgument
-                        (
-                            DataFlow.Unspecified,
-                            new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
-                            "sp_GroupId : SV_GroupID"
-                        )
-                    );
-                }
-
-                if (function.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_DispatchThreadId").Any() == false)
-                {
-                    function.Function.Head.Signature.Parameters.Add
-                    (
-                        new FunctionArgument
-                        (
-                            DataFlow.Unspecified,
-                            new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
-                            "sp_DispatchThreadId : SV_DispatchThreadID"
-                        )
-                    );
-                }
-
-                if (function.Function.Head.Signature.Parameters.Where(p => p.Name == "sp_GroupIndex").Any() == false)
-                {
-                    function.Function.Head.Signature.Parameters.Add
-                    (
-                        new FunctionArgument
-                        (
-                            DataFlow.Unspecified,
-                            new PrimitiveDataType(PrimitiveDataTypeKind.UnsignedInteger),
-                            "sp_GroupIndex : SV_GroupIndex"
-                        )
-                    );
-                }
-            }
-        }
-
-        if (entry != null)
-        {
-            if ((_currentShader.Type == ShaderType.Graphic && entry.Arguments.Where(a => Translate(a, ns, ast) == "vertex").Any()) || _currentShader.Type == ShaderType.Vertex)
-            { }
-        }
 
         output.Append(Translate(function.Function, ns, ast));
 

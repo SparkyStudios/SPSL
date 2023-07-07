@@ -5,6 +5,8 @@ group HLSL: Base;
 // Generates a struct property.
 prop(p) ::= "<p.type> <p.name><if(p.semantic)> : <p.semantic><endif>"
 
+buffer_register(binding, set) ::= "<if(binding)> : register(b<binding><if(set)>, space<set><endif>)<endif>"
+
 // Constant Buffer
 cbuffer(name, binding, set, properties) ::= <<
 struct buffer_<name>
@@ -12,20 +14,40 @@ struct buffer_<name>
   <properties:prop(); separator = ";\n">;
 };
 
-cbuffer <name> : register(b<binding>, space<set>)
+cbuffer <name><buffer_register(binding, set)>
 {
   buffer_<name> <name>;
 };
 >>
 
-// ReadWrite Buffer
-rwbuffer(name, binding, set, properties, isCoherent) ::= <<
+// ReadOnly StructuredBuffer
+sbuffer(name, binding, set, properties) ::= <<
 struct buffer_<name>
 {
   <properties:prop(); separator = ";\n">;
 };
 
-<if(isCoherent)>globallycoherent <endif>RWStructuredBuffer\<buffer_<name>\> <name> : register(b<binding>, space<set>);
+StructuredBuffer\<buffer_<name>\> <name><buffer_register(binding, set)>;
+>>
+
+// ReadWrite/WriteOnly StructuredBuffer
+rwsbuffer(name, binding, set, properties, isCoherent) ::= <<
+struct buffer_<name>
+{
+  <properties:prop(); separator = ";\n">;
+};
+
+<if(isCoherent)>globallycoherent <endif>RWStructuredBuffer\<buffer_<name>\> <name><buffer_register(binding, set)>;
+>>
+
+// ReadOnly TypedBuffer
+tbuffer(name, binding, set, type, isStructured) ::= <<
+<if(isStructured)>StructuredBuffer<else>Buffer<endif>\<<type>\> <name><buffer_register(binding, set)>;
+>>
+
+// ReadWrite TypedBuffer
+rwtbuffer(name, binding, set, type, isCoherent, isStructured) ::= <<
+<if(isCoherent)>globallycoherent <endif>RW<if(isStructured)>StructuredBuffer<else>Buffer<endif>\<<type>\> <name><buffer_register(binding, set)>;
 >>
 
 // Structure
