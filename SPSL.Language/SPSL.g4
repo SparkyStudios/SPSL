@@ -444,8 +444,12 @@ OP_RSHIFT
 /* ====================
  Parser rules
  */
-file
+shaderFile
   : Directives = directive* DOC_COMMENT* Namespace = namespaceDefinition? (DOC_COMMENT* useDirective)* FileLevelDefinitions = fileLevelDefinition* EOF
+  ;
+
+materialFile
+  : Directives = directive* DOC_COMMENT* Namespace = namespaceDefinition? (DOC_COMMENT* useDirective)* Material = material EOF
   ;
 
 namespaceDefinition
@@ -463,7 +467,6 @@ fileLevelDefinition
   | interface
   | shaderFragment
   | shader
-  | material
   ;
 
 globalVariable

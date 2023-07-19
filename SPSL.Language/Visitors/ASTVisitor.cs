@@ -204,7 +204,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         }
     }
 
-    public override AST.AST VisitFile(SPSLParser.FileContext context)
+    public override AST.AST VisitShaderFile(SPSLParser.ShaderFileContext context)
     {
         // TODO: Parse directives
 

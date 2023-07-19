@@ -640,8 +640,10 @@ public class Translator
 
                 // Vertex shader entry point always takes as arguments a single InputStream struct
                 shaderFunction.Function.Head.Signature.Parameters.Clear();
-                shaderFunction.Function.Head.Signature.Parameters.Add(new(DataFlow.In,
-                    new UserDefinedDataType(new("Stream")), "streams"));
+                shaderFunction.Function.Head.Signature.Parameters.Add
+                (
+                    new(DataFlow.In, new UserDefinedDataType(new("InputStream")), "streams")
+                );
             }
 
             output.Append(Translate(shaderFunction.Function.Head, ns, ast));

@@ -36,11 +36,17 @@ using IToken = Antlr4.Runtime.IToken;
 [System.CLSCompliant(false)]
 public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.file"/>.
+	/// Visit a parse tree produced by <see cref="SPSLParser.shaderFile"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitFile([NotNull] SPSLParser.FileContext context);
+	Result VisitShaderFile([NotNull] SPSLParser.ShaderFileContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialFile"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialFile([NotNull] SPSLParser.MaterialFileContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.namespaceDefinition"/>.
 	/// </summary>
@@ -239,17 +245,25 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitShaderLangDirective([NotNull] SPSLParser.ShaderLangDirectiveContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.parameterDirective"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitParameterDirective([NotNull] SPSLParser.ParameterDirectiveContext context);
-	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.materialParams"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>MaterialStateBlock</c>
+	/// labeled alternative in <see cref="SPSLParser.materialState"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialStateBlock([NotNull] SPSLParser.MaterialStateBlockContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>MaterialStateValue</c>
+	/// labeled alternative in <see cref="SPSLParser.materialState"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialStateValue([NotNull] SPSLParser.MaterialStateValueContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.localVarDeclaration"/>.
 	/// </summary>
@@ -276,6 +290,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitBufferComponent([NotNull] SPSLParser.BufferComponentContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialParamsComponent"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialParamsComponent([NotNull] SPSLParser.MaterialParamsComponentContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>StructProperty</c>
 	/// labeled alternative in <see cref="SPSLParser.structComponent"/>.

@@ -48,7 +48,7 @@ void RunOptions(Options opts)
     if (opts.Shader)
     {
         // Build AST
-        var ast = AST.FromFile(opts.InputFile, opts.LibDirectories);
+        var ast = AST.FromShaderFile(opts.InputFile, opts.LibDirectories);
 
         switch (opts.Generator)
         {

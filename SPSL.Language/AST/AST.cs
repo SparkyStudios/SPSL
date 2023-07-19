@@ -6,11 +6,30 @@ namespace SPSL.Language.AST;
 
 public class AST : IEnumerable<Namespace>
 {
-    private readonly Dictionary<string, Namespace> _namespaces = new();
+    private class NamespaceNameComparer : IComparer<KeyValuePair<string, Namespace>>
+    {
+        public int Compare(KeyValuePair<string, Namespace> x, KeyValuePair<string, Namespace> y)
+        {
+            string l = x.Key;
+            string r = y.Key;
+            int f = -1;
+
+            if (x.Key.Length < y.Key.Length)
+            {
+                l = y.Key;
+                r = x.Key;
+                f = 1;
+            }
+
+            return l.StartsWith(r) ? f : l.CompareTo(r);
+        }
+    }
+
+    private Dictionary<string, Namespace> _namespaces = new();
 
     public Namespace this[string name] => _namespaces[name];
 
-    public static AST FromFile(string path, IEnumerable<string> libraryPaths)
+    public static AST FromShaderFile(string path, IEnumerable<string> libraryPaths)
     {
         HashSet<string> importedNamespaces = new();
 
@@ -36,10 +55,10 @@ public class AST : IEnumerable<Namespace>
                     if (pos >= 0)
                     {
                         var parent = ns[..pos];
-                        ns = ns[(pos + 1)..];
 
                         if (ast.FirstOrDefault(n => n.FullName == parent) is { } parentNode)
                         {
+                            parsed[ns].Name = ns[(pos + 2)..];
                             parsed[ns].Parent = parentNode;
 
                             if (parentNode.Namespaces.FirstOrDefault(n => n.FullName == parsed[ns].FullName) is
@@ -74,7 +93,7 @@ public class AST : IEnumerable<Namespace>
 
             ASTVisitor shaderVisitor = new();
 
-            AST ast = shaderVisitor.Visit(parser.file());
+            AST ast = shaderVisitor.Visit(parser.shaderFile());
 
             foreach (var import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
             {
@@ -94,6 +113,8 @@ public class AST : IEnumerable<Namespace>
             found.Merge(ns);
         else
             _namespaces.Add(ns.FullName, ns);
+
+        _namespaces = _namespaces.Order(new NamespaceNameComparer()).ToDictionary(name => name.Key, value => value.Value);
 
         return this;
     }

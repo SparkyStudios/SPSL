@@ -24,7 +24,7 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
             var fullName = Name;
 
             if (Parent != null)
-                fullName = $"{Parent.FullName}/{fullName}";
+                fullName = $"{Parent.FullName}::{fullName}";
 
             return fullName;
         }
