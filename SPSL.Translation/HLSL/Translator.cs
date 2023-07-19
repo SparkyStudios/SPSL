@@ -637,6 +637,7 @@ public class Translator
             {
                 // Vertex shader entry point always returns a TransientStream struct
                 shaderFunction.Function.Head.ReturnType = new UserDefinedDataType(new("TransientStream"));
+                shaderFunction.Function.Body.Children.Append(new ReturnStatement(new BasicExpression("streams")));
 
                 // Vertex shader entry point always takes as arguments a single InputStream struct
                 shaderFunction.Function.Head.Signature.Parameters.Clear();
@@ -644,6 +645,23 @@ public class Translator
                 (
                     new(DataFlow.In, new UserDefinedDataType(new("InputStream")), "streams")
                 );
+            }
+
+            if ((entry != null && _currentShader.Stage == ShaderStage.Graphic &&
+                 entry.Arguments.Any(a => Translate(a, ns, ast) == "pixel")) ||
+                (_currentShader.Stage == ShaderStage.Pixel && shaderFunction.Name == _currentShader.Name))
+            {
+                // Pixel shader entry point always returns a OutputStream struct
+                shaderFunction.Function.Head.ReturnType = new UserDefinedDataType(new("OutputStream"));
+                shaderFunction.Function.Body.Children.Prepend
+                (
+                    new VariableDeclarationStatement()
+                    {
+                        Type = new UserDefinedDataType(new("OutputStream")),
+                        Name = new BasicExpression("streams")
+                    }
+                );
+                shaderFunction.Function.Body.Children.Append(new ReturnStatement(new BasicExpression("streams")));
             }
 
             output.Append(Translate(shaderFunction.Function.Head, ns, ast));

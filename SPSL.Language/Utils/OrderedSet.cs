@@ -40,6 +40,19 @@ public class OrderedSet<T> : ICollection<T> where T : notnull
         return true;
     }
 
+    public bool Prepend(T item)
+    {
+        if (_dictionary.ContainsKey(item)) return false;
+        LinkedListNode<T>? node = _linkedList.AddFirst(item);
+        _dictionary.Add(item, node);
+        return true;
+    }
+
+    public bool Append(T item)
+    {
+        return Add(item);
+    }
+
     public void Clear()
     {
         _linkedList.Clear();
