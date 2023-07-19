@@ -19,7 +19,7 @@ public class Shader : INamespaceChild, IBlock
 
     public bool IsAbstract { get; set; }
 
-    public ShaderType Type { get; }
+    public ShaderStage Stage { get; }
 
     public NamespacedReference ExtendedShader { get; set; } = NamespacedReference.Null;
 
@@ -33,15 +33,15 @@ public class Shader : INamespaceChild, IBlock
 
     #region Constructors
 
-    public Shader(ShaderType type, string name)
+    public Shader(ShaderStage stage, string name)
     {
-        Type = type;
+        Stage = stage;
         Name = name;
     }
 
     public Shader(string name, ComputeShaderParams @params)
     {
-        Type = ShaderType.Compute;
+        Stage = ShaderStage.Compute;
         Name = name;
         ComputeParams = @params;
     }

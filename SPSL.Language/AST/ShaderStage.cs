@@ -1,6 +1,6 @@
 namespace SPSL.Language.AST;
 
-public enum ShaderType
+public enum ShaderStage
 {
     Unspecified,
     Vertex,

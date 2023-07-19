@@ -573,7 +573,7 @@ public class Translator
 
             if (entry != null || shaderFunction.Name == _currentShader.Name)
             {
-                if (_currentShader.Type == ShaderType.Compute)
+                if (_currentShader.Stage == ShaderStage.Compute)
                 {
                     // -- Ensure that we have all our compute shader keywords as parameters
 
@@ -631,9 +631,9 @@ public class Translator
                 }
             }
 
-            if ((entry != null && _currentShader.Type == ShaderType.Graphic &&
+            if ((entry != null && _currentShader.Stage == ShaderStage.Graphic &&
                  entry.Arguments.Any(a => Translate(a, ns, ast) == "vertex")) ||
-                (_currentShader.Type == ShaderType.Vertex && shaderFunction.Name == _currentShader.Name))
+                (_currentShader.Stage == ShaderStage.Vertex && shaderFunction.Name == _currentShader.Name))
             {
                 // Vertex shader entry point always returns a TransientStream struct
                 shaderFunction.Function.Head.ReturnType = new UserDefinedDataType(new("TransientStream"));
@@ -904,7 +904,7 @@ public class Translator
 
         if (entry != null || function.Name == _currentShader.Name)
         {
-            if (_currentShader.Type == ShaderType.Compute)
+            if (_currentShader.Stage == ShaderStage.Compute)
             {
                 // -- Compute shader entry points need the numthreads attribute
 

@@ -6,31 +6,31 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
 {
     protected override Shader? DefaultResult => null;
 
-    protected ShaderType GetShaderType(string type)
+    protected ShaderStage GetShaderType(string type)
     {
         return type.ToLower() switch
         {
-            "vertex" => ShaderType.Vertex,
-            "fragment" => ShaderType.Pixel,
-            "pixel" => ShaderType.Pixel,
-            "geometry" => ShaderType.Geometry,
-            "hull" => ShaderType.Hull,
-            "domain" => ShaderType.Domain,
-            "compute" => ShaderType.Compute,
+            "vertex" => ShaderStage.Vertex,
+            "fragment" => ShaderStage.Pixel,
+            "pixel" => ShaderStage.Pixel,
+            "geometry" => ShaderStage.Geometry,
+            "hull" => ShaderStage.Hull,
+            "domain" => ShaderStage.Domain,
+            "compute" => ShaderStage.Compute,
             _ => throw new ArgumentException("The given SPSL shader type is not recognized."),
         };
     }
 
     public override Shader VisitGenericShaderDefinition(SPSLParser.GenericShaderDefinitionContext context)
     {
-        ShaderType sType = context.Type switch
+        ShaderStage sStage = context.Type switch
         {
-            null => ShaderType.Unspecified,
+            null => ShaderStage.Unspecified,
             _ => GetShaderType(context.Type.Text)
         };
         var sName = context.Name.Text;
 
-        Shader shader = new(sType, sName)
+        Shader shader = new(sStage, sName)
         {
             IsAbstract = context.IsAbstract,
             ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader)
