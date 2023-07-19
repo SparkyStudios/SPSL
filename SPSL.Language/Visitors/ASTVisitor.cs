@@ -1,16 +1,17 @@
 ﻿using Antlr4.Runtime.Tree;
+using SPSL.Language.AST;
 using SPSL.Language.Utils;
 using static System.String;
 
-namespace SPSL.Language.AST.Visitors;
+namespace SPSL.Language.Visitors;
 
-public class ASTVisitor : SPSLBaseVisitor<AST>
+public class ASTVisitor : SPSLBaseVisitor<AST.AST>
 {
     private Namespace _currentNamespace = new(Empty);
 
     public readonly OrderedSet<string> Imports = new();
 
-    protected override AST DefaultResult => new();
+    protected override AST.AST DefaultResult => new();
 
     internal static NamespacedReference ParseNamespacedTypeName(SPSLParser.NamespacedTypeNameContext? context)
     {
@@ -24,14 +25,14 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
             IsOverride = context.IsOverride
         };
 
-        foreach (SPSLParser.AnnotationContext annotation in context.annotation())
+        foreach (var annotation in context.annotation())
         {
             function.Annotations.Add
             (
                 new Annotation
                 {
                     Name = annotation.Name.Text,
-                    Arguments = new(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
+                    Arguments = new OrderedSet<IExpression>(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
                 }
             );
         }
@@ -175,12 +176,12 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         };
     }
 
-    protected override AST AggregateResult(AST aggregate, AST nextResult)
+    protected override AST.AST AggregateResult(AST.AST aggregate, AST.AST nextResult)
     {
         return aggregate.Merge(nextResult);
     }
 
-    protected override bool ShouldVisitNextChild(IRuleNode node, AST currentResult)
+    protected override bool ShouldVisitNextChild(IRuleNode node, AST.AST currentResult)
     {
         switch (node)
         {
@@ -203,14 +204,14 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         }
     }
 
-    public override AST VisitFile(SPSLParser.FileContext context)
+    public override AST.AST VisitFile(SPSLParser.FileContext context)
     {
         // TODO: Parse directives
 
         return VisitChildren(context);
     }
 
-    public override AST VisitNamespaceDefinition(SPSLParser.NamespaceDefinitionContext context)
+    public override AST.AST VisitNamespaceDefinition(SPSLParser.NamespaceDefinitionContext context)
     {
         var ns = context.Name.GetText().Split('/');
 
@@ -227,52 +228,52 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitUseDirective(SPSLParser.UseDirectiveContext context)
+    public override AST.AST VisitUseDirective(SPSLParser.UseDirectiveContext context)
     {
         Imports.Add(context.namespacedTypeName().GetText());
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitPermutationVariableBool(SPSLParser.PermutationVariableBoolContext context)
+    public override AST.AST VisitPermutationVariableBool(SPSLParser.PermutationVariableBoolContext context)
     {
         _currentNamespace.AddChild(ParsePermutationVariable(context));
 
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitPermutationVariableEnum(SPSLParser.PermutationVariableEnumContext context)
+    public override AST.AST VisitPermutationVariableEnum(SPSLParser.PermutationVariableEnumContext context)
     {
         _currentNamespace.AddChild(ParsePermutationVariable(context));
 
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitPermutationVariableInteger(SPSLParser.PermutationVariableIntegerContext context)
+    public override AST.AST VisitPermutationVariableInteger(SPSLParser.PermutationVariableIntegerContext context)
     {
         _currentNamespace.AddChild(ParsePermutationVariable(context));
 
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
+    public override AST.AST VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
     {
         _currentNamespace.AddChild(ParseGlobalVariable(context));
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitStruct(SPSLParser.StructContext context)
+    public override AST.AST VisitStruct(SPSLParser.StructContext context)
     {
         _currentNamespace.AddChild(context.Accept(new TypeVisitor())!);
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitEnum(SPSLParser.EnumContext context)
+    public override AST.AST VisitEnum(SPSLParser.EnumContext context)
     {
         _currentNamespace.AddChild(context.Accept(new TypeVisitor())!);
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitInterface(SPSLParser.InterfaceContext context)
+    public override AST.AST VisitInterface(SPSLParser.InterfaceContext context)
     {
         var tName = context.Definition.Name.Text;
         Interface @interface = new(tName);
@@ -300,7 +301,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitShaderFragment(SPSLParser.ShaderFragmentContext context)
+    public override AST.AST VisitShaderFragment(SPSLParser.ShaderFragmentContext context)
     {
         // --- Definition
 
@@ -345,7 +346,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST>
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST VisitShader(SPSLParser.ShaderContext context)
+    public override AST.AST VisitShader(SPSLParser.ShaderContext context)
     {
         _currentNamespace.AddChild(context.Accept(new ShaderVisitor())!);
 

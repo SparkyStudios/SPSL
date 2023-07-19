@@ -1,6 +1,7 @@
 using Antlr4.Runtime.Tree;
+using SPSL.Language.AST;
 
-namespace SPSL.Language.AST.Visitors;
+namespace SPSL.Language.Visitors;
 
 public class IBlockVisitor : SPSLBaseVisitor<IBlock?>
 {

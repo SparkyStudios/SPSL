@@ -1,6 +1,8 @@
 using Antlr4.Runtime.Tree;
+using SPSL.Language.AST;
+using Type = SPSL.Language.AST.Type;
 
-namespace SPSL.Language.AST.Visitors;
+namespace SPSL.Language.Visitors;
 
 public class TypeVisitor : SPSLBaseVisitor<Type?>
 {

@@ -25,8 +25,8 @@ public class Options
     [Option('l', "lib", HelpText = "Specifies the library directory path.", Required = false, Min = 1)]
     public IEnumerable<string> LibDirectories { get; set; } = null!;
 
-    [Option("std-lib", HelpText = "Specifies whether the SPSL standard library is used.", Default = true, Required = false)]
-    public bool UseStandardLib { get; set; } = true;
+    [Option("no-std-lib", HelpText = "Specifies whether the SPSL standard library should not be used.", Default = false, Required = false)]
+    public bool NoStandardLib { get; set; } = false;
 
     [Option('g', "generator", HelpText = "Specifies the code generator to use. HLSL and GLSL will generate shader code", Default = Generator.HLSL, Required = false)]
     public Generator Generator { get; set; } = Generator.HLSL;

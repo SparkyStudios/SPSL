@@ -1,4 +1,6 @@
-namespace SPSL.Language.AST.Visitors;
+using SPSL.Language.AST;
+
+namespace SPSL.Language.Visitors;
 
 public class ShaderVisitor : SPSLBaseVisitor<Shader?>
 {

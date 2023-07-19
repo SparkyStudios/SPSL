@@ -1,8 +1,9 @@
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
+using SPSL.Language.AST;
 using SPSL.Language.Utils;
 
-namespace SPSL.Language.AST.Visitors;
+namespace SPSL.Language.Visitors;
 
 public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 {

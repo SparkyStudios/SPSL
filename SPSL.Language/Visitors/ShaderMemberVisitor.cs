@@ -1,7 +1,9 @@
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
+using SPSL.Language.AST;
+using Stream = SPSL.Language.AST.Stream;
 
-namespace SPSL.Language.AST.Visitors;
+namespace SPSL.Language.Visitors;
 
 public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
 {
