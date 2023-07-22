@@ -12,3 +12,10 @@ public interface INamespaceChild
     /// </summary>
     string Name { get; set; }
 }
+
+public static class INamespaceChildExtensions
+{
+    public static string GetFullName(this INamespaceChild child) => $"{child.Parent?.FullName}::{child.Name}";
+
+    public static NamespacedReference GetReference(this INamespaceChild child) => new(GetFullName(child));
+}

@@ -5,7 +5,7 @@ namespace SPSL.Language.AST;
 /// </summary>
 public class PermutationVariable : INamespaceChild, IBlockChild
 {
-    public enum VariableType
+    public enum VariableType : byte
     {
         Bool,
         Enum,

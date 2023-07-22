@@ -139,4 +139,9 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             context.streamProperty().Select(property => ParseStreamProperty(property))
         );
     }
+
+    public override IShaderMember? VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
+    {
+        return ASTVisitor.ParseGlobalVariable(context);
+    }
 }

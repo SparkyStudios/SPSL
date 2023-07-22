@@ -16,6 +16,9 @@ public class Options
     [Option("node-graph", HelpText = "Specifies whether to generate node graph binary.", Default = false, Required = false, Group = "mode")]
     public bool NodeGraph { get; set; }
 
+    [Option(HelpText = "Specifies whether to generate a material binary.", Default = false, Required = false, Group = "mode")]
+    public bool Material { get; set; }
+
     [Option('i', "input", HelpText = "Specifies the input file path. For shaders, specifies the path to a .spsls file. For node graphs, specifies the path to a .spslg file.", Required = false)]
     public string InputFile { get; set; } = string.Empty;
 
@@ -28,7 +31,7 @@ public class Options
     [Option("no-std-lib", HelpText = "Specifies whether the SPSL standard library should not be used.", Default = false, Required = false)]
     public bool NoStandardLib { get; set; } = false;
 
-    [Option('g', "generator", HelpText = "Specifies the code generator to use. HLSL and GLSL will generate shader code", Default = Generator.HLSL, Required = false)]
+    [Option('g', "generator", HelpText = "Specifies the code generator to use. HLSL and GLSL will generate shader code.", Default = Generator.HLSL, Required = false)]
     public Generator Generator { get; set; } = Generator.HLSL;
 
     [Option('v', "verbose", HelpText = "Set output to verbose messages.", Required = false)]

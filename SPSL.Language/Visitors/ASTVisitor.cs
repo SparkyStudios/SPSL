@@ -20,9 +20,54 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
 
     internal static ShaderFunction ParseShaderFunction(SPSLParser.ShaderFunctionContext context)
     {
+        if (context is SPSLParser.BasicShaderFunctionContext f)
+            return (ASTVisitor.ParseShaderFunction(f));
+        if (context is SPSLParser.ShaderConstructorFunctionContext c)
+            return (ASTVisitor.ParseShaderFunction(c));
+
+        throw new ArgumentException("Unsupported shader function.");
+    }
+
+    internal static ShaderFunction ParseShaderFunction(SPSLParser.BasicShaderFunctionContext context)
+    {
         var function = new ShaderFunction(ParseFunction(context.Function))
         {
             IsOverride = context.IsOverride
+        };
+
+        foreach (var annotation in context.annotation())
+        {
+            function.Annotations.Add
+            (
+                new Annotation
+                {
+                    Name = annotation.Name.Text,
+                    Arguments = new OrderedSet<IExpression>(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
+                }
+            );
+        }
+
+        return function;
+    }
+
+    internal static ShaderFunction ParseShaderFunction(SPSLParser.ShaderConstructorFunctionContext context)
+    {
+        var function = new ShaderFunction
+        (
+            new Function
+            (
+                new FunctionHead
+                (
+                    new PrimitiveDataType(PrimitiveDataTypeKind.Void),
+                    context.Name.Text,
+                    new FunctionSignature()
+                ),
+                ParseFunctionBody(context.Body)
+            )
+        )
+        {
+            IsOverride = false,
+            IsConstructor = true
         };
 
         foreach (var annotation in context.annotation())
@@ -211,9 +256,16 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         return VisitChildren(context);
     }
 
+    public override AST.AST VisitMaterialFile(SPSLParser.MaterialFileContext context)
+    {
+        // TODO: Parse directives
+
+        return VisitChildren(context);
+    }
+
     public override AST.AST VisitNamespaceDefinition(SPSLParser.NamespaceDefinitionContext context)
     {
-        var ns = context.Name.GetText().Split('/');
+        var ns = context.Name.GetText().Split("::");
 
         Namespace? current = null;
         for (int i = 0, l = ns.Length; i < l; i++)
@@ -224,6 +276,13 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         }
 
         _currentNamespace = current!;
+
+        return DefaultResult.AddNamespace(_currentNamespace);
+    }
+
+    public override AST.AST VisitMaterial(SPSLParser.MaterialContext context)
+    {
+        _currentNamespace.AddChild(context.Accept(new MaterialVisitor())!);
 
         return DefaultResult.AddNamespace(_currentNamespace);
     }
@@ -252,12 +311,6 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
     {
         _currentNamespace.AddChild(ParsePermutationVariable(context));
 
-        return DefaultResult.AddNamespace(_currentNamespace);
-    }
-
-    public override AST.AST VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
-    {
-        _currentNamespace.AddChild(ParseGlobalVariable(context));
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
@@ -321,20 +374,26 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         foreach (SPSLParser.UseDirectiveContext use in context.useDirective())
             fragment.Uses(ParseNamespacedTypeName(use.Name));
 
-        // --- Global variables
-
-        foreach (SPSLParser.GlobalVariableContext variable in context.globalVariable())
-            fragment.AddGlobalVariable(ParseGlobalVariable(variable));
-
         // --- Permutation variables
 
         foreach (SPSLParser.PermutationVariableContext variable in context.permutationVariable())
-            fragment.AddPermutationVariable(ParsePermutationVariable(variable));
+        {
+            var permutation = ParsePermutationVariable(variable);
+            permutation.Parent = _currentNamespace;
+            fragment.AddPermutationVariable(permutation);
+        }
 
         // --- Shader Members
 
         foreach (SPSLParser.ShaderMemberContext memberContext in context.shaderMember())
-            fragment.AddShaderMember(memberContext.Accept(new ShaderMemberVisitor())!);
+        {
+            var member = memberContext.Accept(new ShaderMemberVisitor())!;
+
+            if (member is INamespaceChild child)
+                child.Parent = _currentNamespace;
+
+            fragment.AddShaderMember(member);
+        }
 
         // --- Functions
 

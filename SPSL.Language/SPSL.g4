@@ -461,8 +461,7 @@ namespacedTypeName
   ;
 
 fileLevelDefinition
-  : globalVariable
-  | permutationVariable
+  : permutationVariable
   | type
   | interface
   | shaderFragment
@@ -519,7 +518,7 @@ interfacesList
 
 shaderFragment
   : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
-    DOC_COMMENT* (shaderMember | permutationVariable | globalVariable | shaderFunction)
+    DOC_COMMENT* (shaderMember | permutationVariable | shaderFunction)
   )* TOK_CLOSE_BRACE
   ;
 
@@ -530,15 +529,15 @@ shaderFragmentDefinition
   ;
 
 shader
-  : DOC_COMMENT* Definition = shaderDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (DOC_COMMENT* shaderMember)* (
-    DOC_COMMENT* shaderFunction
+  : DOC_COMMENT* Definition = shaderDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
+    DOC_COMMENT* (shaderMember | shaderFunction)
   )* TOK_CLOSE_BRACE
   ;
 
 material
   : DOC_COMMENT* Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
     DOC_COMMENT* materialMember
-  )* (DOC_COMMENT* shaderFunction)* TOK_CLOSE_BRACE
+  )* TOK_CLOSE_BRACE
   ;
 
 stream
@@ -550,7 +549,7 @@ materialDefinition
   locals[bool IsAbstract]
   : (KEYWORD_ABSTRACT {$IsAbstract = true;})? KEYWORD_MATERIAL Name = IDENTIFIER (
     KEYWORD_EXTENDS ExtendedMaterial = namespacedTypeName
-  )? (KEYWORD_IMPLEMENTS Interfaces = interfacesList)?
+  )?
   ;
 
 shaderDefinition
@@ -564,9 +563,6 @@ shaderDefinition
     IntegerLiteral OP_GREATER_THAN (KEYWORD_EXTENDS ExtendedShader = namespacedTypeName)? (
     KEYWORD_IMPLEMENTS Interfaces = interfacesList
   )? # ComputeShaderDefinition
-  | Type = KEYWORD_GRAPHIC KEYWORD_SHADER Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedShader = namespacedTypeName)? (
-    KEYWORD_IMPLEMENTS Interfaces = interfacesList
-  )? # GraphicShaderDefinition
   ;
 
 useDirective
@@ -578,16 +574,39 @@ streamProperty
   ;
 
 shaderMember
-  : bufferDefinition
+  : globalVariable
+  | bufferDefinition
   | type
   | stream
+  | samplerState
+  ;
+
+samplerState
+  : TYPE_SAMPLER Name = IDENTIFIER OP_ASSIGN IDENTIFIER                                 # DefaultSamplerState
+  | TYPE_SAMPLER Name = IDENTIFIER TOK_OPEN_BRACE samplerStateProperty+ TOK_CLOSE_BRACE # CustomSamplerState
+  ;
+
+samplerStateProperty
+  : Property = IDENTIFIER OP_ASSIGN Value = primitiveExpression
   ;
 
 materialMember
   : materialParams
   | materialState
-  | localVarDeclaration
   | type
+  | shaderFunction
+  | materialShaderUsage
+  ;
+
+materialShaderUsageDefinition
+  : KEYWORD_USE Stage = (KEYWORD_VERTEX | KEYWORD_PIXEL | KEYWORD_GEOMETRY | KEYWORD_DOMAIN | KEYWORD_HULL)? KEYWORD_SHADER Name = namespacedTypeName
+  ;
+
+materialShaderUsage
+  : Definition = materialShaderUsageDefinition TOK_SEMICOLON # SimpleMaterialShaderUsage
+  | Definition = materialShaderUsageDefinition (KEYWORD_AS Name = IDENTIFIER)? TOK_OPEN_BRACE (
+    DOC_COMMENT* (shaderFunction | useDirective)
+  )* TOK_CLOSE_BRACE # CustomizedMaterialShaderUsage
   ;
 
 // ----- Annotations -----
@@ -620,8 +639,12 @@ materialParams
   ;
 
 materialState
-  : 'state' Name = IDENTIFIER TOK_OPEN_BRACE variableDeclarationAssignment* TOK_CLOSE_BRACE # MaterialStateBlock
-  | 'state' Name = IDENTIFIER OP_ASSIGN Value = IDENTIFIER TOK_SEMICOLON                    # MaterialStateValue
+  : 'state' Name = IDENTIFIER TOK_OPEN_BRACE materialStateComponent* TOK_CLOSE_BRACE # MaterialStateBlock
+  | 'state' Name = IDENTIFIER OP_ASSIGN Value = IDENTIFIER TOK_SEMICOLON             # MaterialStateValue
+  ;
+
+materialStateComponent
+  : Name = IDENTIFIER OP_ASSIGN Value = initializationExpression
   ;
 
 // Shader variables
@@ -642,7 +665,8 @@ bufferComponent
   ;
 
 materialParamsComponent
-  : annotation* Type = dataType Name = IDENTIFIER (OP_ASSIGN DefaultValue = expressionStatement)? TOK_SEMICOLON
+  : annotation* Type = dataType Name = IDENTIFIER (OP_ASSIGN DefaultValue = initializationExpression)? TOK_SEMICOLON # MaterialValueParameter
+  | permutationVariable                                                                                              # MaterialPermutationParameter
   ;
 
 structComponent
@@ -673,7 +697,8 @@ variableIdentity
 
 shaderFunction
   locals[bool IsOverride]
-  : annotation* (KEYWORD_OVERRIDE {$IsOverride = true;})? Function = function
+  : annotation* (KEYWORD_OVERRIDE                                                                                   {$IsOverride = true;})? Function = function # BasicShaderFunction
+  | annotation* Name = IDENTIFIER TOK_OPEN_PAREN TOK_CLOSE_PAREN TOK_OPEN_BRACE Body = functionBody TOK_CLOSE_BRACE # ShaderConstructorFunction
   ;
 
 function
@@ -681,7 +706,7 @@ function
   ;
 
 functionHead
-  : Type = dataType? Name = IDENTIFIER Signature = functionSignature
+  : Type = dataType Name = IDENTIFIER Signature = functionSignature
   ;
 
 functionSignature
@@ -811,6 +836,12 @@ contextAccessExpression
 
 basicExpression
   : Identifier = IDENTIFIER
+  ;
+
+initializationExpression
+  : basicExpression
+  | primitiveExpression
+  | newInstanceExpression
   ;
 
 expressionStatement

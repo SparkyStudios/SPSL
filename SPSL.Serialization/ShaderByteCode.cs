@@ -1,17 +1,11 @@
 ﻿using System.Runtime.Serialization;
 using System.Text;
-using SPSL.Language.AST;
 
 namespace SPSL.Serialization;
 
 [DataContract]
 public class ShaderByteCode
 {
-    /// <summary>
-    /// The stage of this shader.
-    /// </summary>
-    public ShaderStage Stage;
-
     /// <summary>
     /// Gets the shader data.
     /// </summary>
@@ -21,6 +15,7 @@ public class ShaderByteCode
     /// <value>
     /// The shader data.
     /// </value>
+    [DataMember(Order = 0)]
     public byte[] Data { get; set; }
 
     /// <summary>

@@ -19,8 +19,7 @@ public class OrderedSet<T> : ICollection<T> where T : notnull
 
         if (items == null) return;
 
-        foreach (var item in items)
-            Add(item);
+        AddRange(items);
     }
 
     public int Count => _dictionary.Count;
@@ -30,6 +29,12 @@ public class OrderedSet<T> : ICollection<T> where T : notnull
     void ICollection<T>.Add(T item)
     {
         Add(item);
+    }
+
+    public void AddRange(IEnumerable<T> items)
+    {
+        foreach (var item in items)
+            Add(item);
     }
 
     public bool Add(T item)

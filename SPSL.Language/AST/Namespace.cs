@@ -92,10 +92,12 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
     /// Register a child into this namespace.
     /// </summary>
     /// <param name="child">The child to register.</param>
-    public void AddChild(INamespaceChild child)
+    public INamespaceChild AddChild(INamespaceChild child)
     {
         child.Parent = this;
         Children.Add(child);
+
+        return child;
     }
 
     /// <summary>
@@ -116,7 +118,7 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
             var nsName = name[..pos];
 
             foreach (Namespace ns in Namespaces.Where(ns => ns.Name == nsName))
-                return ns.GetChild(name[(pos + 1)..]);
+                return ns.GetChild(name[(pos + 2)..]);
         }
 
         return Children.FirstOrDefault(child => child.Name == name);

@@ -6,7 +6,7 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
 {
     protected override Shader? DefaultResult => null;
 
-    protected ShaderStage GetShaderType(string type)
+    internal static ShaderStage GetShaderStage(string type)
     {
         return type.ToLower() switch
         {
@@ -26,7 +26,7 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
         ShaderStage sStage = context.Type switch
         {
             null => ShaderStage.Unspecified,
-            _ => GetShaderType(context.Type.Text)
+            _ => GetShaderStage(context.Type.Text)
         };
         var sName = context.Name.Text;
 

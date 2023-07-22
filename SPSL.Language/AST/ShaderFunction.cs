@@ -2,7 +2,7 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
-public class ShaderFunction : IAnnotable, IBlockChild
+public class ShaderFunction : IAnnotable, IShaderMember, IMaterialMember
 {
     #region Properties
 
@@ -10,9 +10,11 @@ public class ShaderFunction : IAnnotable, IBlockChild
 
     public Function Function { get; set; }
 
+    public bool IsConstructor { get; set; }
+
     #endregion
 
-    #region Construtors
+    #region Constructors
 
     public ShaderFunction(Function function)
     {

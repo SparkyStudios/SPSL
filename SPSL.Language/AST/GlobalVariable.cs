@@ -3,7 +3,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// An SPSL shader global variable.
 /// </summary>
-public class GlobalVariable : INamespaceChild, IBlockChild
+public class GlobalVariable : IShaderMember
 {
     #region Properties
 
@@ -42,13 +42,7 @@ public class GlobalVariable : INamespaceChild, IBlockChild
 
     #endregion
 
-    #region INamespaceChild Implementation
-
-    /// <summary>
-    /// The parent <see cref="Language.AST.Namespace"/> of this one.
-    /// Defaults to <c>null</c> for root namespaces.
-    /// </summary>
-    public Namespace? Parent { get; set; }
+    #region IBlockChild Implementation
 
     /// <summary>
     /// The type name.

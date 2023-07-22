@@ -14,7 +14,7 @@ public class Shader : INamespaceChild, IBlock
     }
 
     #endregion
-    
+
     #region Properties
 
     public bool IsAbstract { get; set; }
@@ -28,7 +28,7 @@ public class Shader : INamespaceChild, IBlock
     public OrderedSet<NamespacedReference> ImportedShaderFragments { get; } = new();
 
     public ComputeShaderParams ComputeParams { get; }
-    
+
     #endregion
 
     #region Constructors
@@ -68,8 +68,7 @@ public class Shader : INamespaceChild, IBlock
 
     public void Uses(IEnumerable<NamespacedReference> names)
     {
-        foreach (var name in names)
-            Uses(name);
+        ImportedShaderFragments.AddRange(names);
     }
 
     #endregion

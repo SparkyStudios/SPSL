@@ -8,6 +8,5 @@ public enum ShaderStage
     Geometry,
     Hull,
     Domain,
-    Compute,
-    Graphic,
+    Compute
 }

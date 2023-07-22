@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SPSL.Translation\SPSL.Translation.csproj" />
     <ProjectReference Include="..\SPSL.Language\SPSL.Language.csproj" />
+    <ProjectReference Include="..\SPSL.Serialization\SPSL.Serialization.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />

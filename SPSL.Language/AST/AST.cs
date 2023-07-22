@@ -29,82 +29,94 @@ public class AST : IEnumerable<Namespace>
 
     public Namespace this[string name] => _namespaces[name];
 
+    private enum ParseFileMode
+    {
+        Shader,
+        Material
+    }
+
+    private static AST ParseDirectory(string p, IEnumerable<string> libs, HashSet<string> importedNamespaces)
+    {
+        AST ast = new();
+        IEnumerable<string> paths = libs as string[] ?? libs.ToArray();
+
+        foreach (var libraryPath in paths.Select(Path.GetFullPath))
+        {
+            if (!Directory.Exists(libraryPath))
+                continue;
+
+            foreach (var file in Directory.GetFiles(Path.Join(libraryPath, p), "*.spsl*",
+                         SearchOption.AllDirectories))
+            {
+                var ns = Path.GetDirectoryName(file)![(libraryPath.Length + 1)..]
+                    .Replace(Path.DirectorySeparatorChar.ToString(), "::");
+                var pos = ns.LastIndexOf("::", StringComparison.Ordinal);
+
+                var mode = file.EndsWith(".spslm", StringComparison.Ordinal) ? ParseFileMode.Material : ParseFileMode.Shader;
+                var parsed = ParseFile(mode, file, paths, importedNamespaces);
+
+                if (pos >= 0)
+                {
+                    var parent = ns[..pos];
+
+                    if (ast.FirstOrDefault(n => n.FullName == parent) is { } parentNode)
+                    {
+                        parsed[ns].Name = ns[(pos + 2)..];
+                        parsed[ns].Parent = parentNode;
+
+                        if (parentNode.Namespaces.FirstOrDefault(n => n.FullName == parsed[ns].FullName) is
+                            { } parentNamespace)
+                            parentNamespace.Merge(parsed[ns]);
+                        else
+                            parentNode.Children.Add(parsed[ns]);
+                    }
+                }
+
+                importedNamespaces.Add(ns);
+                ast.Merge(parsed);
+            }
+        }
+
+        return ast;
+    }
+
+    private static AST ParseFile(ParseFileMode mode, string p, IEnumerable<string> libs, HashSet<string> importedNamespaces)
+    {
+        using var spsl = new StreamReader(p);
+        IEnumerable<string> paths = libs as string[] ?? libs.ToArray();
+
+        // ---- Build AST
+
+        SPSLLexer lexer = new(new AntlrInputStream(spsl));
+
+        lexer.RemoveErrorListeners();
+
+        SPSLParser parser = new(new CommonTokenStream(lexer));
+        parser.RemoveErrorListeners();
+
+        ASTVisitor shaderVisitor = new();
+
+        AST ast = shaderVisitor.Visit(mode == ParseFileMode.Shader ? parser.shaderFile() : parser.materialFile());
+
+        foreach (var import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
+        {
+            ast.Merge(ParseDirectory(Path.Join(import.Split("::")), paths, importedNamespaces));
+            importedNamespaces.Add(import);
+        }
+
+        return ast;
+    }
+
     public static AST FromShaderFile(string path, IEnumerable<string> libraryPaths)
     {
         HashSet<string> importedNamespaces = new();
+        return ParseFile(ParseFileMode.Shader, path, libraryPaths, importedNamespaces);
+    }
 
-        AST ParseDirectory(string p, IEnumerable<string> libs)
-        {
-            AST ast = new();
-            IEnumerable<string> paths = libs as string[] ?? libs.ToArray();
-
-            foreach (var libraryPath in paths.Select(Path.GetFullPath))
-            {
-                if (!Directory.Exists(libraryPath))
-                    continue;
-
-                foreach (var file in Directory.GetFiles(Path.Join(libraryPath, p), "*.spsli",
-                             SearchOption.AllDirectories))
-                {
-                    var ns = Path.GetDirectoryName(file)![(libraryPath.Length + 1)..]
-                        .Replace(Path.DirectorySeparatorChar.ToString(), "::");
-                    var pos = ns.LastIndexOf("::", StringComparison.Ordinal);
-
-                    var parsed = ParseFile(file, paths);
-
-                    if (pos >= 0)
-                    {
-                        var parent = ns[..pos];
-
-                        if (ast.FirstOrDefault(n => n.FullName == parent) is { } parentNode)
-                        {
-                            parsed[ns].Name = ns[(pos + 2)..];
-                            parsed[ns].Parent = parentNode;
-
-                            if (parentNode.Namespaces.FirstOrDefault(n => n.FullName == parsed[ns].FullName) is
-                                { } parentNamespace)
-                                parentNamespace.Merge(parsed[ns]);
-                            else
-                                parentNode.Children.Add(parsed[ns]);
-                        }
-                    }
-
-                    importedNamespaces.Add(ns);
-                    ast.Merge(parsed);
-                }
-            }
-
-            return ast;
-        }
-
-        AST ParseFile(string p, IEnumerable<string> libs)
-        {
-            using var spsl = new StreamReader(p);
-            IEnumerable<string> paths = libs as string[] ?? libs.ToArray();
-
-            // ---- Build AST
-
-            SPSLLexer lexer = new(new AntlrInputStream(spsl));
-
-            lexer.RemoveErrorListeners();
-
-            SPSLParser parser = new(new CommonTokenStream(lexer));
-            parser.RemoveErrorListeners();
-
-            ASTVisitor shaderVisitor = new();
-
-            AST ast = shaderVisitor.Visit(parser.shaderFile());
-
-            foreach (var import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
-            {
-                ast.Merge(ParseDirectory(import, paths));
-                importedNamespaces.Add(import);
-            }
-
-            return ast;
-        }
-
-        return ParseFile(path, libraryPaths);
+    public static AST FromMaterialFile(string path, IEnumerable<string> libraryPaths)
+    {
+        HashSet<string> importedNamespaces = new();
+        return ParseFile(ParseFileMode.Material, path, libraryPaths, importedNamespaces);
     }
 
     public AST AddNamespace(Namespace ns)

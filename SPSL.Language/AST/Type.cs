@@ -5,7 +5,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent an SPSL type.
 /// </summary>
-public class Type : INamespaceChild, IShaderMember
+public class Type : INamespaceChild, IShaderMember, IMaterialMember
 {
     #region Properties
 

@@ -190,13 +190,6 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context);
 	/// <summary>
-	/// Visit a parse tree produced by the <c>GraphicShaderDefinition</c>
-	/// labeled alternative in <see cref="SPSLParser.shaderDefinition"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitGraphicShaderDefinition([NotNull] SPSLParser.GraphicShaderDefinitionContext context);
-	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.useDirective"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -215,11 +208,51 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitShaderMember([NotNull] SPSLParser.ShaderMemberContext context);
 	/// <summary>
+	/// Visit a parse tree produced by the <c>DefaultSamplerState</c>
+	/// labeled alternative in <see cref="SPSLParser.samplerState"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitDefaultSamplerState([NotNull] SPSLParser.DefaultSamplerStateContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>CustomSamplerState</c>
+	/// labeled alternative in <see cref="SPSLParser.samplerState"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitCustomSamplerState([NotNull] SPSLParser.CustomSamplerStateContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.samplerStateProperty"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitSamplerStateProperty([NotNull] SPSLParser.SamplerStatePropertyContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.materialMember"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitMaterialMember([NotNull] SPSLParser.MaterialMemberContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialShaderUsageDefinition"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialShaderUsageDefinition([NotNull] SPSLParser.MaterialShaderUsageDefinitionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>SimpleMaterialShaderUsage</c>
+	/// labeled alternative in <see cref="SPSLParser.materialShaderUsage"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitSimpleMaterialShaderUsage([NotNull] SPSLParser.SimpleMaterialShaderUsageContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>CustomizedMaterialShaderUsage</c>
+	/// labeled alternative in <see cref="SPSLParser.materialShaderUsage"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitCustomizedMaterialShaderUsage([NotNull] SPSLParser.CustomizedMaterialShaderUsageContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.annotation"/>.
 	/// </summary>
@@ -265,6 +298,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitMaterialStateValue([NotNull] SPSLParser.MaterialStateValueContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialStateComponent"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialStateComponent([NotNull] SPSLParser.MaterialStateComponentContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.localVarDeclaration"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -291,11 +330,19 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitBufferComponent([NotNull] SPSLParser.BufferComponentContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.materialParamsComponent"/>.
+	/// Visit a parse tree produced by the <c>MaterialValueParameter</c>
+	/// labeled alternative in <see cref="SPSLParser.materialParamsComponent"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitMaterialParamsComponent([NotNull] SPSLParser.MaterialParamsComponentContext context);
+	Result VisitMaterialValueParameter([NotNull] SPSLParser.MaterialValueParameterContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>MaterialPermutationParameter</c>
+	/// labeled alternative in <see cref="SPSLParser.materialParamsComponent"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialPermutationParameter([NotNull] SPSLParser.MaterialPermutationParameterContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>StructProperty</c>
 	/// labeled alternative in <see cref="SPSLParser.structComponent"/>.
@@ -343,11 +390,19 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitVariableIdentity([NotNull] SPSLParser.VariableIdentityContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.shaderFunction"/>.
+	/// Visit a parse tree produced by the <c>BasicShaderFunction</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderFunction"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitShaderFunction([NotNull] SPSLParser.ShaderFunctionContext context);
+	Result VisitBasicShaderFunction([NotNull] SPSLParser.BasicShaderFunctionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ShaderConstructorFunction</c>
+	/// labeled alternative in <see cref="SPSLParser.shaderFunction"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitShaderConstructorFunction([NotNull] SPSLParser.ShaderConstructorFunctionContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.function"/>.
 	/// </summary>
@@ -528,6 +583,12 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitBasicExpression([NotNull] SPSLParser.BasicExpressionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.initializationExpression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitInitializationExpression([NotNull] SPSLParser.InitializationExpressionContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>PostfixUnaryOperationExpression</c>
 	/// labeled alternative in <see cref="SPSLParser.expressionStatement"/>.
