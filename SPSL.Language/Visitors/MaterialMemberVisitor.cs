@@ -8,6 +8,13 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
 {
     protected override IMaterialMember? DefaultResult => null;
 
+    private readonly string _fileSource;
+
+    public MaterialMemberVisitor(string fileSource)
+    {
+        _fileSource = fileSource;
+    }
+
     protected override bool ShouldVisitNextChild(IRuleNode node, IMaterialMember? currentResult)
         => node is SPSLParser.MaterialMemberContext or SPSLParser.MaterialParamsContext
             or SPSLParser.TypeContext or SPSLParser.StructContext or SPSLParser.EnumContext
@@ -21,7 +28,8 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         {
             IsPartial = context.IsPartial,
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
 
         foreach (var param in context.materialParamsComponent())
@@ -30,18 +38,20 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
 
             if (param is SPSLParser.MaterialValueParameterContext v)
             {
-                materialParam = new(v.Type.Accept(new DataTypeVisitor()), v.Name.Text, MaterialParameterType.Value)
+                materialParam = new(v.Type.Accept(new DataTypeVisitor(_fileSource)), v.Name.Text,
+                    MaterialParameterType.Value)
                 {
-                    DefaultValue = v.DefaultValue?.Accept(new ExpressionVisitor()),
+                    DefaultValue = v.DefaultValue?.Accept(new ExpressionVisitor(_fileSource)),
                     Start = v.Start.StartIndex,
-                    End = v.Stop.StopIndex
+                    End = v.Stop.StopIndex,
+                    Source = _fileSource
                 };
 
-                materialParam.Annotations.AddRange(v.annotation().Select(a => a.ToAnnotation()));
+                materialParam.Annotations.AddRange(v.annotation().Select(a => a.ToAnnotation(_fileSource)));
             }
             else if (param is SPSLParser.MaterialPermutationParameterContext p)
             {
-                PermutationVariable permutation = ASTVisitor.ParsePermutationVariable(p.permutationVariable());
+                var permutation = p.permutationVariable().ToPermutationVariable(_fileSource);
 
                 materialParam = new
                 (
@@ -59,7 +69,8 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
                 {
                     DefaultValue = permutation.Initializer,
                     Start = p.Start.StartIndex,
-                    End = p.Stop.StopIndex
+                    End = p.Stop.StopIndex,
+                    Source = _fileSource
                 };
             }
             else
@@ -70,7 +81,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
             materialParams.Children.Add(materialParam);
         }
 
-        materialParams.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation()));
+        materialParams.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation(_fileSource)));
         return materialParams;
     }
 
@@ -80,7 +91,8 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         {
             Value = context.Value.Text,
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -94,28 +106,30 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
                 c => new MaterialStateComponent
                 (
                     c.Name.Text,
-                    c.initializationExpression().Accept(new ExpressionVisitor())!
+                    c.initializationExpression().Accept(new ExpressionVisitor(_fileSource))!
                 )
                 {
                     Start = c.Start.StartIndex,
-                    End = c.Stop.StopIndex
+                    End = c.Stop.StopIndex,
+                    Source = _fileSource
                 }
             )
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
     public override IMaterialMember? VisitStruct(SPSLParser.StructContext context)
     {
-        return context.Accept(new TypeVisitor());
+        return context.Accept(new TypeVisitor(_fileSource));
     }
 
     public override IMaterialMember? VisitEnum(SPSLParser.EnumContext context)
     {
-        return context.Accept(new TypeVisitor());
+        return context.Accept(new TypeVisitor(_fileSource));
     }
 
     public override IMaterialMember? VisitSimpleMaterialShaderUsage(SPSLParser.SimpleMaterialShaderUsageContext context)
@@ -125,7 +139,8 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
             ReferencedShader = ASTVisitor.ParseNamespacedTypeName(context.Definition.Name),
             Stage = ShaderVisitor.GetShaderStage(context.Definition.Stage.Text),
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -137,10 +152,12 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
             ReferencedShader = ASTVisitor.ParseNamespacedTypeName(context.Definition.Name),
             Stage = ShaderVisitor.GetShaderStage(context.Definition.Stage.Text),
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
 
-        shader.Children.AddRange(context.shaderFunction().Select(ASTVisitor.ParseShaderFunction));
+        shader.Children.AddRange(
+            context.shaderFunction().Select(f => f.Accept(new ShaderFunctionVisitor(_fileSource))!));
         shader.ImportedShaderFragments.AddRange(context.useDirective()
             .Select(c => ASTVisitor.ParseNamespacedTypeName(c.Name)));
 

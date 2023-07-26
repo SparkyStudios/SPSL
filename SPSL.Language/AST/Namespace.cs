@@ -114,7 +114,7 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
         // If the name is namespaced
         if (name.Contains("::"))
         {
-            var pos = name.IndexOf("::");
+            var pos = name.IndexOf("::", StringComparison.Ordinal);
             var nsName = name[..pos];
 
             foreach (Namespace ns in Namespaces.Where(ns => ns.Name == nsName))
@@ -157,6 +157,16 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
     /// The namespace name.
     /// </summary>
     public string Name { get; set; }
+
+    #endregion
+
+    #region INode Implementation
+
+    public string Source { get; set; }
+
+    public int Start { get; init; } = -1;
+
+    public int End { get; init; } = -1;
 
     #endregion
 }

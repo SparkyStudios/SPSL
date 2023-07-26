@@ -1,6 +1,6 @@
 ﻿namespace SPSL.Language.AST;
 
-public interface INamespaceChild
+public interface INamespaceChild : INode
 {
     /// <summary>
     /// The <see cref="Language.AST.Namespace"/> in which this child exists.

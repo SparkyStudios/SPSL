@@ -24,6 +24,8 @@ public class UnknownDataType : IDataType
 
     #region INode Implementation
 
+    public string Source { get; set; }
+
     public int Start { get; init; }
 
     public int End { get; init; }

@@ -6,6 +6,13 @@ namespace SPSL.Language.Visitors;
 
 public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 {
+    private readonly string _fileSource;
+
+    public StatementVisitor(string fileSource)
+    {
+        _fileSource = fileSource;
+    }
+
     protected override IStatement? DefaultResult => null;
 
     protected override IStatement? AggregateResult(IStatement? aggregate, IStatement? nextResult)
@@ -58,10 +65,11 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             return context.VariableDeclaration.Accept(this)!;
 
         if (context.ExpressionStatement != null)
-            return new ExpressionStatement(context.ExpressionStatement.Accept(new ExpressionVisitor())!)
+            return new ExpressionStatement(context.ExpressionStatement.Accept(new ExpressionVisitor(_fileSource))!)
             {
                 Start = context.Start.StartIndex,
-                End = context.Stop.StopIndex
+                End = context.Stop.StopIndex,
+                Source = _fileSource
             };
 
         if (context.StatementBlock != null)
@@ -79,7 +87,12 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         if (context.PermuteStatement != null)
             return context.PermuteStatement.Accept(this)!;
 
-        throw new NotSupportedException();
+        return new InvalidStatement
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
+            Source = _fileSource
+        };
     }
 
     public override IStatement VisitLeaveControlFlowStatement(SPSLParser.LeaveControlFlowStatementContext context)
@@ -102,8 +115,8 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
     public override IStatement VisitTypedVariableDeclaration(SPSLParser.TypedVariableDeclarationContext context)
     {
         OrderedSet<VariableDeclarationStatement> declarations = new();
-        IDataType type = context.Type.Accept(new DataTypeVisitor())!;
-        ExpressionVisitor expressionVisitor = new();
+        IDataType type = context.Type.Accept(new DataTypeVisitor(_fileSource))!;
+        ExpressionVisitor expressionVisitor = new(_fileSource);
 
         foreach (SPSLParser.VariableIdentityContext variableIdentity in context.variableIdentity())
         {
@@ -124,7 +137,8 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
                     Name = (BasicExpression)identifier.Accept(expressionVisitor)!,
                     Initializer = value,
                     Start = variableIdentity.Start.StartIndex,
-                    End = variableIdentity.Stop.StopIndex
+                    End = variableIdentity.Stop.StopIndex,
+                    Source = _fileSource
                 }
             );
         }
@@ -132,25 +146,28 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         return new StatementCollection(declarations)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
     public override IStatement VisitUntypedVariableDeclaration(SPSLParser.UntypedVariableDeclarationContext context)
     {
-        ExpressionVisitor visitor = new();
+        ExpressionVisitor visitor = new(_fileSource);
 
         return new VariableDeclarationStatement
         {
             Type = new UnknownDataType
             {
                 Start = context.Start.StartIndex,
-                End = context.Stop.StopIndex
+                End = context.Stop.StopIndex,
+                Source = _fileSource
             },
             Name = (BasicExpression)context.Declaration.Identifier.Accept(visitor)!,
             Initializer = context.Declaration.Expression.Accept(visitor),
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -159,7 +176,8 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         StatementBlock block = new()
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StartIndex
+            End = context.Stop.StartIndex,
+            Source = _fileSource
         };
 
         foreach (SPSLParser.StatementContext statement in context.statement())
@@ -170,7 +188,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
     public override IStatement VisitIfStatement(SPSLParser.IfStatementContext context)
     {
-        ExpressionVisitor expressionVisitor = new();
+        ExpressionVisitor expressionVisitor = new(_fileSource);
 
         IfStatement.IfStatementConditionBlock @if = new()
         {
@@ -198,26 +216,28 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         return new IfStatement(@if, elif, @else)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StartIndex
+            End = context.Stop.StartIndex,
+            Source = _fileSource
         };
     }
 
     public override IStatement VisitWhileStatement(SPSLParser.WhileStatementContext context)
     {
-        ExpressionVisitor expressionVisitor = new();
+        ExpressionVisitor expressionVisitor = new(_fileSource);
 
         return new WhileStatement
         {
             Condition = context.Expression.Accept(expressionVisitor)!,
             Block = (StatementBlock)context.Block.Accept(this)!,
             Start = context.Start.StartIndex,
-            End = context.Stop.StartIndex
+            End = context.Stop.StartIndex,
+            Source = _fileSource
         };
     }
 
     public override IStatement VisitPermuteStatement(SPSLParser.PermuteStatementContext context)
     {
-        ExpressionVisitor expressionVisitor = new();
+        ExpressionVisitor expressionVisitor = new(_fileSource);
 
         BinaryOperationExpression condition = new
         (
@@ -227,7 +247,8 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         )
         {
             Start = context.Identifier.Start.StartIndex,
-            End = context.Value.Stop.StopIndex
+            End = context.Value.Stop.StopIndex,
+            Source = _fileSource
         };
 
         var block = (StatementBlock)context.Block.Accept(this)!;
@@ -239,7 +260,8 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         return new PermuteStatement(condition, block, @else)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StartIndex
+            End = context.Stop.StartIndex,
+            Source = _fileSource
         };
     }
 
@@ -248,16 +270,18 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         return new BreakStatement
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StartIndex
+            End = context.Stop.StartIndex,
+            Source = _fileSource
         };
     }
 
     public override IStatement VisitReturnStatement(SPSLParser.ReturnStatementContext context)
     {
-        return new ReturnStatement(context.Expression.Accept(new ExpressionVisitor()))
+        return new ReturnStatement(context.Expression.Accept(new ExpressionVisitor(_fileSource)))
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StartIndex
+            End = context.Stop.StartIndex,
+            Source = _fileSource
         };
     }
 
@@ -266,7 +290,8 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         return new ContinueStatement
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StartIndex
+            End = context.Stop.StartIndex,
+            Source = _fileSource
         };
     }
 
@@ -275,7 +300,8 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         return new DiscardStatement
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StartIndex
+            End = context.Stop.StartIndex,
+            Source = _fileSource
         };
     }
 }

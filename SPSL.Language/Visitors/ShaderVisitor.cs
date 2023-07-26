@@ -4,6 +4,13 @@ namespace SPSL.Language.Visitors;
 
 public class ShaderVisitor : SPSLBaseVisitor<Shader?>
 {
+    private readonly string _fileSource;
+
+    public ShaderVisitor(string fileSource)
+    {
+        _fileSource = fileSource;
+    }
+
     protected override Shader? DefaultResult => null;
 
     internal static ShaderStage GetShaderStage(string type)
@@ -36,6 +43,7 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
             ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
+            Source = _fileSource
         };
 
         if (context.Interfaces is not null)
@@ -61,6 +69,7 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
             ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
+            Source = _fileSource
         };
 
         if (context.Interfaces is not null)
@@ -84,12 +93,12 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
         // --- Shader Members
 
         foreach (SPSLParser.ShaderMemberContext member in context.shaderMember())
-            shader.Children.Add(member.Accept(new ShaderMemberVisitor())!);
+            shader.Children.Add(member.Accept(new ShaderMemberVisitor(_fileSource))!);
 
         // --- Shader Functions
 
         foreach (SPSLParser.ShaderFunctionContext function in context.shaderFunction())
-            shader.Children.Add(ASTVisitor.ParseShaderFunction(function));
+            shader.Children.Add(function.Accept(new ShaderFunctionVisitor(_fileSource))!);
 
         return shader;
     }

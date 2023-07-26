@@ -6,6 +6,13 @@ namespace SPSL.Language.Visitors;
 
 public class TypeVisitor : SPSLBaseVisitor<Type?>
 {
+    private readonly string _fileSource;
+    
+    public TypeVisitor(string fileSource)
+    {
+        _fileSource = fileSource;
+    }
+
     protected override Type? DefaultResult => null;
 
     protected override bool ShouldVisitNextChild(IRuleNode node, Type? currentResult)
@@ -19,7 +26,8 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
         {
             ExtendedType = ASTVisitor.ParseNamespacedTypeName(context.Definition.ExtendedType),
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
 
         // Register struct members
@@ -29,26 +37,28 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
             {
                 case SPSLParser.StructPropertyContext property:
                 {
-                    var mType = property.Type.Accept(new DataTypeVisitor());
+                    var mType = property.Type.Accept(new DataTypeVisitor(_fileSource));
                     var mName = property.Name.Text;
                     type.AddProperty
                     (
                         new(mType, mName)
                         {
                             Start = property.Start.StartIndex,
-                            End = property.Stop.StopIndex
+                            End = property.Stop.StopIndex,
+                            Source = _fileSource
                         }
                     );
                     break;
                 }
                 case SPSLParser.StructFunctionContext function:
                 {
-                    var typeFunction = new TypeFunction(ASTVisitor.ParseFunction(function.Function))
+                    var typeFunction = new TypeFunction(function.Function.ToFunction(_fileSource))
                     {
                         Start = function.Start.StartIndex,
-                        End = function.Stop.StopIndex
+                        End = function.Stop.StopIndex,
+                        Source = _fileSource
                     };
-                    typeFunction.Annotations.AddRange(function.annotation().Select(a => a.ToAnnotation()));
+                    typeFunction.Annotations.AddRange(function.annotation().Select(a => a.ToAnnotation(_fileSource)));
                     type.AddFunction(typeFunction);
                     break;
                 }
@@ -65,7 +75,8 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
         Type type = new(tKind, tName)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
 
         uint lastValue = 0;
@@ -74,9 +85,8 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
         foreach (SPSLParser.EnumComponentContext member in context.enumComponent())
         {
             var mName = member.Name.Text;
-            IConstantExpression? value = (member.Value?.Accept(new ExpressionVisitor())) as IConstantExpression;
 
-            if (value is not null && value is ILiteral constant)
+            if (member.Value?.Accept(new ExpressionVisitor(_fileSource)) is ILiteral constant)
             {
                 lastValue = constant switch
                 {
@@ -92,7 +102,8 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
                 {
                     Initializer = new UnsignedIntegerLiteral(lastValue),
                     Start = member.Start.StartIndex,
-                    End = member.Stop.StopIndex
+                    End = member.Stop.StopIndex,
+                    Source = _fileSource
                 }
             );
             lastValue++;

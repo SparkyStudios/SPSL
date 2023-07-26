@@ -94,7 +94,7 @@ public class AST : IEnumerable<Namespace>
         SPSLParser parser = new(new CommonTokenStream(lexer));
         parser.RemoveErrorListeners();
 
-        ASTVisitor shaderVisitor = new();
+        ASTVisitor shaderVisitor = new(p);
 
         AST ast = shaderVisitor.Visit(mode == ParseFileMode.Shader ? parser.shaderFile() : parser.materialFile());
 

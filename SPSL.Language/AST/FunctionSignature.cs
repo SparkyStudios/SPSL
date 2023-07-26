@@ -43,6 +43,8 @@ public class FunctionSignature : INode, IEquatable<FunctionSignature>
 
     #region INode Implementation
 
+    public string Source { get; set; }
+
     public int Start { get; init; }
 
     public int End { get; init; }

@@ -5,6 +5,13 @@ namespace SPSL.Language.Visitors;
 
 public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
 {
+    private readonly string _fileSource;
+    
+    public DataTypeVisitor(string fileSource)
+    {
+        _fileSource = fileSource;
+    }
+
     protected override IDataType DefaultResult => new UnknownDataType();
 
     protected override IDataType AggregateResult(IDataType aggregate, IDataType nextResult)
@@ -80,6 +87,7 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
         {
             Start = context.Start.Line,
             End = context.Stop.Line,
+            Source = _fileSource
         };
     }
 
@@ -124,7 +132,8 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
         return new BuiltInDataType(kind)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -133,7 +142,8 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
         return new UserDefinedDataType(new(context.Type.GetText()))
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 }

@@ -7,6 +7,13 @@ namespace SPSL.Language.Visitors;
 
 public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 {
+    private readonly string _fileSource;
+
+    public ExpressionVisitor(string fileSource)
+    {
+        _fileSource = fileSource;
+    }
+
     protected override IExpression? DefaultResult => null;
 
     protected override IExpression? AggregateResult(IExpression? aggregate, IExpression? nextResult)
@@ -33,7 +40,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         return new BasicExpression(context.Identifier.Text)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -42,33 +50,38 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         return new ParenthesizedExpression(context.Expression.Accept(this)!)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
     public override IExpression VisitPrimitiveExpression(SPSLParser.PrimitiveExpressionContext context)
     {
-        return context.Accept(new LiteralVisitor())!;
+        return context.Accept(new LiteralVisitor(_fileSource))!;
     }
 
-    public override IExpression VisitPrimitiveConstantExpression(
-        SPSLParser.PrimitiveConstantExpressionContext context)
+    public override IExpression VisitPrimitiveConstantExpression(SPSLParser.PrimitiveConstantExpressionContext context)
     {
-        return context.Accept(new LiteralVisitor())!;
+        return context.Accept(new LiteralVisitor(_fileSource))!;
     }
 
-    public override IExpression VisitUserDefinedConstantExpression(
-        SPSLParser.UserDefinedConstantExpressionContext context)
+    public override IExpression VisitUserDefinedConstantExpression
+    (
+        SPSLParser.UserDefinedConstantExpressionContext context
+    )
     {
         return new UserDefinedConstantExpression(new(context.namespacedTypeName().GetText()))
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
-    public override IExpression VisitPropertyMemberReferenceExpression(
-        SPSLParser.PropertyMemberReferenceExpressionContext context)
+    public override IExpression VisitPropertyMemberReferenceExpression
+    (
+        SPSLParser.PropertyMemberReferenceExpressionContext context
+    )
     {
         return new PropertyMemberReferenceExpression
         (
@@ -77,7 +90,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -93,7 +107,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -109,12 +124,15 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
-    public override IExpression VisitAssignableChainedExpression(
-        SPSLParser.AssignableChainedExpressionContext context)
+    public override IExpression VisitAssignableChainedExpression
+    (
+        SPSLParser.AssignableChainedExpressionContext context
+    )
     {
         return new ChainedExpression
         (
@@ -123,7 +141,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -132,7 +151,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         return new ContextAccessExpression(context.Identifier.Text)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -148,7 +168,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
                     new(expression.Accept(this)!)
                     {
                         Start = expression.Start.StartIndex,
-                        End = expression.Stop.StopIndex
+                        End = expression.Stop.StopIndex,
+                        Source = _fileSource
                     }
                 );
             }
@@ -157,7 +178,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         return new InvocationExpression(new(context.Name.GetText()), parameters)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -169,21 +191,24 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
             return new ArrayAccessExpression(access.Accept(this)!, context.Index.Accept(this)!)
             {
                 Start = access.Start.StartIndex,
-                End = access.Stop.StopIndex
+                End = access.Stop.StopIndex,
+                Source = _fileSource
             };
 
         if ((access = context.memberReferenceExpression()) != null)
             return new ArrayAccessExpression(access.Accept(this)!, context.Index.Accept(this)!)
             {
                 Start = access.Start.StartIndex,
-                End = access.Stop.StopIndex
+                End = access.Stop.StopIndex,
+                Source = _fileSource
             };
 
         if ((access = context.invocationExpression()) != null)
             return new ArrayAccessExpression(access.Accept(this)!, context.Index.Accept(this)!)
             {
                 Start = access.Start.StartIndex,
-                End = access.Stop.StopIndex
+                End = access.Stop.StopIndex,
+                Source = _fileSource
             };
 
         throw new NotSupportedException();
@@ -194,12 +219,15 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         return new NegateOperationExpression(context.Expression.Accept(this)!)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
-    public override IExpression VisitPostfixUnaryOperationExpression(
-        SPSLParser.PostfixUnaryOperationExpressionContext context)
+    public override IExpression VisitPostfixUnaryOperationExpression
+    (
+        SPSLParser.PostfixUnaryOperationExpressionContext context
+    )
     {
         return new UnaryOperationExpression
         (
@@ -209,12 +237,15 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
-    public override IExpression VisitPrefixUnaryOperationExpression(
-        SPSLParser.PrefixUnaryOperationExpressionContext context)
+    public override IExpression VisitPrefixUnaryOperationExpression
+    (
+        SPSLParser.PrefixUnaryOperationExpressionContext context
+    )
     {
         return new UnaryOperationExpression
         (
@@ -224,7 +255,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -233,7 +265,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         return new SignedExpression(context.Operator.Text, context.Expression.Accept(this)!)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -247,7 +280,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -261,7 +295,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -275,16 +310,22 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
     public override IExpression VisitCastExpression(SPSLParser.CastExpressionContext context)
     {
-        return new CastExpression(context.Type.Accept(new DataTypeVisitor())!, context.Expression.Accept(this)!)
+        return new CastExpression
+        (
+            context.Type.Accept(new DataTypeVisitor(_fileSource))!,
+            context.Expression.Accept(this)!
+        )
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 
@@ -300,16 +341,18 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
                     new(expression.Accept(this)!)
                     {
                         Start = expression.Start.StartIndex,
-                        End = expression.Stop.StopIndex
+                        End = expression.Stop.StopIndex,
+                        Source = _fileSource
                     }
                 );
             }
         }
 
-        return new NewInstanceExpression(context.Type.Accept(new DataTypeVisitor())!, parameters)
+        return new NewInstanceExpression(context.Type.Accept(new DataTypeVisitor(_fileSource))!, parameters)
         {
             Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex
+            End = context.Stop.StopIndex,
+            Source = _fileSource
         };
     }
 }

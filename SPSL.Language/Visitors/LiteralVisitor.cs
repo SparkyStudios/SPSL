@@ -6,6 +6,13 @@ namespace SPSL.Language.Visitors;
 
 public class LiteralVisitor : SPSLBaseVisitor<ILiteral?>
 {
+    private readonly string _fileSource;
+
+    public LiteralVisitor(string fileSource)
+    {
+        _fileSource = fileSource;
+    }
+
     protected override ILiteral? DefaultResult => null;
 
     protected override ILiteral? AggregateResult(ILiteral? aggregate, ILiteral? nextResult)
@@ -30,17 +37,20 @@ public class LiteralVisitor : SPSLBaseVisitor<ILiteral?>
             SPSLParser.BoolLiteral => new BoolLiteral(bool.Parse(context.Literal.Text))
             {
                 Start = context.Literal.StartIndex,
-                End = context.Literal.StopIndex
+                End = context.Literal.StopIndex,
+                Source = _fileSource
             },
             SPSLParser.DoubleLiteral => new DoubleLiteral(double.Parse(context.Literal.Text.TrimEnd('d', 'D')))
             {
                 Start = context.Literal.StartIndex,
-                End = context.Literal.StopIndex
+                End = context.Literal.StopIndex,
+                Source = _fileSource
             },
             SPSLParser.FloatLiteral => new FloatLiteral(float.Parse(context.Literal.Text.TrimEnd('f', 'F')))
             {
                 Start = context.Literal.StartIndex,
-                End = context.Literal.StopIndex
+                End = context.Literal.StopIndex,
+                Source = _fileSource
             },
             SPSLParser.IntegerLiteral => new IntegerLiteral
             (
@@ -54,7 +64,8 @@ public class LiteralVisitor : SPSLBaseVisitor<ILiteral?>
                 IsHexConstant = isHex,
                 IsOctalConstant = isOctal,
                 Start = context.Literal.StartIndex,
-                End = context.Literal.StopIndex
+                End = context.Literal.StopIndex,
+                Source = _fileSource
             },
             SPSLParser.UnsignedIntegerLiteral => new UnsignedIntegerLiteral
             (
@@ -62,12 +73,14 @@ public class LiteralVisitor : SPSLBaseVisitor<ILiteral?>
             )
             {
                 Start = context.Literal.StartIndex,
-                End = context.Literal.StopIndex
+                End = context.Literal.StopIndex,
+                Source = _fileSource
             },
             SPSLParser.StringLiteral => new StringLiteral(context.Literal.Text)
             {
                 Start = context.Literal.StartIndex,
-                End = context.Literal.StopIndex
+                End = context.Literal.StopIndex,
+                Source = _fileSource
             },
             _ => throw new NotSupportedException(),
         };
