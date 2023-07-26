@@ -3,7 +3,7 @@
 /// <summary>
 /// Represent any kind of data type.
 /// </summary>
-public interface IDataType : IEquatable<IDataType>
+public interface IDataType : INode, IEquatable<IDataType>
 {
     /// <summary>
     /// Define if this data type is an array type.

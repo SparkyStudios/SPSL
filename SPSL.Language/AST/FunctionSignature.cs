@@ -5,7 +5,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent an SPSL function signature.
 /// </summary>
-public class FunctionSignature : IEquatable<FunctionSignature>
+public class FunctionSignature : INode, IEquatable<FunctionSignature>
 {
     #region Properties
 
@@ -17,17 +17,17 @@ public class FunctionSignature : IEquatable<FunctionSignature>
 
     public FunctionSignature()
     {
-        Parameters = new OrderedSet<FunctionArgument>();
+        Parameters = new();
     }
 
     public FunctionSignature(IEnumerable<FunctionArgument> parameters)
     {
-        Parameters = new OrderedSet<FunctionArgument>(parameters);
+        Parameters = new(parameters);
     }
 
     public FunctionSignature(params FunctionArgument[] parameters)
     {
-        Parameters = new OrderedSet<FunctionArgument>(parameters);
+        Parameters = new(parameters);
     }
 
     #endregion
@@ -41,6 +41,14 @@ public class FunctionSignature : IEquatable<FunctionSignature>
 
     #endregion
 
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
+
+    #endregion
+
     #region IEquatable<FunctionSignature> Implementation
 
     public bool Equals(FunctionSignature? other)
@@ -50,7 +58,8 @@ public class FunctionSignature : IEquatable<FunctionSignature>
 
         // Slow array-like indexation, but needed for ordered comparison. Maybe a better way can be found
         for (uint i = 0, l = (uint)Parameters.Count; i < l; i++)
-            if (Parameters[i].Equals(other.Parameters[i]) is false) return false;
+            if (Parameters[i].Equals(other.Parameters[i]) is false)
+                return false;
 
         return true;
     }

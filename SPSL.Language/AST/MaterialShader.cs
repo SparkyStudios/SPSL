@@ -55,13 +55,20 @@ public class MaterialShader : IBlock, IMaterialMember
 
     #endregion
 
-
     #region IBlockChild Implementation
 
     /// <summary>
     /// The material shader name.
     /// </summary>
     public string Name { get; set; }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

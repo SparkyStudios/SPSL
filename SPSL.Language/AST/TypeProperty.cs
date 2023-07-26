@@ -5,7 +5,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent a member of an <see cref="Language.AST.Type"/>.
 /// </summary>
-public class TypeProperty : IAnnotable
+public class TypeProperty : IAnnotable, INode
 {
     #region Properties
 
@@ -41,6 +41,14 @@ public class TypeProperty : IAnnotable
     #region IAnnotable Implementation
 
     public OrderedSet<Annotation> Annotations { get; } = new();
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

@@ -58,7 +58,11 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             return context.VariableDeclaration.Accept(this)!;
 
         if (context.ExpressionStatement != null)
-            return new ExpressionStatement(context.ExpressionStatement.Accept(new ExpressionVisitor())!);
+            return new ExpressionStatement(context.ExpressionStatement.Accept(new ExpressionVisitor())!)
+            {
+                Start = context.Start.StartIndex,
+                End = context.Stop.StopIndex
+            };
 
         if (context.StatementBlock != null)
             return context.StatementBlock.Accept(this)!;
@@ -113,17 +117,23 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
             declarations.Add
             (
-                new VariableDeclarationStatement
+                new()
                 {
                     IsConst = context.IsConst,
                     Type = type,
                     Name = (BasicExpression)identifier.Accept(expressionVisitor)!,
-                    Initializer = value
+                    Initializer = value,
+                    Start = variableIdentity.Start.StartIndex,
+                    End = variableIdentity.Stop.StopIndex
                 }
             );
         }
 
-        return new StatementCollection(declarations);
+        return new StatementCollection(declarations)
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
     }
 
     public override IStatement VisitUntypedVariableDeclaration(SPSLParser.UntypedVariableDeclarationContext context)
@@ -132,15 +142,25 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
         return new VariableDeclarationStatement
         {
-            Type = new UnknownDataType(),
+            Type = new UnknownDataType
+            {
+                Start = context.Start.StartIndex,
+                End = context.Stop.StopIndex
+            },
             Name = (BasicExpression)context.Declaration.Identifier.Accept(visitor)!,
-            Initializer = context.Declaration.Expression.Accept(visitor)
+            Initializer = context.Declaration.Expression.Accept(visitor),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
     }
 
     public override IStatement VisitStatementBlock(SPSLParser.StatementBlockContext context)
     {
-        StatementBlock block = new();
+        StatementBlock block = new()
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex
+        };
 
         foreach (SPSLParser.StatementContext statement in context.statement())
             block.Children.Add(statement.Accept(this)!);
@@ -158,8 +178,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             Block = (StatementBlock)context.Block.Accept(this)!
         };
 
-        OrderedSet<IfStatement.IfStatementConditionBlock> elif =
-            new OrderedSet<IfStatement.IfStatementConditionBlock>();
+        OrderedSet<IfStatement.IfStatementConditionBlock> elif = new();
         foreach (SPSLParser.ElifStatementContext ctx in context.elifStatement())
         {
             elif.Add
@@ -176,7 +195,11 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         if (context.Else != null)
             @else = (StatementBlock?)context.Else.Block.Accept(this);
 
-        return new IfStatement(@if, elif, @else);
+        return new IfStatement(@if, elif, @else)
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex
+        };
     }
 
     public override IStatement VisitWhileStatement(SPSLParser.WhileStatementContext context)
@@ -186,7 +209,9 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         return new WhileStatement
         {
             Condition = context.Expression.Accept(expressionVisitor)!,
-            Block = (StatementBlock)context.Block.Accept(this)!
+            Block = (StatementBlock)context.Block.Accept(this)!,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex
         };
     }
 
@@ -199,7 +224,11 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             context.Identifier.Accept(expressionVisitor)!,
             context.Operator.Text,
             context.Value.Accept(expressionVisitor)!
-        );
+        )
+        {
+            Start = context.Identifier.Start.StartIndex,
+            End = context.Value.Stop.StopIndex
+        };
 
         var block = (StatementBlock)context.Block.Accept(this)!;
 
@@ -207,26 +236,46 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         if (context.Else != null)
             @else = (StatementBlock?)context.Else.Block.Accept(this);
 
-        return new PermuteStatement(condition, block, @else);
+        return new PermuteStatement(condition, block, @else)
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex
+        };
     }
 
     public override IStatement VisitBreakStatement(SPSLParser.BreakStatementContext context)
     {
-        return new BreakStatement();
+        return new BreakStatement
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex
+        };
     }
 
     public override IStatement VisitReturnStatement(SPSLParser.ReturnStatementContext context)
     {
-        return new ReturnStatement(context.Expression.Accept(new ExpressionVisitor()));
+        return new ReturnStatement(context.Expression.Accept(new ExpressionVisitor()))
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex
+        };
     }
 
     public override IStatement VisitContinueStatement(SPSLParser.ContinueStatementContext context)
     {
-        return new ContinueStatement();
+        return new ContinueStatement
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex
+        };
     }
 
     public override IStatement VisitDiscardStatement(SPSLParser.DiscardStatementContext context)
     {
-        return new DiscardStatement();
+        return new DiscardStatement
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex
+        };
     }
 }

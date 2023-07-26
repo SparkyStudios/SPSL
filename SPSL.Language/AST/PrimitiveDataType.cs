@@ -51,12 +51,21 @@ public class PrimitiveDataType : IDataType
 
     #endregion
 
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
+
+    #endregion
+
     #region IEquatable<IDataType> Implementation
 
     /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
     public bool Equals(IDataType? other)
     {
-        return other is PrimitiveDataType otherType && Type == otherType.Type && IsArray == otherType.IsArray && ArraySize == otherType.ArraySize;
+        return other is PrimitiveDataType otherType && Type == otherType.Type && IsArray == otherType.IsArray &&
+               ArraySize == otherType.ArraySize;
     }
 
     #endregion

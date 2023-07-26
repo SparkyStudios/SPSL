@@ -3,7 +3,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent an invocation parameter.
 /// </summary>
-public class InvocationParameter
+public class InvocationParameter : INode
 {
     #region Properties
 
@@ -24,6 +24,14 @@ public class InvocationParameter
     {
         Expression = expression;
     }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

@@ -17,8 +17,16 @@ public class NewInstanceExpression : IExpression
     public NewInstanceExpression(IDataType type, IEnumerable<InvocationParameter>? parameters = null)
     {
         Type = type;
-        Parameters = new OrderedSet<InvocationParameter>(parameters);
+        Parameters = new(parameters);
     }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

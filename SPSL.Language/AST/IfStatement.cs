@@ -56,12 +56,25 @@ public class IfStatement : IStatement
     /// <param name="if">The if part of the statement.</param>
     /// <param name="elif">The elif parts of the statement.</param>
     /// <param name="else">The else part of the statement.</param>
-    public IfStatement(IfStatementConditionBlock @if, IEnumerable<IfStatementConditionBlock>? elif = null, StatementBlock? @else = null)
+    public IfStatement
+    (
+        IfStatementConditionBlock @if,
+        IEnumerable<IfStatementConditionBlock>? elif = null,
+        StatementBlock? @else = null
+    )
     {
         If = @if;
         Elif = new(elif);
         Else = @else;
     }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

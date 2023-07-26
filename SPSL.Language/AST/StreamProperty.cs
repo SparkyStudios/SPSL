@@ -5,7 +5,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent a property in a <see cref="Language.AST.Stream"/>.
 /// </summary>
-public class StreamProperty : IAnnotable
+public class StreamProperty : IAnnotable, INode
 {
     #region Properties
 
@@ -48,6 +48,14 @@ public class StreamProperty : IAnnotable
     #region IAnnotable Implementation
 
     public OrderedSet<Annotation> Annotations { get; } = new();
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

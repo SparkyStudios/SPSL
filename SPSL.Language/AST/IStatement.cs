@@ -3,5 +3,6 @@
 /// <summary>
 /// Represent any kind of statement.
 /// </summary>
-public interface IStatement
-{ }
+public interface IStatement : INode
+{
+}

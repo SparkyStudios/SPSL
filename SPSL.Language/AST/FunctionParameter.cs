@@ -3,7 +3,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent an SPSL function argument.
 /// </summary>
-public class FunctionArgument : IEquatable<FunctionArgument>
+public class FunctionArgument : INode, IEquatable<FunctionArgument>
 {
     #region Properties
 
@@ -32,6 +32,14 @@ public class FunctionArgument : IEquatable<FunctionArgument>
         Type = type;
         Name = name;
     }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 

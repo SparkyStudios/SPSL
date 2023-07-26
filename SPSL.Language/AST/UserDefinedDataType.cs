@@ -42,8 +42,17 @@ public class UserDefinedDataType : IDataType
     /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
     public bool Equals(IDataType? other)
     {
-        return other is UserDefinedDataType otherType && Type.Equals(otherType.Type) && IsArray == otherType.IsArray && ArraySize == otherType.ArraySize;
+        return other is UserDefinedDataType otherType && Type.Equals(otherType.Type) && IsArray == otherType.IsArray &&
+               ArraySize == otherType.ArraySize;
     }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

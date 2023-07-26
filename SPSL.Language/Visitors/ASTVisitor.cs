@@ -32,21 +32,12 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
     {
         var function = new ShaderFunction(ParseFunction(context.Function))
         {
-            IsOverride = context.IsOverride
+            IsOverride = context.IsOverride,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
 
-        foreach (var annotation in context.annotation())
-        {
-            function.Annotations.Add
-            (
-                new Annotation
-                {
-                    Name = annotation.Name.Text,
-                    Arguments = new OrderedSet<IExpression>(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
-                }
-            );
-        }
-
+        function.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation()));
         return function;
     }
 
@@ -54,55 +45,58 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
     {
         var function = new ShaderFunction
         (
-            new Function
+            new
             (
-                new FunctionHead
+                new
                 (
                     new PrimitiveDataType(PrimitiveDataTypeKind.Void),
                     context.Name.Text,
-                    new FunctionSignature()
+                    new()
                 ),
                 ParseFunctionBody(context.Body)
             )
         )
         {
             IsOverride = false,
-            IsConstructor = true
+            IsConstructor = true,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
 
-        foreach (var annotation in context.annotation())
-        {
-            function.Annotations.Add
-            (
-                new Annotation
-                {
-                    Name = annotation.Name.Text,
-                    Arguments = new OrderedSet<IExpression>(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
-                }
-            );
-        }
-
+        function.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation()));
         return function;
     }
 
     internal static Function ParseFunction(SPSLParser.FunctionContext context)
     {
-        return new Function(ParseFunctionHead(context.Head), ParseFunctionBody(context.Body));
+        return new(ParseFunctionHead(context.Head), ParseFunctionBody(context.Body))
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
     }
 
     internal static FunctionHead ParseFunctionHead(SPSLParser.FunctionHeadContext context)
     {
-        return new FunctionHead
+        return new
         (
             context.Type.Accept(new DataTypeVisitor()),
             context.Name.Text,
             ParseFunctionSignature(context.Signature)
-        );
+        )
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
     }
 
     internal static FunctionSignature ParseFunctionSignature(SPSLParser.FunctionSignatureContext context)
     {
-        FunctionSignature signature = new();
+        FunctionSignature signature = new()
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
 
         if (context.Arguments == null) return signature;
 
@@ -110,7 +104,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         {
             signature.AddParameter
             (
-                new FunctionArgument
+                new
                 (
                     arg.Flow?.Text switch
                     {
@@ -123,6 +117,10 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
                     arg.Type.Accept(new DataTypeVisitor()),
                     arg.Name.Text
                 )
+                {
+                    Start = arg.Start.StartIndex,
+                    End = arg.Stop.StopIndex
+                }
             );
         }
 
@@ -140,7 +138,11 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         if (context.ReturnStatement != null)
             statements.Add(context.ReturnStatement.Accept(statementVisitor)!);
 
-        return new StatementBlock(statements);
+        return new(statements)
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
     }
 
     internal static GlobalVariable ParseGlobalVariable(SPSLParser.GlobalVariableContext context)
@@ -153,6 +155,8 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         )
         {
             Name = context.Definition.Identifier.Identifier.Text,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
     }
 
@@ -172,19 +176,25 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
 
     internal static PermutationVariable ParsePermutationVariable(SPSLParser.PermutationVariableBoolContext context)
     {
-        return new PermutationVariable
+        return new
         (
             PermutationVariable.VariableType.Bool,
             new BoolLiteral(bool.Parse(context.Value.Text))
+            {
+                Start = context.Value.StartIndex,
+                End = context.Value.StopIndex
+            }
         )
         {
             Name = context.Identifier.GetText(),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
     }
 
     internal static PermutationVariable ParsePermutationVariable(SPSLParser.PermutationVariableEnumContext context)
     {
-        return new PermutationVariable
+        return new
         (
             PermutationVariable.VariableType.Enum,
             context.Value.Accept(new ExpressionVisitor())!
@@ -192,23 +202,35 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         {
             EnumerationValues = context.IDENTIFIER().Select(id => id.GetText()).ToArray(),
             Name = context.Identifier.GetText(),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
     }
 
     internal static PermutationVariable ParsePermutationVariable(SPSLParser.PermutationVariableIntegerContext context)
     {
-        return new PermutationVariable
+        return new
         (
             PermutationVariable.VariableType.Integer,
             new IntegerLiteral(int.Parse(context.Value.Text))
+            {
+                Start = context.Value.StartIndex,
+                End = context.Value.StopIndex
+            }
         )
         {
             Name = context.Identifier.GetText(),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
     }
 
-    internal static TypeProperty ParseBufferComponent(SPSLParser.BufferComponentContext context)
-        => new TypeProperty(context.Type.Accept(new DataTypeVisitor()), context.Name.Text);
+    internal static TypeProperty ParseBufferComponent(SPSLParser.BufferComponentContext context) =>
+        new(context.Type.Accept(new DataTypeVisitor()), context.Name.Text)
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
 
 
     protected TypeKind GetTypeKind(string type)
@@ -329,12 +351,15 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
     public override AST.AST VisitInterface(SPSLParser.InterfaceContext context)
     {
         var tName = context.Definition.Name.Text;
-        Interface @interface = new(tName);
+        Interface @interface = new(tName)
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
 
         if (context.Definition.ExtendedInterfaces != null)
         {
-            foreach (SPSLParser.NamespacedTypeNameContext nsd in context.Definition.ExtendedInterfaces
-                         .namespacedTypeName())
+            foreach (var nsd in context.Definition.ExtendedInterfaces.namespacedTypeName())
                 @interface.AddExtendedInterface(nsd.GetText());
         }
 
@@ -361,7 +386,9 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         var fName = context.Definition.Name.Text;
         ShaderFragment fragment = new(fName)
         {
-            ExtendedShaderFragment = ParseNamespacedTypeName(context.Definition.ExtendedFragment)
+            ExtendedShaderFragment = ParseNamespacedTypeName(context.Definition.ExtendedFragment),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
 
         if (context.Definition.ExtendedInterfaces != null)

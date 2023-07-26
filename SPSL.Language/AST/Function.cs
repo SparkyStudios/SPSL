@@ -21,14 +21,30 @@ public class Function : IBlockChild
     public Function(FunctionHead head, params IStatement[] children)
     {
         Head = head;
-        Body = new StatementBlock(children);
+        Body = new(children)
+        {
+            Start = children[0].Start,
+            End = children[^1].End
+        };
     }
 
     #endregion
 
     #region IBlockChild Implementation
 
-    string IBlockChild.Name { get => Head.Name; set => Head.Name = value; }
+    string IBlockChild.Name
+    {
+        get => Head.Name;
+        set => Head.Name = value;
+    }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

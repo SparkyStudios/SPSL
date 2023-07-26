@@ -11,14 +11,17 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
     protected override bool ShouldVisitNextChild(IRuleNode node, IMaterialMember? currentResult)
         => node is SPSLParser.MaterialMemberContext or SPSLParser.MaterialParamsContext
             or SPSLParser.TypeContext or SPSLParser.StructContext or SPSLParser.EnumContext
-            or SPSLParser.MaterialStateContext or SPSLParser.MaterialStateBlockContext or SPSLParser.MaterialStateValueContext
+            or SPSLParser.MaterialStateContext or SPSLParser.MaterialStateBlockContext
+            or SPSLParser.MaterialStateValueContext
             or SPSLParser.MaterialShaderUsageContext;
 
     public override IMaterialMember? VisitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context)
     {
         MaterialParameterGroup materialParams = new(context.Name.Text)
         {
-            IsPartial = context.IsPartial
+            IsPartial = context.IsPartial,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
 
         foreach (var param in context.materialParamsComponent())
@@ -30,13 +33,11 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
                 materialParam = new(v.Type.Accept(new DataTypeVisitor()), v.Name.Text, MaterialParameterType.Value)
                 {
                     DefaultValue = v.DefaultValue?.Accept(new ExpressionVisitor()),
+                    Start = v.Start.StartIndex,
+                    End = v.Stop.StopIndex
                 };
 
-                materialParam.Annotations.AddRange(v.annotation().Select(a => new Annotation
-                {
-                    Name = a.Name.Text,
-                    Arguments = new(a.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
-                }));
+                materialParam.Annotations.AddRange(v.annotation().Select(a => a.ToAnnotation()));
             }
             else if (param is SPSLParser.MaterialPermutationParameterContext p)
             {
@@ -47,7 +48,8 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
                     permutation.Type switch
                     {
                         PermutationVariable.VariableType.Bool => new PrimitiveDataType(PrimitiveDataTypeKind.Boolean),
-                        PermutationVariable.VariableType.Integer => new PrimitiveDataType(PrimitiveDataTypeKind.Integer),
+                        PermutationVariable.VariableType.Integer =>
+                            new PrimitiveDataType(PrimitiveDataTypeKind.Integer),
                         PermutationVariable.VariableType.Enum => new UserDefinedDataType(new(permutation.Name)),
                         _ => throw new ArgumentException("Invalid permutation variable type"),
                     },
@@ -55,7 +57,9 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
                     MaterialParameterType.Permutation
                 )
                 {
-                    DefaultValue = permutation.Initializer
+                    DefaultValue = permutation.Initializer,
+                    Start = p.Start.StartIndex,
+                    End = p.Stop.StopIndex
                 };
             }
             else
@@ -66,12 +70,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
             materialParams.Children.Add(materialParam);
         }
 
-        materialParams.Annotations.AddRange(context.annotation().Select(a => new Annotation
-        {
-            Name = a.Name.Text,
-            Arguments = new(a.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
-        }));
-
+        materialParams.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation()));
         return materialParams;
     }
 
@@ -80,15 +79,33 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         return new MaterialState(context.Name.Text)
         {
             Value = context.Value.Text,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
     }
 
     public override IMaterialMember? VisitMaterialStateBlock([NotNull] SPSLParser.MaterialStateBlockContext context)
     {
-        MaterialState materialStateBlock = new(context.Name.Text);
-        materialStateBlock.Children.AddRange(context.materialStateComponent().Select(c => new MaterialStateComponent(c.Name.Text, c.initializationExpression().Accept(new ExpressionVisitor())!)));
-
-        return materialStateBlock;
+        return new MaterialState
+        (
+            context.Name.Text,
+            context.materialStateComponent().Select
+            (
+                c => new MaterialStateComponent
+                (
+                    c.Name.Text,
+                    c.initializationExpression().Accept(new ExpressionVisitor())!
+                )
+                {
+                    Start = c.Start.StartIndex,
+                    End = c.Stop.StopIndex
+                }
+            )
+        )
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
     }
 
     public override IMaterialMember? VisitStruct(SPSLParser.StructContext context)
@@ -107,19 +124,25 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         {
             ReferencedShader = ASTVisitor.ParseNamespacedTypeName(context.Definition.Name),
             Stage = ShaderVisitor.GetShaderStage(context.Definition.Stage.Text),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
     }
 
-    public override IMaterialMember? VisitCustomizedMaterialShaderUsage(SPSLParser.CustomizedMaterialShaderUsageContext context)
+    public override IMaterialMember? VisitCustomizedMaterialShaderUsage(
+        SPSLParser.CustomizedMaterialShaderUsageContext context)
     {
         MaterialShader shader = new(context.Name?.Text ?? context.Definition.Stage.Text)
         {
             ReferencedShader = ASTVisitor.ParseNamespacedTypeName(context.Definition.Name),
             Stage = ShaderVisitor.GetShaderStage(context.Definition.Stage.Text),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
 
-        shader.Children.AddRange(context.shaderFunction().Select(c => ASTVisitor.ParseShaderFunction(c)));
-        shader.ImportedShaderFragments.AddRange(context.useDirective().Select(c => ASTVisitor.ParseNamespacedTypeName(c.Name)));
+        shader.Children.AddRange(context.shaderFunction().Select(ASTVisitor.ParseShaderFunction));
+        shader.ImportedShaderFragments.AddRange(context.useDirective()
+            .Select(c => ASTVisitor.ParseNamespacedTypeName(c.Name)));
 
         return shader;
     }

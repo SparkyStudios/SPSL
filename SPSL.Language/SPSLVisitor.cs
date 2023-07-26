@@ -727,6 +727,18 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitUserDefinedConstantExpression([NotNull] SPSLParser.UserDefinedConstantExpressionContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.languageDataType"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitLanguageDataType([NotNull] SPSLParser.LanguageDataTypeContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.customDataType"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitCustomDataType([NotNull] SPSLParser.CustomDataTypeContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.dataType"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

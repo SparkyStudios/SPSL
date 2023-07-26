@@ -10,6 +10,8 @@ public class MaterialVisitor : SPSLBaseVisitor<Material?>
     {
         Material material = new(context.Definition.Name.Text)
         {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
             IsAbstract = context.Definition.IsAbstract,
             ExtendedMaterial = ASTVisitor.ParseNamespacedTypeName(context.Definition.ExtendedMaterial)
         };

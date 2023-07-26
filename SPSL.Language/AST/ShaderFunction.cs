@@ -18,7 +18,7 @@ public class ShaderFunction : IAnnotable, IShaderMember, IMaterialMember
 
     public ShaderFunction(Function function)
     {
-        Annotations = new OrderedSet<Annotation>();
+        Annotations = new();
         IsOverride = false;
         Function = function;
     }
@@ -33,8 +33,19 @@ public class ShaderFunction : IAnnotable, IShaderMember, IMaterialMember
 
     #region IBlockChild Implementation
 
-    public string Name { get => ((IBlockChild)Function).Name; set => ((IBlockChild)Function).Name = value; }
+    public string Name
+    {
+        get => ((IBlockChild)Function).Name;
+        set => ((IBlockChild)Function).Name = value;
+    }
 
     #endregion
 
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
+
+    #endregion
 }

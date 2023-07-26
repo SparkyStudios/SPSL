@@ -179,7 +179,7 @@ public class Translator
 
         foreach (Namespace ns in ast)
         {
-            if (_configuration.Namespaces is null || !_configuration.Namespaces.Any(n => n.Name == ns.FullName))
+            if (_configuration.Namespaces is not null && _configuration.Namespaces.All(n => n.Name != ns.FullName))
                 continue;
 
             output.Append(Translate(ns, ast));
@@ -209,14 +209,6 @@ public class Translator
             output.AppendLine();
 
             var child = (PermutationVariable)namespaceChild;
-            output.Append(Translate(child, ns, ast));
-        }
-
-        foreach (INamespaceChild namespaceChild in ns.Where(child => child is GlobalVariable))
-        {
-            output.AppendLine();
-
-            var child = (GlobalVariable)namespaceChild;
             output.Append(Translate(child, ns, ast));
         }
 
@@ -645,7 +637,7 @@ public class Translator
                     shaderFunction.Function.Head.ReturnType = new UserDefinedDataType(new("TransientStream"));
                     shaderFunction.Function.Body.Children.Prepend
                     (
-                        new VariableDeclarationStatement()
+                        new VariableDeclarationStatement
                         {
                             Type = new UserDefinedDataType(new("TransientStream")),
                             Name = new BasicExpression("out_streams")
@@ -667,7 +659,7 @@ public class Translator
                     shaderFunction.Function.Head.ReturnType = new UserDefinedDataType(new("OutputStream"));
                     shaderFunction.Function.Body.Children.Prepend
                     (
-                        new VariableDeclarationStatement()
+                        new VariableDeclarationStatement
                         {
                             Type = new UserDefinedDataType(new("OutputStream")),
                             Name = new BasicExpression("out_streams")

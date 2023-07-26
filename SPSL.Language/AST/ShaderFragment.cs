@@ -58,7 +58,8 @@ public class ShaderFragment : INamespaceChild, IBlock
         Children = new OrderedSet<IBlockChild>(functions.Cast<IBlockChild>());
     }
 
-    public ShaderFragment(string name, IEnumerable<ShaderFunction> functions, IEnumerable<NamespacedReference> interfaces)
+    public ShaderFragment(string name, IEnumerable<ShaderFunction> functions,
+        IEnumerable<NamespacedReference> interfaces)
     {
         Name = name;
         ExtendedShaderFragment = NamespacedReference.Null;
@@ -136,6 +137,14 @@ public class ShaderFragment : INamespaceChild, IBlock
     #region IBlock Implementation
 
     public OrderedSet<IBlockChild> Children { get; }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

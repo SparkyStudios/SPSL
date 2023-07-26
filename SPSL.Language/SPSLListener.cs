@@ -1197,6 +1197,26 @@ public interface ISPSLListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitUserDefinedConstantExpression([NotNull] SPSLParser.UserDefinedConstantExpressionContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.languageDataType"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterLanguageDataType([NotNull] SPSLParser.LanguageDataTypeContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.languageDataType"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitLanguageDataType([NotNull] SPSLParser.LanguageDataTypeContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.customDataType"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterCustomDataType([NotNull] SPSLParser.CustomDataTypeContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.customDataType"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitCustomDataType([NotNull] SPSLParser.CustomDataTypeContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.dataType"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

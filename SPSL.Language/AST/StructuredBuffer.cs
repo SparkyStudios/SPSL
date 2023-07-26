@@ -34,4 +34,12 @@ public class StructuredBuffer : IShaderMember, IAnnotable
     public OrderedSet<Annotation> Annotations { get; } = new();
 
     #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
+
+    #endregion
 }

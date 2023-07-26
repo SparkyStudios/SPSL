@@ -36,7 +36,8 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
     {
         SPSLParser.BufferComponentContext bufferComponentContext = context.bufferComponent();
 
-        StreamProperty property = new(
+        StreamProperty property = new
+        (
             bufferComponentContext.Type.Accept(new DataTypeVisitor()),
             bufferComponentContext.Name.Text,
             context.Flow.Text switch
@@ -46,20 +47,13 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
                 "output" => StreamPropertyFlow.Output,
                 _ => throw new ArgumentOutOfRangeException(nameof(context.Flow), context.Flow.Text, "Invalid stream property flow.")
             }
-        );
-
-        foreach (SPSLParser.AnnotationContext annotation in context.annotation())
+        )
         {
-            property.Annotations.Add
-            (
-                new Annotation
-                {
-                    Name = annotation.Name.Text,
-                    Arguments = new(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
-                }
-            );
-        }
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
 
+        property.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation()));
         return property;
     }
 
@@ -67,30 +61,22 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
         => node is SPSLParser.ShaderMemberContext or SPSLParser.BufferDefinitionContext
             or SPSLParser.TypeContext or SPSLParser.StructContext or SPSLParser.EnumContext;
 
-    public override IShaderMember VisitInPlaceStructuredBufferDefinition([NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context)
+    public override IShaderMember VisitInPlaceStructuredBufferDefinition(
+        [NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context)
     {
         StructuredBuffer buffer = new
         (
             context.Name.Text,
-            context.bufferComponent().Select(component => ASTVisitor.ParseBufferComponent(component))
+            context.bufferComponent().Select(ASTVisitor.ParseBufferComponent)
         )
         {
             Storage = context.Storage == null ? BufferStorage.Undefined : ParseBufferStorage(context.Storage.Text),
-            Access = ParseBufferAccess(context.Access.Text)
+            Access = ParseBufferAccess(context.Access.Text),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
 
-        foreach (SPSLParser.AnnotationContext annotation in context.annotation())
-        {
-            buffer.Annotations.Add
-            (
-                new Annotation
-                {
-                    Name = annotation.Name.Text,
-                    Arguments = new(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
-                }
-            );
-        }
-
+        buffer.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation()));
         return buffer;
     }
 
@@ -103,21 +89,12 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
         )
         {
             Storage = context.Storage == null ? BufferStorage.Undefined : ParseBufferStorage(context.Storage.Text),
-            Access = ParseBufferAccess(context.Access.Text)
+            Access = ParseBufferAccess(context.Access.Text),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
 
-        foreach (SPSLParser.AnnotationContext annotation in context.annotation())
-        {
-            buffer.Annotations.Add
-            (
-                new Annotation
-                {
-                    Name = annotation.Name.Text,
-                    Arguments = new(annotation.constantExpression().Select(e => e.Accept(new ExpressionVisitor())!)),
-                }
-            );
-        }
-
+        buffer.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation()));
         return buffer;
     }
 
@@ -137,7 +114,11 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
         (
             $"@stream{++StreamCount}",
             context.streamProperty().Select(property => ParseStreamProperty(property))
-        );
+        )
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
+        };
     }
 
     public override IShaderMember? VisitGlobalVariable(SPSLParser.GlobalVariableContext context)

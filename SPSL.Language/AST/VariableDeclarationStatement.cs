@@ -11,7 +11,7 @@ public class VariableDeclarationStatement : IStayControlFlowStatement
     /// Defines if the variable is declared using the "const" modifier.
     /// </summary>
     public bool IsConst { get; init; } = false;
-    
+
     /// <summary>
     /// The type of the variable.
     /// </summary>
@@ -26,6 +26,14 @@ public class VariableDeclarationStatement : IStayControlFlowStatement
     /// The initial value of the variable.
     /// </summary>
     public IExpression? Initializer { get; init; } = null;
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

@@ -1,6 +1,6 @@
 namespace SPSL.Language.AST;
 
-public class FunctionHead : IEquatable<FunctionHead>
+public class FunctionHead : INode, IEquatable<FunctionHead>
 {
     public IDataType ReturnType { get; set; }
 
@@ -14,12 +14,21 @@ public class FunctionHead : IEquatable<FunctionHead>
         Name = name;
         Signature = signature;
     }
+    
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
+
+    #endregion
 
     #region IEquatable<FunctionHead> Implementation
 
     public bool Equals(FunctionHead? other)
     {
-        return other is not null && ReturnType.Equals(other.ReturnType) && Name.Equals(other.Name) && Signature.Equals(other.Signature);
+        return other is not null && ReturnType.Equals(other.ReturnType) && Name.Equals(other.Name) &&
+               Signature.Equals(other.Signature);
     }
 
     #endregion

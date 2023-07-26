@@ -18,22 +18,40 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
         Type type = new(tKind, tName)
         {
             ExtendedType = ASTVisitor.ParseNamespacedTypeName(context.Definition.ExtendedType),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
         };
 
         // Register struct members
         foreach (SPSLParser.StructComponentContext member in context.structComponent())
         {
-            if (member is SPSLParser.StructPropertyContext property)
+            switch (member)
             {
-                var mType = property.Type.Accept(new DataTypeVisitor());
-                var mName = property.Name.Text;
-                type.AddProperty(new TypeProperty(mType, mName));
-            }
-            else if (member is SPSLParser.StructFunctionContext function)
-            {
-                var typeFunction = new TypeFunction(ASTVisitor.ParseFunction(function.Function));
-                // TODO: Annotations
-                type.AddFunction(typeFunction);
+                case SPSLParser.StructPropertyContext property:
+                {
+                    var mType = property.Type.Accept(new DataTypeVisitor());
+                    var mName = property.Name.Text;
+                    type.AddProperty
+                    (
+                        new(mType, mName)
+                        {
+                            Start = property.Start.StartIndex,
+                            End = property.Stop.StopIndex
+                        }
+                    );
+                    break;
+                }
+                case SPSLParser.StructFunctionContext function:
+                {
+                    var typeFunction = new TypeFunction(ASTVisitor.ParseFunction(function.Function))
+                    {
+                        Start = function.Start.StartIndex,
+                        End = function.Stop.StopIndex
+                    };
+                    typeFunction.Annotations.AddRange(function.annotation().Select(a => a.ToAnnotation()));
+                    type.AddFunction(typeFunction);
+                    break;
+                }
             }
         }
 
@@ -44,7 +62,11 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
     {
         TypeKind tKind = TypeKind.Enum;
         var tName = context.Definition.Name.Text;
-        Type type = new(tKind, tName);
+        Type type = new(tKind, tName)
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
 
         uint lastValue = 0;
 
@@ -64,7 +86,15 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
                 };
             }
 
-            type.AddProperty(new TypeProperty(new PrimitiveDataType(PrimitiveDataTypeKind.UnsignedInteger), mName) { Initializer = new UnsignedIntegerLiteral(lastValue) });
+            type.AddProperty
+            (
+                new(new PrimitiveDataType(PrimitiveDataTypeKind.UnsignedInteger), mName)
+                {
+                    Initializer = new UnsignedIntegerLiteral(lastValue),
+                    Start = member.Start.StartIndex,
+                    End = member.Stop.StopIndex
+                }
+            );
             lastValue++;
         }
 

@@ -644,7 +644,7 @@ materialState
   ;
 
 materialStateComponent
-  : Name = IDENTIFIER OP_ASSIGN Value = initializationExpression
+  : Name = IDENTIFIER OP_ASSIGN Value = initializationExpression TOK_SEMICOLON
   ;
 
 // Shader variables
@@ -718,7 +718,9 @@ argList
   ;
 
 argDef
-  : Flow = (KEYWORD_IN | KEYWORD_OUT | KEYWORD_INOUT | KEYWORD_CONST)? Type = dataType Name = IDENTIFIER
+  : DOC_COMMENT* Flow = (KEYWORD_IN | KEYWORD_OUT | KEYWORD_INOUT | KEYWORD_CONST)? Type = dataType Name = IDENTIFIER (
+    OP_ASSIGN DefaultValue = constantExpression
+  )?
   ;
 
 functionBody
@@ -758,11 +760,11 @@ assignableChainedExpression
   ;
 
 propertyMemberReferenceExpression
-  : Target = (KEYWORD_THIS | KEYWORD_BASE | IDENTIFIER) TOK_DOT Member = basicExpression
+  : Target = (KEYWORD_THIS | KEYWORD_BASE) TOK_DOT Member = basicExpression
   ;
 
 methodMemberReferenceExpression
-  : Target = (KEYWORD_THIS | KEYWORD_BASE | IDENTIFIER) TOK_DOT Member = invocationExpression
+  : Target = (KEYWORD_THIS | KEYWORD_BASE) TOK_DOT Member = invocationExpression
   ;
 
 memberReferenceExpression
@@ -823,7 +825,7 @@ parenthesizedExpression
   ;
 
 newInstanceExpression
-  : Type = dataType TOK_OPEN_PAREN Parameters = parametersList? TOK_CLOSE_PAREN
+  : Type = languageDataType TOK_OPEN_PAREN Parameters = parametersList? TOK_CLOSE_PAREN
   ;
 
 parametersList
@@ -846,17 +848,17 @@ initializationExpression
 
 expressionStatement
   : basicExpression                                                                                                                       # Expression
-  | parenthesizedExpression                                                                                                               # Expression
   | primitiveExpression                                                                                                                   # Expression
-  | constantExpression                                                                                                                    # Expression
-  | memberReferenceExpression                                                                                                             # Expression
+  | newInstanceExpression                                                                                                                 # Expression
+  | parenthesizedExpression                                                                                                               # Expression
+  | propertyMemberReferenceExpression                                                                                                     # Expression
+  | methodMemberReferenceExpression                                                                                                       # Expression
   | chainedExpression                                                                                                                     # Expression
   | invocationExpression                                                                                                                  # Expression
   | arrayAccessExpression                                                                                                                 # Expression
-  | newInstanceExpression                                                                                                                 # Expression
-  | TOK_EXCLAMATION Expression = expressionStatement                                                                                      # NegateOperationExpression
   | Expression = assignableExpression Operator = (OP_INCREMENT | OP_DECREMENT)                                                            # PostfixUnaryOperationExpression
   | Operator = (OP_INCREMENT | OP_DECREMENT) Expression = assignableExpression                                                            # PrefixUnaryOperationExpression
+  | TOK_EXCLAMATION Expression = expressionStatement                                                                                      # NegateOperationExpression
   | Operator = (OP_MINUS | OP_PLUS) Expression = expressionStatement                                                                      # SignedExpression
   | Left = expressionStatement Operator = OP_LEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression
   | Left = expressionStatement Operator = OP_GEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression
@@ -897,8 +899,8 @@ arrayAccessExpression
   ;
 
 assignableExpression
-  : arrayAccessExpression
-  | basicExpression
+  : basicExpression
+  | arrayAccessExpression
   | propertyMemberReferenceExpression
   | assignableChainedExpression
   ;
@@ -958,11 +960,20 @@ constantExpression
   ;
 
 // ----- Types -----
-dataType
+languageDataType
   locals[bool IsArray, DataTypeKind DataType]
-  : primitiveDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET   {$IsArray = true;})? {$DataType = DataTypeKind.Primitive;}
-  | builtinDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET     {$IsArray = true;})? {$DataType = DataTypeKind.BuiltIn;}
-  | userDefinedDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET {$IsArray = true;})? {$DataType = DataTypeKind.UserDefined;}
+  : primitiveDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET {$IsArray = true;})? {$DataType = DataTypeKind.Primitive;}
+  | builtinDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET   {$IsArray = true;})? {$DataType = DataTypeKind.BuiltIn;}
+  ;
+
+customDataType
+  locals[bool IsArray, DataTypeKind DataType]
+  : userDefinedDataType (TOK_OPEN_BRACKET ArraySize = IntegerLiteral? TOK_CLOSE_BRACKET {$IsArray = true;})? {$DataType = DataTypeKind.UserDefined;}
+  ;
+
+dataType
+  : languageDataType
+  | customDataType
   ;
 
 userDefinedDataType

@@ -10,9 +10,9 @@ public class AST : IEnumerable<Namespace>
     {
         public int Compare(KeyValuePair<string, Namespace> x, KeyValuePair<string, Namespace> y)
         {
-            string l = x.Key;
-            string r = y.Key;
-            int f = -1;
+            var l = x.Key;
+            var r = y.Key;
+            var f = -1;
 
             if (x.Key.Length < y.Key.Length)
             {
@@ -21,7 +21,7 @@ public class AST : IEnumerable<Namespace>
                 f = 1;
             }
 
-            return l.StartsWith(r) ? f : l.CompareTo(r);
+            return l.StartsWith(r) ? f : string.Compare(l, r, StringComparison.Ordinal);
         }
     }
 
@@ -52,8 +52,8 @@ public class AST : IEnumerable<Namespace>
                     .Replace(Path.DirectorySeparatorChar.ToString(), "::");
                 var pos = ns.LastIndexOf("::", StringComparison.Ordinal);
 
-                var mode = file.EndsWith(".spslm", StringComparison.Ordinal) ? ParseFileMode.Material : ParseFileMode.Shader;
-                var parsed = ParseFile(mode, file, paths, importedNamespaces);
+                ParseFileMode mode = file.EndsWith(".spslm", StringComparison.Ordinal) ? ParseFileMode.Material : ParseFileMode.Shader;
+                AST parsed = ParseFile(mode, file, paths, importedNamespaces);
 
                 if (pos >= 0)
                 {
@@ -121,7 +121,7 @@ public class AST : IEnumerable<Namespace>
 
     public AST AddNamespace(Namespace ns)
     {
-        if (_namespaces.TryGetValue(ns.FullName, out var found))
+        if (_namespaces.TryGetValue(ns.FullName, out Namespace? found))
             found.Merge(ns);
         else
             _namespaces.Add(ns.FullName, ns);
@@ -138,7 +138,7 @@ public class AST : IEnumerable<Namespace>
 
     public Namespace? GetNamespace(string name)
     {
-        return _namespaces.TryGetValue(name, out var found) ? found : null;
+        return _namespaces.TryGetValue(name, out Namespace? found) ? found : null;
     }
 
     public AST Merge(AST ast)

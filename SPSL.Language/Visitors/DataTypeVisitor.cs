@@ -29,12 +29,27 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
         }
     }
 
-    public override IDataType VisitDataType(SPSLParser.DataTypeContext context)
+    public override IDataType VisitLanguageDataType(SPSLParser.LanguageDataTypeContext context)
     {
         IDataType type = context.DataType switch
         {
             DataTypeKind.Primitive => context.primitiveDataType().Accept(this),
             DataTypeKind.BuiltIn => context.builtinDataType().Accept(this),
+            _ => DefaultResult,
+        };
+
+        type.IsArray = context.IsArray;
+
+        if (context.ArraySize != null)
+            type.ArraySize = uint.Parse(context.ArraySize.Text.TrimEnd('u', 'U'));
+
+        return type;
+    }
+    
+    public override IDataType VisitCustomDataType(SPSLParser.CustomDataTypeContext context)
+    {
+        IDataType type = context.DataType switch
+        {
             DataTypeKind.UserDefined => context.userDefinedDataType().Accept(this),
             _ => DefaultResult,
         };
@@ -61,7 +76,11 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
             _ => throw new NotSupportedException("The given primitive type is not supported."),
         };
 
-        return new PrimitiveDataType(kind);
+        return new PrimitiveDataType(kind)
+        {
+            Start = context.Start.Line,
+            End = context.Stop.Line,
+        };
     }
 
     public override IDataType VisitBuiltinDataType(SPSLParser.BuiltinDataTypeContext context)
@@ -102,11 +121,19 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
             _ => throw new NotSupportedException("The given primitive type is not supported."),
         };
 
-        return new BuiltInDataType(kind);
+        return new BuiltInDataType(kind)
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
     }
 
     public override IDataType VisitUserDefinedDataType(SPSLParser.UserDefinedDataTypeContext context)
     {
-        return new UserDefinedDataType(new NamespacedReference(context.Type.GetText()));
+        return new UserDefinedDataType(new(context.Type.GetText()))
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex
+        };
     }
 }

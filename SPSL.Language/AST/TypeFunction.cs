@@ -17,7 +17,7 @@ public class TypeFunction : IAnnotable, IBlockChild
 
     public TypeFunction(Function function)
     {
-        Annotations = new OrderedSet<Annotation>();
+        Annotations = new();
         Function = function;
     }
 
@@ -31,7 +31,19 @@ public class TypeFunction : IAnnotable, IBlockChild
 
     #region IBlockChild Implementation
 
-    public string Name { get => ((IBlockChild)Function).Name; set => ((IBlockChild)Function).Name = value; }
+    public string Name
+    {
+        get => ((IBlockChild)Function).Name;
+        set => ((IBlockChild)Function).Name = value;
+    }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

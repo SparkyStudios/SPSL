@@ -33,7 +33,9 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
         Shader shader = new(sStage, sName)
         {
             IsAbstract = context.IsAbstract,
-            ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader)
+            ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
         };
 
         if (context.Interfaces is not null)
@@ -56,7 +58,9 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
         Shader shader = new(sName, @params)
         {
             IsAbstract = false,
-            ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader)
+            ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
         };
 
         if (context.Interfaces is not null)

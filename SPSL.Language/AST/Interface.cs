@@ -3,7 +3,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent an SPSL shader interface.
 /// </summary>
-public class Interface : INamespaceChild
+public class Interface : INamespaceChild, INode
 {
     #region Properties
 
@@ -22,7 +22,8 @@ public class Interface : INamespaceChild
         FunctionHeads = new HashSet<FunctionHead>();
     }
 
-    public Interface(string name, IEnumerable<NamespacedReference> extendedInterfaces, IEnumerable<FunctionHead> functionHeads)
+    public Interface(string name, IEnumerable<NamespacedReference> extendedInterfaces,
+        IEnumerable<FunctionHead> functionHeads)
     {
         Name = name;
         ExtendedInterfaces = new HashSet<NamespacedReference>(extendedInterfaces);
@@ -62,6 +63,14 @@ public class Interface : INamespaceChild
     /// The namespace's name.
     /// </summary>
     public string Name { get; set; }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

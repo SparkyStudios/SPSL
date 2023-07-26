@@ -77,8 +77,17 @@ public class BuiltInDataType : IDataType
     /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
     public bool Equals(IDataType? other)
     {
-        return other is BuiltInDataType otherType && Type == otherType.Type && IsArray == otherType.IsArray && ArraySize == otherType.ArraySize;
+        return other is BuiltInDataType otherType && Type == otherType.Type && IsArray == otherType.IsArray &&
+               ArraySize == otherType.ArraySize;
     }
+
+    #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
 
     #endregion
 }

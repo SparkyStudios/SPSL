@@ -1422,6 +1422,30 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitUserDefinedConstantExpression([NotNull] SPSLParser.UserDefinedConstantExpressionContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.languageDataType"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterLanguageDataType([NotNull] SPSLParser.LanguageDataTypeContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.languageDataType"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitLanguageDataType([NotNull] SPSLParser.LanguageDataTypeContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.customDataType"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterCustomDataType([NotNull] SPSLParser.CustomDataTypeContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.customDataType"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitCustomDataType([NotNull] SPSLParser.CustomDataTypeContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.dataType"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>

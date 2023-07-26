@@ -13,7 +13,7 @@ public class StatementBlock : IStatement
 
     public StatementBlock(params IStatement[] children)
     {
-        Children = new OrderedSet<IStatement>(children);
+        Children = new(children);
     }
 
     #endregion
@@ -24,4 +24,11 @@ public class StatementBlock : IStatement
 
     #endregion
 
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
+
+    #endregion
 }

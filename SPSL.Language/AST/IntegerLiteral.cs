@@ -41,4 +41,12 @@ public class IntegerLiteral : ILiteral
     object ILiteral.Value { get; set; } = null!;
 
     #endregion
+
+    #region INode Implementation
+
+    public int Start { get; init; }
+
+    public int End { get; init; }
+
+    #endregion
 }
