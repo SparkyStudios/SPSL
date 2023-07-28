@@ -12,6 +12,7 @@ public class SyntaxDiagnosticService : IDiagnosticService
     private class SyntaxErrorListener : BaseErrorListener
     {
         private const string SourceName = "spsl-syntax-analyzer";
+        private const string DiagnosticId = "SPSL_SYNTAX_ERROR";
 
         private readonly ConfigurationService _configurationService;
         private readonly List<Diagnostic> _diagnostics;
@@ -54,13 +55,14 @@ public class SyntaxDiagnosticService : IDiagnosticService
                 Range = range,
                 Message = msg,
                 Source = SourceName,
+                Code = DiagnosticId,
                 RelatedInformation = _configurationService.HasDiagnosticRelatedInformationCapability
-                    ? new Container<DiagnosticRelatedInformation>
+                    ? new
                     (
                         new DiagnosticRelatedInformation
                         {
                             Message = $"Syntax Error: {msg}",
-                            Location = new Location
+                            Location = new()
                             {
                                 Uri = _document.Uri,
                                 Range = range
@@ -74,27 +76,25 @@ public class SyntaxDiagnosticService : IDiagnosticService
         }
     }
 
-    private readonly ConcurrentDictionary<DocumentUri, List<Diagnostic>> _diagnostics = new();
+    private readonly ConcurrentDictionary<DocumentUri, List<Diagnostic>> _cache = new();
 
     private readonly DocumentManagerService _documentManagerService;
     private readonly ConfigurationService _configurationService;
-    private readonly AstProviderService _astProviderService;
-
-    public event EventHandler<DiagnosticReadyEventArgs>? DiagnosticReady;
+    private readonly TokenProviderService _tokenProviderService;
 
     public SyntaxDiagnosticService
     (
         DocumentManagerService documentManagerService,
         ConfigurationService configurationService,
-        AstProviderService astProviderService
+        TokenProviderService tokenProviderService
     )
     {
         _documentManagerService = documentManagerService;
         _configurationService = configurationService;
-        _astProviderService = astProviderService;
+        _tokenProviderService = tokenProviderService;
 
-        _astProviderService.CollectParserErrorListeners += OnCollectParserErrorListeners;
-        _astProviderService.DocumentAstChanged += OnDocumentAstChanged;
+        _tokenProviderService.CollectParserErrorListeners += OnCollectParserErrorListeners;
+        _tokenProviderService.DataUpdated += TokenProviderServiceOnDataUpdated;
     }
 
     private void OnCollectParserErrorListeners(object? sender, CollectParserErrorListenersEventArgs e)
@@ -104,7 +104,7 @@ public class SyntaxDiagnosticService : IDiagnosticService
 
         Document document = _documentManagerService.GetDocument(e.Uri);
 
-        var diagnostics = _diagnostics.GetOrAdd(e.Uri, new List<Diagnostic>());
+        var diagnostics = _cache.GetOrAdd(e.Uri, new List<Diagnostic>());
         diagnostics.Clear();
 
         SyntaxErrorListener listener = new
@@ -117,20 +117,43 @@ public class SyntaxDiagnosticService : IDiagnosticService
         e.ErrorListeners.Add(listener);
     }
 
-    private void OnDocumentAstChanged(object? sender, DocumentAstEventArgs e)
+    private void TokenProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<ParserRuleContext> e)
     {
-        DiagnosticReady?.Invoke
+        DataUpdated?.Invoke
         (
             this,
-            new(e.Uri, new(_diagnostics.GetOrAdd(e.Uri, new List<Diagnostic>())))
+            new(e.Uri, GetData(e.Uri) ?? new())
         );
     }
+
+    #region IDiagnosticService Implementation
 
     public IEnumerable<Diagnostic> Diagnose(DocumentUri uri, CancellationToken cancellationToken)
     {
         if (!_documentManagerService.HasDocument(uri))
             return ArraySegment<Diagnostic>.Empty;
 
-        return _diagnostics.TryGetValue(uri, out var diagnostics) ? diagnostics : ArraySegment<Diagnostic>.Empty;
+        return _cache.TryGetValue(uri, out var diagnostics) ? diagnostics : ArraySegment<Diagnostic>.Empty;
     }
+
+    #endregion
+
+    #region IProviderService<Container<Diagnostic>> Implementation
+
+    public event EventHandler<ProviderDataUpdatedEventArgs<Container<Diagnostic>>>? DataUpdated;
+
+    public Container<Diagnostic>? GetData(DocumentUri uri)
+    {
+        return _cache.TryGetValue(uri, out var diagnostics) ? new(diagnostics) : null;
+    }
+
+    public void SetData(DocumentUri uri, Container<Diagnostic> data, bool notify = true)
+    {
+        _cache.AddOrUpdate(uri, data.ToList(), (k, v) => data.ToList());
+
+        if (!notify) return;
+        DataUpdated?.Invoke(this, new(uri, data));
+    }
+
+    #endregion
 }

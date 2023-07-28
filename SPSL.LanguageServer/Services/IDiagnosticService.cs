@@ -4,9 +4,7 @@ using SPSL.LanguageServer.Core;
 
 namespace SPSL.LanguageServer.Services;
 
-public interface IDiagnosticService
+public interface IDiagnosticService : IProviderService<Container<Diagnostic>>
 {
-    public event EventHandler<DiagnosticReadyEventArgs>? DiagnosticReady;
-
     public IEnumerable<Diagnostic> Diagnose(DocumentUri uri, CancellationToken cancellationToken);
 }

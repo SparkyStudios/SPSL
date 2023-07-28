@@ -70,13 +70,13 @@ public class Document
     /// <summary>
     /// The document version.
     /// </summary>
-    public int? Version { get; set; } = null;
+    public int? Version { get; set; }
 
     /// <summary>
     /// Gets the number of lines in this document.
     /// </summary>
     public int LineCount => GetLineOffsets().Count();
-    
+
     public Document(DocumentUri uri, string languageId, int? version = null, string? initialContent = null)
     {
         Uri = uri;
@@ -139,22 +139,8 @@ public class Document
                 }
                 else
                 {
-                    if (addedLineOffsets.Count < 10000)
-                    {
-                        Console.WriteLine($"{lineOffsets.Count} ---- {startLine + 1} ---- {endLine - startLine}");
-                        lineOffsets.RemoveRange(startLine + 1, endLine - startLine);
-                        lineOffsets.InsertRange(startLine + 1, addedLineOffsets);
-                    }
-                    else
-                    {
-                        var part1 = lineOffsets.GetRange(0, startLine + 1);
-                        var part2 = lineOffsets.GetRange(endLine + 1, lineOffsets.Count - endLine);
-
-                        part1.AddRange(addedLineOffsets);
-                        part1.AddRange(part2);
-
-                        _lineOffsets = lineOffsets = part1;
-                    }
+                    lineOffsets.RemoveRange(startLine + 1, endLine - startLine);
+                    lineOffsets.InsertRange(startLine + 1, addedLineOffsets);
                 }
 
                 var diff = change.Text.Length - (endOffset - startOffset);
@@ -212,7 +198,7 @@ public class Document
     public int OffsetAt(Position position)
     {
         var lineOffsets = GetLineOffsets() as List<int> ?? GetLineOffsets().ToList();
-        
+
         if (position.Line >= lineOffsets.Count)
             return _content.Length;
 

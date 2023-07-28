@@ -42,12 +42,15 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
         _syntaxDiagnosticService = syntaxDiagnosticService;
 
         _documentManagerService.DocumentContentChanged += DocumentManagerServiceOnDocumentContentChanged;
-        _documentManagerService.DocumentRemoved += DocumentManagerServiceOnDocumentRemoved;
 
-        _syntaxDiagnosticService.DiagnosticReady += SyntaxDiagnosticServiceOnDiagnosticReady;
+        _syntaxDiagnosticService.DataUpdated += SyntaxDiagnosticServiceOnDataUpdated;
     }
 
-    private void SyntaxDiagnosticServiceOnDiagnosticReady(object? sender, DiagnosticReadyEventArgs e)
+    private void SyntaxDiagnosticServiceOnDataUpdated
+    (
+        object? sender,
+        ProviderDataUpdatedEventArgs<Container<Diagnostic>> e
+    )
     {
         if (!_documentManagerService.HasDocument(e.Uri))
             return;
@@ -60,7 +63,7 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
             {
                 Uri = document.Uri,
                 Version = document.Version,
-                Diagnostics = e.Diagnostics
+                Diagnostics = e.Data
             }
         );
     }
@@ -68,18 +71,6 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
     private void DocumentManagerServiceOnDocumentContentChanged(object? sender, DocumentEventArgs e)
     {
         _router.Window.LogInfo($"Document content changed: {e.Uri}");
-    }
-
-    private void DocumentManagerServiceOnDocumentRemoved(object? sender, DocumentEventArgs e)
-    {
-        _router.TextDocument.PublishDiagnostics
-        (
-            new()
-            {
-                Uri = e.Uri,
-                Diagnostics = new()
-            }
-        );
     }
 
     TextDocumentOpenRegistrationOptions
@@ -178,6 +169,6 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
 
     public TextDocumentAttributes GetTextDocumentAttributes(DocumentUri uri)
     {
-        return new(uri, "spsl");
+        return new(uri, "file", "spsl");
     }
 }

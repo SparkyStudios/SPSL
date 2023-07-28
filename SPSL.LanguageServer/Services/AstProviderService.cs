@@ -1,61 +1,53 @@
 ﻿using System.Collections.Concurrent;
 using Antlr4.Runtime;
 using OmniSharp.Extensions.LanguageServer.Protocol;
-using SPSL.Language;
 using SPSL.Language.AST;
 using SPSL.Language.Visitors;
 using SPSL.LanguageServer.Core;
 
 namespace SPSL.LanguageServer.Services;
 
-public class AstProviderService
+/// <summary>
+/// <see cref="IProviderService{AST}" /> implementation that provides <see cref="AST" /> data.
+/// </summary>
+public class AstProviderService : IProviderService<AST>
 {
-    private readonly ConcurrentDictionary<DocumentUri, AST> _documentAst = new();
+    private readonly ConcurrentDictionary<DocumentUri, AST> _cache = new();
 
-    private readonly DocumentManagerService _documentManagerService;
-    private readonly List<IParserErrorListener> _errorListeners = new();
+    private readonly TokenProviderService _tokenProviderService;
 
-    public event EventHandler<DocumentAstEventArgs>? DocumentAstChanged;
-    public event EventHandler<CollectParserErrorListenersEventArgs>? CollectParserErrorListeners;
-
-    public AstProviderService(DocumentManagerService documentManagerService)
+    public AstProviderService(TokenProviderService tokenProviderService)
     {
-        _documentManagerService = documentManagerService;
+        _tokenProviderService = tokenProviderService;
 
-        _documentManagerService.DocumentContentChanged += OnDocumentContentChanged;
+        _tokenProviderService.DataUpdated += TokenProviderServiceOnDataUpdated;
     }
 
-    private void OnDocumentContentChanged(object? sender, DocumentEventArgs e)
+    private void TokenProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<ParserRuleContext> e)
     {
-        Document document = _documentManagerService.GetDocument(e.Uri);
-
-        SPSLLexer lexer = new(new AntlrInputStream(document.GetText()));
-        lexer.RemoveErrorListeners();
-
-        SPSLParser parser = new(new CommonTokenStream(lexer));
-        parser.RemoveErrorListeners();
-
-        List<IAntlrErrorListener<IToken>> tempListeners = new();
-        CollectParserErrorListeners?.Invoke(this, new(e.Uri) { ErrorListeners = tempListeners });
-        tempListeners.AddRange(_errorListeners);
-        parser.AddErrorListener(new ProxyParserErrorListener(tempListeners));
-
-        ParserRuleContext tree = document.Uri.Path.EndsWith(".spslm") ? parser.materialFile() : parser.shaderFile();
-
         ASTVisitor visitor = new(e.Uri.ToString());
-        AST ast = visitor.Visit(tree);
+        AST ast = visitor.Visit(e.Data);
 
-        _documentAst.AddOrUpdate(document.Uri, ast, (_, _) => ast);
-        DocumentAstChanged?.Invoke(this, new(document.Uri, ast));
+        _cache.AddOrUpdate(e.Uri, ast, (_, _) => ast);
+        DataUpdated?.Invoke(this, new(e.Uri, ast));
     }
 
-    public void AddParserErrorListener(IParserErrorListener errorListener)
+    #region IProviderService<AST> Implementation
+
+    public event EventHandler<ProviderDataUpdatedEventArgs<AST>>? DataUpdated;
+
+    public AST? GetData(DocumentUri uri)
     {
-        _errorListeners.Add(errorListener);
+        return _cache.TryGetValue(uri, out AST? ast) ? ast : null;
     }
 
-    public void RemoveParserErrorListener(IParserErrorListener errorListener)
+    public void SetData(DocumentUri uri, AST data, bool notify = true)
     {
-        _errorListeners.Remove(errorListener);
+        _cache.AddOrUpdate(uri, data, (_, _) => data);
+
+        if (!notify) return;
+        DataUpdated?.Invoke(this, new(uri, data));
     }
+
+    #endregion
 }

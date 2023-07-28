@@ -14,12 +14,18 @@ static void ConfigureServices(IServiceCollection services)
 {
     services.AddSingleton<DocumentManagerService>();
     services.AddSingleton<ConfigurationService>();
-    services.AddSingleton<SyntaxDiagnosticService>();
+    services.AddSingleton<TokenProviderService>();
     services.AddSingleton<AstProviderService>();
+    services.AddSingleton<SyntaxDiagnosticService>();
+    services.AddSingleton<SymbolProviderService>();
 }
 
-static Task<InitializeResult> OnInitialize(ILanguageServer languageServer, InitializeParams request,
-    CancellationToken cancellationToken)
+static Task<InitializeResult> OnInitialize
+(
+    ILanguageServer languageServer,
+    InitializeParams request,
+    CancellationToken cancellationToken
+)
 {
     ClientCapabilities? capabilities = request.Capabilities;
 
@@ -89,6 +95,7 @@ try
             .WithServices(ConfigureServices)
             .WithHandler<TextDocumentSyncHandler>()
             .WithHandler<HoverHandler>()
+            .WithHandler<CompletionHandler>()
             .OnInitialize(OnInitialize)
     );
 }
