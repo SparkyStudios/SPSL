@@ -5,9 +5,9 @@ namespace SPSL.Language.AST;
 /// </summary>
 public interface INode
 {
-    public int Start { get; init; }
+    public int Start { get; internal set; }
     
-    public int End { get; init; }
+    public int End { get; internal set; }
     
     public string Source { get; internal set; }
 }

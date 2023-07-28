@@ -71,6 +71,19 @@ public class NamespacedReference : IEquatable<NamespacedReference>
 
     #region Overrides
 
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+        return Equals((NamespacedReference)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return Name.GetHashCode();
+    }
+
     public override string ToString()
     {
         return Name;

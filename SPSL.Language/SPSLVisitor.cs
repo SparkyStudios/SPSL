@@ -190,11 +190,17 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.useDirective"/>.
+	/// Visit a parse tree produced by <see cref="SPSLParser.useNamespaceDirective"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitUseDirective([NotNull] SPSLParser.UseDirectiveContext context);
+	Result VisitUseNamespaceDirective([NotNull] SPSLParser.UseNamespaceDirectiveContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.useFragmentDirective"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitUseFragmentDirective([NotNull] SPSLParser.UseFragmentDirectiveContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.streamProperty"/>.
 	/// </summary>

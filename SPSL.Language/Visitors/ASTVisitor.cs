@@ -99,7 +99,7 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
-    public override AST.AST VisitUseDirective(SPSLParser.UseDirectiveContext context)
+    public override AST.AST VisitUseNamespaceDirective(SPSLParser.UseNamespaceDirectiveContext context)
     {
         Imports.Add(context.namespacedTypeName().GetText());
         return DefaultResult.AddNamespace(_currentNamespace);
@@ -179,14 +179,14 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
 
         // --- Use Directives
 
-        foreach (SPSLParser.UseDirectiveContext use in context.useDirective())
+        foreach (SPSLParser.UseFragmentDirectiveContext use in context.useFragmentDirective())
             fragment.Uses(ParseNamespacedTypeName(use.Name));
 
         // --- Permutation variables
 
         foreach (SPSLParser.PermutationVariableContext variable in context.permutationVariable())
         {
-            PermutationVariable permutation = variable.ToPermutationVariable(_fileSource);
+            var permutation = variable.ToPermutationVariable(_fileSource);
             permutation.Parent = _currentNamespace;
 
             fragment.AddPermutationVariable(permutation);
@@ -210,7 +210,11 @@ public class ASTVisitor : SPSLBaseVisitor<AST.AST>
         // --- Functions
 
         foreach (SPSLParser.ShaderFunctionContext function in context.shaderFunction())
-            fragment.AddFunction(function.Accept(new ShaderFunctionVisitor(_fileSource))!);
+        {
+            ShaderFunction? f = function.Accept(new ShaderFunctionVisitor(_fileSource));
+            if (f is null) continue;
+            fragment.AddFunction(f);
+        }
 
         _currentNamespace.AddChild(fragment);
 

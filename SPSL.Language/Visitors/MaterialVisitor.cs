@@ -24,8 +24,13 @@ public class MaterialVisitor : SPSLBaseVisitor<Material?>
             Source = _fileSource
         };
 
-        foreach (SPSLParser.MaterialMemberContext member in context.materialMember())
-            material.Children.Add(member.Accept(new MaterialMemberVisitor(_fileSource))!);
+        material.Children.AddRange
+        (
+            context.materialMember()
+                .Select(m => m.Accept(new MaterialMemberVisitor(_fileSource)))
+                .Where(m => m is not null)
+                .Cast<IMaterialMember>()
+        );
 
         return material;
     }

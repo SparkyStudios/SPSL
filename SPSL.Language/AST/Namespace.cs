@@ -162,11 +162,11 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 
     #region INode Implementation
 
-    public string Source { get; set; }
+    public string Source { get; set; } = null!;
 
-    public int Start { get; init; } = -1;
+    public int Start { get; set; } = -1;
 
-    public int End { get; init; } = -1;
+    public int End { get; set; } = -1;
 
     #endregion
 }

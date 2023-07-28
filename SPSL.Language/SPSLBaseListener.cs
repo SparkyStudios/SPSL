@@ -348,17 +348,29 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="SPSLParser.useDirective"/>.
+	/// Enter a parse tree produced by <see cref="SPSLParser.useNamespaceDirective"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterUseDirective([NotNull] SPSLParser.UseDirectiveContext context) { }
+	public virtual void EnterUseNamespaceDirective([NotNull] SPSLParser.UseNamespaceDirectiveContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="SPSLParser.useDirective"/>.
+	/// Exit a parse tree produced by <see cref="SPSLParser.useNamespaceDirective"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitUseDirective([NotNull] SPSLParser.UseDirectiveContext context) { }
+	public virtual void ExitUseNamespaceDirective([NotNull] SPSLParser.UseNamespaceDirectiveContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.useFragmentDirective"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterUseFragmentDirective([NotNull] SPSLParser.UseFragmentDirectiveContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.useFragmentDirective"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitUseFragmentDirective([NotNull] SPSLParser.UseFragmentDirectiveContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="SPSLParser.streamProperty"/>.
 	/// <para>The default implementation does nothing.</para>

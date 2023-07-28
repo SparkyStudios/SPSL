@@ -156,10 +156,14 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
             Source = _fileSource
         };
 
-        shader.Children.AddRange(
-            context.shaderFunction().Select(f => f.Accept(new ShaderFunctionVisitor(_fileSource))!));
-        shader.ImportedShaderFragments.AddRange(context.useDirective()
-            .Select(c => ASTVisitor.ParseNamespacedTypeName(c.Name)));
+        shader.Children.AddRange
+        (
+            context.shaderFunction().Select(f => f.Accept(new ShaderFunctionVisitor(_fileSource))!)
+        );
+        shader.ImportedShaderFragments.AddRange
+        (
+            context.useFragmentDirective().Select(c => ASTVisitor.ParseNamespacedTypeName(c.Name))
+        );
 
         return shader;
     }

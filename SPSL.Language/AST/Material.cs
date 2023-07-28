@@ -50,11 +50,11 @@ public class Material : INamespaceChild, IBlock
 
     #region INode Implementation
 
-    public string Source { get; set; }
+    public string Source { get; set; } = null!;
 
-    public int Start { get; init; }
+    public int Start { get; set; } = -1;
 
-    public int End { get; init; }
+    public int End { get; set; } = -1;
 
     #endregion
 }

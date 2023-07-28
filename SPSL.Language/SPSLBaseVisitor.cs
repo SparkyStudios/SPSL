@@ -293,7 +293,7 @@ public partial class SPSLBaseVisitor<Result> : AbstractParseTreeVisitor<Result>,
 	/// <return>The visitor result.</return>
 	public virtual Result VisitComputeShaderDefinition([NotNull] SPSLParser.ComputeShaderDefinitionContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="SPSLParser.useDirective"/>.
+	/// Visit a parse tree produced by <see cref="SPSLParser.useNamespaceDirective"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -301,7 +301,17 @@ public partial class SPSLBaseVisitor<Result> : AbstractParseTreeVisitor<Result>,
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitUseDirective([NotNull] SPSLParser.UseDirectiveContext context) { return VisitChildren(context); }
+	public virtual Result VisitUseNamespaceDirective([NotNull] SPSLParser.UseNamespaceDirectiveContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.useFragmentDirective"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitUseFragmentDirective([NotNull] SPSLParser.UseFragmentDirectiveContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="SPSLParser.streamProperty"/>.
 	/// <para>

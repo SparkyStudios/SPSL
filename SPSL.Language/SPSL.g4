@@ -445,11 +445,11 @@ OP_RSHIFT
  Parser rules
  */
 shaderFile
-  : Directives = directive* DOC_COMMENT* Namespace = namespaceDefinition? (DOC_COMMENT* useDirective)* FileLevelDefinitions = fileLevelDefinition* EOF
+  : Directives = directive* DOC_COMMENT* Namespace = namespaceDefinition? (DOC_COMMENT* useNamespaceDirective)* FileLevelDefinitions = fileLevelDefinition* EOF
   ;
 
 materialFile
-  : Directives = directive* DOC_COMMENT* Namespace = namespaceDefinition? (DOC_COMMENT* useDirective)* Material = material EOF
+  : Directives = directive* DOC_COMMENT* Namespace = namespaceDefinition? (DOC_COMMENT* useNamespaceDirective)* Material = material EOF
   ;
 
 namespaceDefinition
@@ -517,8 +517,8 @@ interfacesList
   ;
 
 shaderFragment
-  : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
-    DOC_COMMENT* (shaderMember | permutationVariable | shaderFunction)
+  : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (
+    DOC_COMMENT* (shaderMember | permutationVariable | shaderFunction | useFragmentDirective)
   )* TOK_CLOSE_BRACE
   ;
 
@@ -529,15 +529,13 @@ shaderFragmentDefinition
   ;
 
 shader
-  : DOC_COMMENT* Definition = shaderDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
-    DOC_COMMENT* (shaderMember | shaderFunction)
+  : DOC_COMMENT* Definition = shaderDefinition TOK_OPEN_BRACE (
+    DOC_COMMENT* (shaderMember | shaderFunction | useFragmentDirective)
   )* TOK_CLOSE_BRACE
   ;
 
 material
-  : DOC_COMMENT* Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* useDirective)* (
-    DOC_COMMENT* materialMember
-  )* TOK_CLOSE_BRACE
+  : DOC_COMMENT* Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* (materialMember | useFragmentDirective))* TOK_CLOSE_BRACE
   ;
 
 stream
@@ -565,8 +563,12 @@ shaderDefinition
   )? # ComputeShaderDefinition
   ;
 
-useDirective
-  : KEYWORD_USE Name = namespacedTypeName TOK_SEMICOLON
+useNamespaceDirective
+  : KEYWORD_USE KEYWORD_NAMESPACE Name = namespacedTypeName TOK_SEMICOLON
+  ;
+
+useFragmentDirective
+  : KEYWORD_USE KEYWORD_FRAGMENT Name = namespacedTypeName TOK_SEMICOLON
   ;
 
 streamProperty
@@ -605,7 +607,7 @@ materialShaderUsageDefinition
 materialShaderUsage
   : Definition = materialShaderUsageDefinition TOK_SEMICOLON # SimpleMaterialShaderUsage
   | Definition = materialShaderUsageDefinition (KEYWORD_AS Name = IDENTIFIER)? TOK_OPEN_BRACE (
-    DOC_COMMENT* (shaderFunction | useDirective)
+    DOC_COMMENT* (shaderFunction | useFragmentDirective)
   )* TOK_CLOSE_BRACE # CustomizedMaterialShaderUsage
   ;
 

@@ -35,7 +35,7 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
             null => ShaderStage.Unspecified,
             _ => GetShaderStage(context.Type.Text)
         };
-        var sName = context.Name.Text;
+        var sName = context.Name?.Text ?? "UnknownShader";
 
         Shader shader = new(sStage, sName)
         {
@@ -84,10 +84,12 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
         // --- Shader Definition
 
         Shader shader = context.Definition.Accept(this)!;
+        shader.Start = context.Start.StartIndex;
+        shader.End = context.Stop.StopIndex;
 
         // --- Use Directives
 
-        foreach (SPSLParser.UseDirectiveContext use in context.useDirective())
+        foreach (SPSLParser.UseFragmentDirectiveContext use in context.useFragmentDirective())
             shader.Uses(ASTVisitor.ParseNamespacedTypeName(use.Name));
 
         // --- Shader Members
