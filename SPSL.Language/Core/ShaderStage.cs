@@ -1,8 +1,10 @@
-namespace SPSL.Language.AST;
+namespace SPSL.Language.Core;
 
 public enum ShaderStage
 {
     Unspecified,
+    Unknown,
+
     Vertex,
     Pixel,
     Geometry,

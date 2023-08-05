@@ -649,11 +649,6 @@ materialStateComponent
   : Name = IDENTIFIER OP_ASSIGN Value = initializationExpression TOK_SEMICOLON
   ;
 
-// Shader variables
-localVarDeclaration
-  : annotation* KEYWORD_LOCAL Type = dataType IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_SEMICOLON
-  ;
-
 // Uniform block for GLSL CBuffer for HLSL
 bufferDefinition
   : annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite' | 'constant')? KEYWORD_BUFFER Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent*

@@ -11,6 +11,9 @@
 // Generated from d:\sparky_studios\SPSL\SPSL.Language\SPSL.g4 by ANTLR 4.13.0
 
 // Unreachable code detected
+
+using SPSL.Language.Core;
+
 #pragma warning disable 0162
 // The variable '...' is assigned but its value is never used
 #pragma warning disable 0219

@@ -22,7 +22,7 @@ public class SymbolProviderService : IProviderService<SymbolTable>
 
     private void TokenProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<ParserRuleContext> e)
     {
-        SymbolListener listener = new();
+        SymbolListener listener = new(e.Uri.ToString());
         ParseTreeWalker.Default.Walk(listener, e.Data);
 
         _cache.AddOrUpdate(e.Uri, listener.GlobalSymbolTable, (_, _) => listener.GlobalSymbolTable);

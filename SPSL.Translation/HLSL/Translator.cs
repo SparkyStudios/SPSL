@@ -2,6 +2,7 @@ using System.Text;
 using Antlr4.StringTemplate;
 using SPSL.Language;
 using SPSL.Language.AST;
+using SPSL.Language.Core;
 using SPSL.Translation.Common;
 using Stream = SPSL.Language.AST.Stream;
 using Type = SPSL.Language.AST.Type;

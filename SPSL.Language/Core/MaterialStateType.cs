@@ -1,4 +1,6 @@
-namespace SPSL.Language.AST;
+using SPSL.Language.AST;
+
+namespace SPSL.Language.Core;
 
 /// <summary>
 /// Defines the type of a <see cref="MaterialState"/>.

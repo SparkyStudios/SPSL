@@ -1,6 +1,8 @@
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
+using SPSL.Language.Core;
+using SPSL.Language.Utils;
 using Stream = SPSL.Language.AST.Stream;
 
 namespace SPSL.Language.Visitors;
@@ -16,27 +18,6 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
     public ShaderMemberVisitor(string fileSource)
     {
         _fileSource = fileSource;
-    }
-
-    private static BufferStorage ParseBufferStorage(string storage)
-    {
-        return storage switch
-        {
-            "coherent" => BufferStorage.Coherent,
-            _ => BufferStorage.Undefined
-        };
-    }
-
-    private static BufferAccess ParseBufferAccess(string access)
-    {
-        return access switch
-        {
-            "readonly" => BufferAccess.ReadOnly,
-            "writeonly" => BufferAccess.WriteOnly,
-            "readwrite" => BufferAccess.ReadWrite,
-            "constant" => BufferAccess.Constant,
-            _ => BufferAccess.ReadOnly
-        };
     }
 
     private StreamProperty ParseStreamProperty(SPSLParser.StreamPropertyContext context)
@@ -79,8 +60,8 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             context.bufferComponent().Select(c => c.ToTypeProperty(_fileSource))
         )
         {
-            Storage = context.Storage == null ? BufferStorage.Undefined : ParseBufferStorage(context.Storage.Text),
-            Access = ParseBufferAccess(context.Access.Text),
+            Storage = context.Storage == null ? BufferStorage.Undefined : context.Storage.Text.ToBufferStorage(),
+            Access = context.Access.Text.ToBufferAccess(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource
@@ -98,8 +79,8 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             context.dataType().Accept(new DataTypeVisitor(_fileSource))
         )
         {
-            Storage = context.Storage == null ? BufferStorage.Undefined : ParseBufferStorage(context.Storage.Text),
-            Access = ParseBufferAccess(context.Access.Text),
+            Storage = context.Storage == null ? BufferStorage.Undefined : context.Storage.Text.ToBufferStorage(),
+            Access = context.Access.Text.ToBufferAccess(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource

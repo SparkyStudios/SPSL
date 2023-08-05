@@ -3,15 +3,19 @@
 public enum SymbolType : byte
 {
     Unknown = 0,
+    Invalid = 1,
 
     Namespace,
     Permutation,
     Scope,
     Variable,
+    Property,
     Function,
-    Type,
+    Parameter,
+    Struct,
     Enum,
     Shader,
     Material,
-    Fragment
+    Fragment,
+    Buffer,
 }

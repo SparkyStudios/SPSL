@@ -1,4 +1,6 @@
-﻿namespace SPSL.Language.Symbols;
+﻿using SPSL.Language.Symbols.Modifiers;
+
+namespace SPSL.Language.Symbols;
 
 public class Symbol
 {

@@ -1,4 +1,4 @@
-namespace SPSL.Language.AST;
+namespace SPSL.Language.Core;
 
 public enum BufferAccess
 {

@@ -1,6 +1,7 @@
 using System.Runtime.Serialization;
 using MessagePack;
 using SPSL.Language.AST;
+using SPSL.Language.Core;
 
 namespace SPSL.Serialization.Reflection;
 

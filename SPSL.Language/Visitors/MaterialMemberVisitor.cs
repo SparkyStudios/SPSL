@@ -1,6 +1,7 @@
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
+using SPSL.Language.Utils;
 
 namespace SPSL.Language.Visitors;
 
@@ -137,7 +138,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         return new MaterialShader(context.Definition.Stage.Text)
         {
             ReferencedShader = ASTVisitor.ParseNamespacedTypeName(context.Definition.Name),
-            Stage = ShaderVisitor.GetShaderStage(context.Definition.Stage.Text),
+            Stage = context.Definition.Stage.Text.ToShaderStage(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource
@@ -150,7 +151,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         MaterialShader shader = new(context.Name?.Text ?? context.Definition.Stage.Text)
         {
             ReferencedShader = ASTVisitor.ParseNamespacedTypeName(context.Definition.Name),
-            Stage = ShaderVisitor.GetShaderStage(context.Definition.Stage.Text),
+            Stage = context.Definition.Stage.Text.ToShaderStage(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource

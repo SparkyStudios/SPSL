@@ -1,4 +1,6 @@
 using SPSL.Language.AST;
+using SPSL.Language.Core;
+using SPSL.Language.Utils;
 
 namespace SPSL.Language.Visitors;
 
@@ -12,28 +14,13 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
     }
 
     protected override Shader? DefaultResult => null;
-
-    internal static ShaderStage GetShaderStage(string type)
-    {
-        return type.ToLower() switch
-        {
-            "vertex" => ShaderStage.Vertex,
-            "fragment" => ShaderStage.Pixel,
-            "pixel" => ShaderStage.Pixel,
-            "geometry" => ShaderStage.Geometry,
-            "hull" => ShaderStage.Hull,
-            "domain" => ShaderStage.Domain,
-            "compute" => ShaderStage.Compute,
-            _ => throw new ArgumentException("The given SPSL shader type is not recognized."),
-        };
-    }
-
+    
     public override Shader VisitGenericShaderDefinition(SPSLParser.GenericShaderDefinitionContext context)
     {
         ShaderStage sStage = context.Type switch
         {
             null => ShaderStage.Unspecified,
-            _ => GetShaderStage(context.Type.Text)
+            _ => context.Type.Text.ToShaderStage()
         };
         var sName = context.Name?.Text ?? "UnknownShader";
 

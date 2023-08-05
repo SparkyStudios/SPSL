@@ -1,4 +1,4 @@
-namespace SPSL.Language.AST;
+namespace SPSL.Language.Core;
 
 [Flags]
 public enum BufferStorage

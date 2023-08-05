@@ -2,6 +2,7 @@
 using CommandLine;
 using SPSL.CommandLine;
 using SPSL.Language.AST;
+using SPSL.Language.Core;
 using SPSL.Serialization.Reflection;
 using SPSL.Translation.HLSL;
 
