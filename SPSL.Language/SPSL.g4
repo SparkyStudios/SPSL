@@ -7,6 +7,9 @@ options {
 
 @header {
 using SPSL.Language.AST;
+using SPSL.Language.Core;
+
+namespace SPSL.Language;
 }
 
 KEYWORD_NAMESPACE
@@ -553,7 +556,7 @@ materialDefinition
 shaderDefinition
   locals[bool IsAbstract]
   : (KEYWORD_ABSTRACT {$IsAbstract = true;})? (
-    Type = (KEYWORD_VERTEX | KEYWORD_PIXEL | KEYWORD_GEOMETRY | KEYWORD_HULL | KEYWORD_DOMAIN)
+    Type = (KEYWORD_COMPUTE | KEYWORD_VERTEX | KEYWORD_PIXEL | KEYWORD_GEOMETRY | KEYWORD_HULL | KEYWORD_DOMAIN)
   )? KEYWORD_SHADER Name = IDENTIFIER (KEYWORD_EXTENDS ExtendedShader = namespacedTypeName)? (
     KEYWORD_IMPLEMENTS Interfaces = interfacesList
   )? # GenericShaderDefinition
@@ -678,8 +681,8 @@ enumComponent
 // Inner function variables
 variableDeclaration
   locals[bool IsConst]
-  : (KEYWORD_CONST                                          {$IsConst = true;})? Type = dataType variableIdentity (TOK_COMMA variableIdentity)* # TypedVariableDeclaration
-  | KEYWORD_VAR Declaration = variableDeclarationAssignment # UntypedVariableDeclaration
+  : (KEYWORD_CONST {$IsConst = true;})? Type = dataType variableIdentity (TOK_COMMA variableIdentity)* # TypedVariableDeclaration
+  | {$IsConst = true;} KEYWORD_CONST KEYWORD_VAR Identifier = basicExpression OP_ASSIGN Expression = primitiveExpression  # UntypedVariableDeclaration
   ;
 
 variableDeclarationAssignment
