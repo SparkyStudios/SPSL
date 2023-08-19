@@ -14,9 +14,16 @@ public class SymbolListener : SPSLBaseListener
     public SymbolListener(string fileSource)
     {
         _fileSource = fileSource;
+
+        GlobalSymbolTable = new()
+        {
+            Type = SymbolType.Scope,
+            Name = "__SPSL__GLOBAL__SCOPE__",
+            Source = _fileSource
+        };
     }
 
-    public SymbolTable GlobalSymbolTable { get; } = new();
+    public SymbolTable GlobalSymbolTable { get; }
 
     public override void EnterNamespaceDefinition(SPSLParser.NamespaceDefinitionContext context)
     {
@@ -229,10 +236,10 @@ public class SymbolListener : SPSLBaseListener
 
     public override void ExitTypedVariableDeclaration(SPSLParser.TypedVariableDeclarationContext context)
     {
-        Symbol variable = _stack.Peek();
+        //Symbol variable = _stack.Peek();
 
-        if (variable.Type != SymbolType.Variable)
-            throw new("Unexpected symbol type");
+        //if (variable.Type != SymbolType.Variable)
+        //    throw new("Unexpected symbol type");
     }
 
     public override void EnterVariableIdentity(SPSLParser.VariableIdentityContext context)

@@ -258,7 +258,7 @@ public class Translator
         Template template = _hlslTemplate.GetInstanceOf("permutation_var");
         template.Add("m", new Macro(Translate(permutationVariable.GetReference(), ns, ast), Translate(permutationVariable.Initializer, ns, ast)));
 
-        if (permutationVariable.Type == PermutationVariable.VariableType.Enum)
+        if (permutationVariable.Type == PermutationVariableType.Enum)
         {
             for (var i = 0; i < permutationVariable.EnumerationValues.Length; i++)
             {

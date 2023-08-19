@@ -1,6 +1,7 @@
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
+using SPSL.Language.Core;
 using SPSL.Language.Utils;
 
 namespace SPSL.Language.Visitors;
@@ -58,10 +59,10 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
                 (
                     permutation.Type switch
                     {
-                        PermutationVariable.VariableType.Bool => new PrimitiveDataType(PrimitiveDataTypeKind.Boolean),
-                        PermutationVariable.VariableType.Integer =>
+                        PermutationVariableType.Bool => new PrimitiveDataType(PrimitiveDataTypeKind.Boolean),
+                        PermutationVariableType.Integer =>
                             new PrimitiveDataType(PrimitiveDataTypeKind.Integer),
-                        PermutationVariable.VariableType.Enum => new UserDefinedDataType(new(permutation.Name)),
+                        PermutationVariableType.Enum => new UserDefinedDataType(new(permutation.Name)),
                         _ => throw new ArgumentException("Invalid permutation variable type"),
                     },
                     permutation.Name,

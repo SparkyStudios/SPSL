@@ -1,3 +1,5 @@
+using SPSL.Language.Core;
+
 namespace SPSL.Language.AST;
 
 /// <summary>
@@ -5,19 +7,12 @@ namespace SPSL.Language.AST;
 /// </summary>
 public class PermutationVariable : INamespaceChild, IBlockChild
 {
-    public enum VariableType : byte
-    {
-        Bool,
-        Enum,
-        Integer
-    }
-
     #region Properties
 
     /// <summary>
     /// The type of the variable.
     /// </summary>
-    public VariableType Type { get; set; }
+    public PermutationVariableType Type { get; set; }
 
     /// <summary>
     /// The initial value of the variable.
@@ -36,7 +31,7 @@ public class PermutationVariable : INamespaceChild, IBlockChild
     /// <summary>
     /// Initializes a new instance of the <see cref="PermutationVariable"/> class.
     /// </summary>
-    public PermutationVariable(VariableType type, IExpression initializer)
+    public PermutationVariable(PermutationVariableType type, IExpression initializer)
     {
         Type = type;
         Initializer = initializer;

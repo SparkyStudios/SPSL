@@ -39,4 +39,16 @@ public static class StringConversions
             _ => ShaderStage.Unknown,
         };
     }
+
+    public static DataFlow ToDataFlow(this string flow)
+    {
+        return flow switch
+        {
+            "in" => DataFlow.In,
+            "out" => DataFlow.Out,
+            "inout" => DataFlow.InOut,
+            "const" => DataFlow.Const,
+            _ => DataFlow.Unspecified
+        };
+    }
 }

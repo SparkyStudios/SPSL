@@ -1,9 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
 using OmniSharp.Extensions.LanguageServer.Protocol;
-using SPSL.Language.Listeners;
 using SPSL.Language.Symbols;
+using SPSL.Language.Visitors;
 
 namespace SPSL.LanguageServer.Services;
 
@@ -22,11 +21,11 @@ public class SymbolProviderService : IProviderService<SymbolTable>
 
     private void TokenProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<ParserRuleContext> e)
     {
-        SymbolListener listener = new(e.Uri.ToString());
-        ParseTreeWalker.Default.Walk(listener, e.Data);
+        SymbolVisitor visitor = new(e.Uri.ToString());
+        SymbolTable globalSymbolTable = (visitor.Visit(e.Data) as SymbolTable)!;
 
-        _cache.AddOrUpdate(e.Uri, listener.GlobalSymbolTable, (_, _) => listener.GlobalSymbolTable);
-        DataUpdated?.Invoke(this, new(e.Uri, listener.GlobalSymbolTable));
+        _cache.AddOrUpdate(e.Uri, globalSymbolTable, (_, _) => globalSymbolTable);
+        DataUpdated?.Invoke(this, new(e.Uri, globalSymbolTable));
     }
 
     #region IProviderService<SymbolTable> Implementation

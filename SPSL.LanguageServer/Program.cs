@@ -6,7 +6,6 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Server;
-using SPSL.LanguageServer.Core;
 using SPSL.LanguageServer.Handlers;
 using SPSL.LanguageServer.Services;
 
@@ -71,7 +70,7 @@ static Task<InitializeResult> OnInitialize
             {
                 Name = "SPSL Language Server",
                 Version = "0.0.1"
-            }
+            },
         }
     );
 }

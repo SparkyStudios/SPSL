@@ -163,8 +163,8 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
                 End = context.Stop.StopIndex,
                 Source = _fileSource
             },
-            Name = (BasicExpression)context.Declaration.Identifier.Accept(visitor)!,
-            Initializer = context.Declaration.Expression.Accept(visitor),
+            Name = (BasicExpression)context.Identifier.Accept(visitor)!,
+            Initializer = context.Expression.Accept(visitor),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource

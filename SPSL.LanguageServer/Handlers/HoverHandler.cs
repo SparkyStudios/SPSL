@@ -28,9 +28,11 @@ public class HoverHandler : IHoverHandler
                     new MarkupContent
                     {
                         Kind = MarkupKind.Markdown,
-                        Value = @"# Test
+                        Value = """
+                                # Test
 
-This is **test**. With __MD__",
+                                This is **test**. With __MD__
+                                """,
                     }
                 ),
                 Range = new Range

@@ -1,4 +1,5 @@
 ﻿using SPSL.Language.AST;
+using SPSL.Language.Core;
 using SPSL.Language.Utils;
 using SPSL.Language.Visitors;
 
@@ -135,7 +136,7 @@ internal static class SPSLParserExtensions
     {
         return new
         (
-            PermutationVariable.VariableType.Bool,
+            PermutationVariableType.Bool,
             new BoolLiteral(bool.Parse(context.Value.Text))
             {
                 Start = context.Value.StartIndex,
@@ -159,7 +160,7 @@ internal static class SPSLParserExtensions
     {
         return new
         (
-            PermutationVariable.VariableType.Enum,
+            PermutationVariableType.Enum,
             context.Value.Accept(new ExpressionVisitor(fileSource))!
         )
         {
@@ -179,7 +180,7 @@ internal static class SPSLParserExtensions
     {
         return new
         (
-            PermutationVariable.VariableType.Integer,
+            PermutationVariableType.Integer,
             new IntegerLiteral(int.Parse(context.Value.Text))
             {
                 Start = context.Value.StartIndex,
