@@ -6,9 +6,9 @@ public class NewInstanceExpression : IExpression
 {
     #region Properties
 
-    public IDataType Type { get; set; }
+    public IDataType Type { get; }
 
-    public OrderedSet<InvocationParameter> Parameters { get; set; }
+    public OrderedSet<InvocationParameter> Parameters { get; }
 
     #endregion
 
@@ -18,17 +18,35 @@ public class NewInstanceExpression : IExpression
     {
         Type = type;
         Parameters = new(parameters);
+
+        Type.Parent = this;
+        foreach (InvocationParameter parameter in Parameters)
+            parameter.Parent = this;
     }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Type.ResolveNode(source, offset) ??
+               Parameters.FirstOrDefault(p => p.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

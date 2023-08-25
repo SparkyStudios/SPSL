@@ -8,6 +8,8 @@ public class SymbolTable : Symbol
 
     private readonly Hashtable _symbols = new();
 
+    private readonly Dictionary<string, int> _keysCounter = new();
+
     #endregion
 
     #region Properties
@@ -16,13 +18,26 @@ public class SymbolTable : Symbol
 
     #endregion
 
+    private string GetSymbolKey(string name)
+    {
+        if (_keysCounter.TryGetValue(name, out int value))
+        {
+            _keysCounter[name] = ++value;
+            return $"{name}@{value}";
+        }
+
+        _keysCounter[name] = 0;
+        return name;
+    }
+
     /// <summary>
     /// Adds a symbol in the current table.
     /// </summary>
     /// <param name="symbol">The symbol to add.</param>
     public void Add(Symbol symbol)
     {
-        _symbols.Add(symbol.Name, symbol);
+        symbol.Key = GetSymbolKey(symbol.Name);
+        _symbols.Add(symbol.Key, symbol);
         symbol.Parent = this;
     }
 

@@ -1,6 +1,8 @@
+using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
+using static SPSL.Language.SPSLParser;
 using Type = SPSL.Language.AST.Type;
 
 namespace SPSL.Language.Visitors;
@@ -8,7 +10,7 @@ namespace SPSL.Language.Visitors;
 public class TypeVisitor : SPSLBaseVisitor<Type?>
 {
     private readonly string _fileSource;
-    
+
     public TypeVisitor(string fileSource)
     {
         _fileSource = fileSource;
@@ -17,50 +19,58 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
     protected override Type? DefaultResult => null;
 
     protected override bool ShouldVisitNextChild(IRuleNode node, Type? currentResult)
-        => node is SPSLParser.TypeContext or SPSLParser.StructContext or SPSLParser.EnumContext;
+        => node is TypeContext or StructContext or EnumContext;
 
-    public override Type VisitStruct(SPSLParser.StructContext context)
+    public override Type VisitStruct([NotNull] StructContext context)
     {
-        TypeKind tKind = TypeKind.Struct;
-        var tName = context.Definition.Name.Text;
+        const TypeKind tKind = TypeKind.Struct;
+        var tName = context.Definition.Name.ToIdentifier(_fileSource);
+
         Type type = new(tKind, tName)
         {
-            ExtendedType = ASTVisitor.ParseNamespacedTypeName(context.Definition.ExtendedType),
+            ExtendedType = context.Definition.ExtendedType.ToNamespaceReference(_fileSource),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            Documentation = context.Definition.DOC_COMMENT().ToDocumentation()
         };
 
         // Register struct members
-        foreach (SPSLParser.StructComponentContext member in context.structComponent())
+        foreach (StructComponentContext member in context.structComponent())
         {
             switch (member)
             {
-                case SPSLParser.StructPropertyContext property:
+                case StructPropertyContext property:
                 {
                     var mType = property.Type.Accept(new DataTypeVisitor(_fileSource));
-                    var mName = property.Name.Text;
+                    var mName = property.Name.ToIdentifier(_fileSource);
+
                     type.AddProperty
                     (
                         new(mType, mName)
                         {
                             Start = property.Start.StartIndex,
                             End = property.Stop.StopIndex,
-                            Source = _fileSource
+                            Source = _fileSource,
+                            Annotations = new(property.annotation().Select(a => a.ToAnnotation(_fileSource))),
+                            Documentation = property.DOC_COMMENT().ToDocumentation()
                         }
                     );
                     break;
                 }
-                case SPSLParser.StructFunctionContext function:
+                case StructFunctionContext function:
                 {
-                    var typeFunction = new TypeFunction(function.Function.ToFunction(_fileSource))
-                    {
-                        Start = function.Start.StartIndex,
-                        End = function.Stop.StopIndex,
-                        Source = _fileSource
-                    };
-                    typeFunction.Annotations.AddRange(function.annotation().Select(a => a.ToAnnotation(_fileSource)));
-                    type.AddFunction(typeFunction);
+                    type.AddFunction
+                    (
+                        new(function.Function.ToFunction(_fileSource))
+                        {
+                            Start = function.Start.StartIndex,
+                            End = function.Stop.StopIndex,
+                            Source = _fileSource,
+                            Annotations = new(function.annotation().Select(a => a.ToAnnotation(_fileSource))),
+                            Documentation = function.DOC_COMMENT().ToDocumentation()
+                        }
+                    );
                     break;
                 }
             }
@@ -69,23 +79,25 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
         return type;
     }
 
-    public override Type VisitEnum(SPSLParser.EnumContext context)
+    public override Type VisitEnum([NotNull] EnumContext context)
     {
-        TypeKind tKind = TypeKind.Enum;
-        var tName = context.Definition.Name.Text;
+        const TypeKind tKind = TypeKind.Enum;
+        var tName = context.Definition.Name.ToIdentifier(_fileSource);
+
         Type type = new(tKind, tName)
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            Documentation = context.Definition.DOC_COMMENT().ToDocumentation()
         };
 
         uint lastValue = 0;
 
         // Register enum members
-        foreach (SPSLParser.EnumComponentContext member in context.enumComponent())
+        foreach (EnumComponentContext member in context.enumComponent())
         {
-            var mName = member.Name.Text;
+            var mName = member.Name.ToIdentifier(_fileSource);
 
             if (member.Value?.Accept(new ExpressionVisitor(_fileSource)) is ILiteral constant)
             {
@@ -93,7 +105,8 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
                 {
                     IntegerLiteral integer => (uint)integer.Value,
                     UnsignedIntegerLiteral integer => integer.Value,
-                    _ => throw new NotSupportedException("The specified enum value is not supported. Only integer values are accepted.")
+                    _ => throw new NotSupportedException(
+                        "The specified enum value is not supported. Only integer values are accepted.")
                 };
             }
 
@@ -104,9 +117,12 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
                     Initializer = new UnsignedIntegerLiteral(lastValue),
                     Start = member.Start.StartIndex,
                     End = member.Stop.StopIndex,
-                    Source = _fileSource
+                    Source = _fileSource,
+                    Annotations = new(member.annotation().Select(a => a.ToAnnotation(_fileSource))),
+                    Documentation = member.DOC_COMMENT().ToDocumentation()
                 }
             );
+
             lastValue++;
         }
 

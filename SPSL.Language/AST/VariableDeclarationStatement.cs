@@ -10,32 +10,63 @@ public class VariableDeclarationStatement : IStayControlFlowStatement
     /// <summary>
     /// Defines if the variable is declared using the "const" modifier.
     /// </summary>
-    public bool IsConst { get; init; } = false;
+    public bool IsConst { get; init; }
 
     /// <summary>
     /// The type of the variable.
     /// </summary>
-    public IDataType Type { get; init; } = null!;
+    public IDataType Type { get; }
 
     /// <summary>
     /// The name of the variable.
     /// </summary>
-    public BasicExpression Name { get; init; } = null!;
+    public Identifier Name { get; }
 
     /// <summary>
     /// The initial value of the variable.
     /// </summary>
-    public IExpression? Initializer { get; init; } = null;
+    public IExpression? Initializer { get; }
+
+    #endregion
+
+    #region Constructors
+
+    public VariableDeclarationStatement(IDataType type, Identifier name, IExpression? initializer = null)
+    {
+        type.Parent = this;
+        name.Parent = this;
+
+        if (initializer != null)
+            initializer.Parent = this;
+
+        Type = type;
+        Name = name;
+        Initializer = initializer;
+    }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Type.ResolveNode(source, offset) ?? Name.ResolveNode(source, offset) ??
+            Initializer?.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

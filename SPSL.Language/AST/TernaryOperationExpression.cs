@@ -1,7 +1,7 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a ternary operation.
+/// Represents a ternary operation.
 /// </summary>
 public class TernaryOperationExpression : IExpression
 {
@@ -10,19 +10,19 @@ public class TernaryOperationExpression : IExpression
     /// <summary>
     /// The ternary operation condition.
     /// </summary>
-    public IExpression Condition { get; set; }
+    public IExpression Condition { get; }
 
     /// <summary>
     /// The expression to return when <see cref="Condition"/>
     /// is evaluated to true.
     /// </summary>
-    public IExpression WhenTrue { get; set; }
+    public IExpression WhenTrue { get; }
 
     /// <summary>
     /// The expression to return when <see cref="Condition"/>
     /// is evaluated to false.
     /// </summary>
-    public IExpression WhenFalse { get; set; }
+    public IExpression WhenFalse { get; }
 
     #endregion
 
@@ -36,6 +36,10 @@ public class TernaryOperationExpression : IExpression
     /// <param name="whenFalse">The expression to return when <paramref name="condition"/> is evaluated to <c>false</c>.</param>
     public TernaryOperationExpression(IExpression condition, IExpression whenTrue, IExpression whenFalse)
     {
+        condition.Parent = this;
+        whenTrue.Parent = this;
+        whenFalse.Parent = this;
+
         Condition = condition;
         WhenTrue = whenTrue;
         WhenFalse = whenFalse;
@@ -45,11 +49,25 @@ public class TernaryOperationExpression : IExpression
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Condition.ResolveNode(source, offset) ?? WhenTrue.ResolveNode(source, offset) ??
+            WhenFalse.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

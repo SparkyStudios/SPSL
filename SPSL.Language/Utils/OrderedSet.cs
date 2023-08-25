@@ -2,7 +2,7 @@
 
 namespace SPSL.Language.Utils;
 
-public class OrderedSet<T> : ICollection<T> where T : notnull
+public sealed class OrderedSet<T> : ICollection<T> where T : notnull
 {
     private readonly IDictionary<T, LinkedListNode<T>?> _dictionary;
     private readonly LinkedList<T> _linkedList;
@@ -24,7 +24,7 @@ public class OrderedSet<T> : ICollection<T> where T : notnull
 
     public int Count => _dictionary.Count;
 
-    public virtual bool IsReadOnly => _dictionary.IsReadOnly;
+    public bool IsReadOnly => _dictionary.IsReadOnly;
 
     void ICollection<T>.Add(T item)
     {

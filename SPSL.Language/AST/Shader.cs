@@ -22,7 +22,7 @@ public class Shader : INamespaceChild, IBlock
 
     public ShaderStage Stage { get; }
 
-    public NamespacedReference ExtendedShader { get; set; } = NamespacedReference.Null;
+    public NamespacedReference ExtendedShader { get; init; } = NamespacedReference.Null;
 
     public HashSet<NamespacedReference> Interfaces { get; } = new();
 
@@ -34,14 +34,18 @@ public class Shader : INamespaceChild, IBlock
 
     #region Constructors
 
-    public Shader(ShaderStage stage, string name)
+    public Shader(ShaderStage stage, Identifier name)
     {
+        name.Parent = this;
+
         Stage = stage;
         Name = name;
     }
 
-    public Shader(string name, ComputeShaderParams @params)
+    public Shader(Identifier name, ComputeShaderParams @params)
     {
+        name.Parent = this;
+
         Stage = ShaderStage.Compute;
         Name = name;
         ComputeParams = @params;
@@ -53,23 +57,26 @@ public class Shader : INamespaceChild, IBlock
 
     public void Implements(NamespacedReference name)
     {
+        name.Parent = this;
         Interfaces.Add(name);
     }
 
     public void Implements(IEnumerable<NamespacedReference> names)
     {
-        foreach (var name in names)
+        foreach (NamespacedReference name in names)
             Implements(name);
     }
 
     public void Uses(NamespacedReference name)
     {
+        name.Parent = this;
         ImportedShaderFragments.Add(name);
     }
 
     public void Uses(IEnumerable<NamespacedReference> names)
     {
-        ImportedShaderFragments.AddRange(names);
+        foreach (NamespacedReference name in names)
+            Uses(name);
     }
 
     #endregion
@@ -86,22 +93,40 @@ public class Shader : INamespaceChild, IBlock
     /// The parent <see cref="Language.AST.Namespace"/> of this one.
     /// Defaults to <c>null</c> for root namespaces.
     /// </summary>
-    public Namespace? Parent { get; set; }
+    public Namespace? ParentNamespace { get; set; }
 
     /// <summary>
     /// The namespace's name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; set; }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return ExtendedShader.ResolveNode(source, offset) ??
+               Interfaces.FirstOrDefault(i => i.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               ImportedShaderFragments.FirstOrDefault(i => i.ResolveNode(source, offset) != null)
+                   ?.ResolveNode(source, offset) ??
+               Children.FirstOrDefault(c => c.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               Name.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

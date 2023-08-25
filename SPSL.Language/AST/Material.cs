@@ -9,19 +9,21 @@ public class Material : INamespaceChild, IBlock
     /// <summary>
     /// Whether this material is abstract.
     /// </summary>
-    public bool IsAbstract { get; set; } = false;
+    public bool IsAbstract { get; init; }
 
     /// <summary>
     /// A full-qualified reference to the extended material, if any.
     /// </summary>
-    public NamespacedReference ExtendedMaterial { get; set; } = NamespacedReference.Null;
+    public NamespacedReference ExtendedMaterial { get; init; } = NamespacedReference.Null;
 
     #endregion
 
     #region Constructors
 
-    public Material(string name)
+    public Material(Identifier name)
     {
+        name.Parent = this;
+
         Name = name;
     }
 
@@ -39,22 +41,36 @@ public class Material : INamespaceChild, IBlock
     /// The parent <see cref="Language.AST.Namespace"/> of this one.
     /// Defaults to <c>null</c> for root namespaces.
     /// </summary>
-    public Namespace? Parent { get; set; }
+    public Namespace? ParentNamespace { get; set; }
 
     /// <summary>
     /// The namespace's name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; set; }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return ExtendedMaterial.ResolveNode(source, offset) ??
+               Children.FirstOrDefault(c => c.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

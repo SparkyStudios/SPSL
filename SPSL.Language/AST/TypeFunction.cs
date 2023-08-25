@@ -5,11 +5,11 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represents a function inside a struct.
 /// </summary>
-public class TypeFunction : IAnnotable, IBlockChild
+public class TypeFunction : IAnnotated, IDocumented, IBlockChild
 {
     #region Properties
 
-    public Function Function { get; set; }
+    public Function Function { get; }
 
     #endregion
 
@@ -17,21 +17,28 @@ public class TypeFunction : IAnnotable, IBlockChild
 
     public TypeFunction(Function function)
     {
-        Annotations = new();
         Function = function;
     }
 
     #endregion
 
-    #region IAnnotable Implementation
+    #region IAnnotated Implementation
 
-    public OrderedSet<Annotation> Annotations { get; }
+    /// <inheritdoc cref="IAnnotated.Annotations"/>
+    public OrderedSet<Annotation> Annotations { get; init; } = new();
+
+    #endregion
+
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
 
     #endregion
 
     #region IBlockChild Implementation
 
-    public string Name
+    public Identifier Name
     {
         get => ((IBlockChild)Function).Name;
         set => ((IBlockChild)Function).Name = value;
@@ -41,11 +48,25 @@ public class TypeFunction : IAnnotable, IBlockChild
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Function.ResolveNode(source, offset) ??
+               Annotations.FirstOrDefault(a => a.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

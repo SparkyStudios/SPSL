@@ -12,18 +12,18 @@ public class PermuteStatement : IStatement
     /// <summary>
     /// The if statement's condition.
     /// </summary>
-    public IExpression Condition { get; init; }
+    public IExpression Condition { get; }
 
     /// <summary>
     /// The set of statement to execute if the <see cref="Condition"/>
     /// is evaluated to <c>true</c>
     /// </summary>
-    public StatementBlock Block { get; init; }
+    public StatementBlock Block { get; }
 
     /// <summary>
     /// The else part of the statement. Can be null.
     /// </summary>
-    public StatementBlock? Else { get; set; }
+    public StatementBlock? Else { get; }
 
     #endregion
 
@@ -37,6 +37,11 @@ public class PermuteStatement : IStatement
     /// <param name="else">An optional block of code to inject when the <paramref name="condition"/> is evaluated to false.</param>
     public PermuteStatement(IExpression condition, StatementBlock block, StatementBlock? @else = null)
     {
+        condition.Parent = this;
+        block.Parent = this;
+        if (@else != null)
+            @else.Parent = this;
+
         Condition = condition;
         Block = block;
         Else = @else;
@@ -46,11 +51,25 @@ public class PermuteStatement : IStatement
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Condition.ResolveNode(source, offset) ?? Block.ResolveNode(source, offset) ??
+            Else?.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

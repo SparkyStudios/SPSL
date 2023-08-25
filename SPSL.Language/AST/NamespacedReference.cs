@@ -3,25 +3,27 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Reference to a namespace child, using its name.
 /// </summary>
-public class NamespacedReference : IEquatable<NamespacedReference>
+public class NamespacedReference : INode, IEquatable<NamespacedReference>
 {
     #region Fields
 
     /// <summary>
     /// The null reference.
     /// </summary>
-    public static readonly NamespacedReference Null = new(string.Empty);
+    public static readonly NamespacedReference Null = new();
 
     #endregion
 
     #region Properties
+
+    public Identifier[] Names { get; }
 
     /// <summary>
     /// The reference name. It can be appended with the namespace
     /// path in which the referenced child exists.
     /// </summary>
     /// <example>A::Namespace::Path::To::ReferenceName</example>
-    public string Name { get; }
+    public string Name => string.Join(Namespace.Separator, Names.Select(name => name.Value));
 
     /// <summary>
     /// Tries to resolve the namespace name from the reference name. If the reference name
@@ -34,8 +36,8 @@ public class NamespacedReference : IEquatable<NamespacedReference>
     {
         get
         {
-            var index = Name.LastIndexOf("::", StringComparison.Ordinal);
-            return index == -1 ? string.Empty : Name.Substring(0, index);
+            int index = Name.LastIndexOf(Namespace.Separator, StringComparison.Ordinal);
+            return index == -1 ? string.Empty : Name[..index];
         }
     }
 
@@ -43,7 +45,8 @@ public class NamespacedReference : IEquatable<NamespacedReference>
     /// Tries to resolve the child name from the reference name. If the reference name
     /// was not appended with the namespace, this will return the same value as <see cref="Name"/>.
     /// </summary>
-    public string NameWithoutNamespace => NamespaceName.Length > 0 ? Name.Substring(NamespaceName.Length + 2) : Name;
+    public string NameWithoutNamespace =>
+        NamespaceName.Length > 0 ? Name[(NamespaceName.Length + Namespace.SeparatorLength)..] : Name;
 
     #endregion
 
@@ -52,10 +55,36 @@ public class NamespacedReference : IEquatable<NamespacedReference>
     /// <summary>
     /// Initialize a new instance of <see cref="NamespacedReference"/>.
     /// </summary>
-    /// <param name="name">The reference name.</param>
-    public NamespacedReference(string name)
+    /// <param name="names">The reference name, as an array of identifier.</param>
+    public NamespacedReference(params Identifier[] names)
     {
-        Name = name;
+        foreach (Identifier name in names)
+            name.Parent = this;
+
+        Names = names;
+    }
+
+    #endregion
+
+    #region INode Implementation
+
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
+
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
+
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Names.FirstOrDefault(id => id.ResolveNode(source, offset) is not null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
     }
 
     #endregion

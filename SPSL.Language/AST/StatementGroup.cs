@@ -3,7 +3,7 @@ using SPSL.Language.Utils;
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a collection of statements.
+/// Represents a collection of statements.
 /// </summary>
 public class StatementCollection : IStatement
 {
@@ -12,7 +12,7 @@ public class StatementCollection : IStatement
     /// <summary>
     /// The collection of statements.
     /// </summary>
-    public OrderedSet<IStatement> Statements { get; set; }
+    public OrderedSet<IStatement> Statements { get; }
 
     #endregion
 
@@ -20,23 +20,42 @@ public class StatementCollection : IStatement
 
     public StatementCollection(IEnumerable<IStatement> statements)
     {
-        Statements = new OrderedSet<IStatement>(statements);
+        Statements = new(statements);
+
+        foreach (IStatement statement in Statements)
+            statement.Parent = this;
     }
 
     public StatementCollection(params IStatement[] statements)
     {
-        Statements = new OrderedSet<IStatement>(statements);
+        Statements = new(statements);
+
+        foreach (IStatement statement in Statements)
+            statement.Parent = this;
     }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Statements.FirstOrDefault(s => s.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

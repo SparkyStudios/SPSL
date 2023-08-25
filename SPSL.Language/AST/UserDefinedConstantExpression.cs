@@ -1,7 +1,7 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent an user defined constant expression.
+/// Represents an user defined constant expression.
 /// </summary>
 public class UserDefinedConstantExpression : IConstantExpression
 {
@@ -10,7 +10,7 @@ public class UserDefinedConstantExpression : IConstantExpression
     /// <summary>
     /// The reference to the constant value identifier.
     /// </summary>
-    public NamespacedReference Identifier { get; set; }
+    public NamespacedReference Identifier { get; }
 
     #endregion
 
@@ -22,6 +22,8 @@ public class UserDefinedConstantExpression : IConstantExpression
     /// <param name="identifier">The reference to the constant value identifier.</param>
     public UserDefinedConstantExpression(NamespacedReference identifier)
     {
+        identifier.Parent = this;
+
         Identifier = identifier;
     }
 
@@ -29,11 +31,24 @@ public class UserDefinedConstantExpression : IConstantExpression
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Identifier.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

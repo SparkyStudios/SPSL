@@ -1,6 +1,8 @@
+using Antlr4.Runtime.Misc;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
 using SPSL.Language.Utils;
+using static SPSL.Language.SPSLParser;
 
 namespace SPSL.Language.Visitors;
 
@@ -14,35 +16,35 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
     }
 
     protected override Shader? DefaultResult => null;
-    
-    public override Shader VisitGenericShaderDefinition(SPSLParser.GenericShaderDefinitionContext context)
+
+    public override Shader VisitGenericShaderDefinition([NotNull] GenericShaderDefinitionContext context)
     {
         ShaderStage sStage = context.Type switch
         {
             null => ShaderStage.Unspecified,
             _ => context.Type.Text.ToShaderStage()
         };
-        var sName = context.Name?.Text ?? "UnknownShader";
+        var sName = context.Name.ToIdentifier(_fileSource);
 
         Shader shader = new(sStage, sName)
         {
             IsAbstract = context.IsAbstract,
-            ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader),
-            Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex,
+            ExtendedShader = context.ExtendedShader.ToNamespaceReference(_fileSource),
+            Start = ((ShaderContext)context.Parent).Start.StartIndex,
+            End = ((ShaderContext)context.Parent).Stop.StopIndex,
             Source = _fileSource
         };
 
         if (context.Interfaces is not null)
             foreach (var @interface in context.Interfaces.namespacedTypeName())
-                shader.Implements(ASTVisitor.ParseNamespacedTypeName(@interface));
+                shader.Implements(@interface.ToNamespaceReference(_fileSource));
 
         return shader;
     }
 
-    public override Shader VisitComputeShaderDefinition(SPSLParser.ComputeShaderDefinitionContext context)
+    public override Shader VisitComputeShaderDefinition([NotNull] ComputeShaderDefinitionContext context)
     {
-        var sName = context.Name.Text;
+        var sName = context.Name.ToIdentifier(_fileSource);
         Shader.ComputeShaderParams @params = new()
         {
             ThreadCountX = uint.Parse(context.ThreadCountX.Text),
@@ -53,40 +55,38 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
         Shader shader = new(sName, @params)
         {
             IsAbstract = false,
-            ExtendedShader = ASTVisitor.ParseNamespacedTypeName(context.ExtendedShader),
-            Start = context.Start.StartIndex,
-            End = context.Stop.StopIndex,
+            ExtendedShader = context.ExtendedShader.ToNamespaceReference(_fileSource),
+            Start = ((ShaderContext)context.Parent).Start.StartIndex,
+            End = ((ShaderContext)context.Parent).Stop.StopIndex,
             Source = _fileSource
         };
 
         if (context.Interfaces is not null)
-            foreach (var @interface in context.Interfaces.namespacedTypeName())
-                shader.Implements(ASTVisitor.ParseNamespacedTypeName(@interface));
+            foreach (NamespacedTypeNameContext @interface in context.Interfaces.namespacedTypeName())
+                shader.Implements(@interface.ToNamespaceReference(_fileSource));
 
         return shader;
     }
 
-    public override Shader VisitShader(SPSLParser.ShaderContext context)
+    public override Shader VisitShader([NotNull] ShaderContext context)
     {
         // --- Shader Definition
 
         Shader shader = context.Definition.Accept(this)!;
-        shader.Start = context.Start.StartIndex;
-        shader.End = context.Stop.StopIndex;
 
         // --- Use Directives
 
-        foreach (SPSLParser.UseFragmentDirectiveContext use in context.useFragmentDirective())
-            shader.Uses(ASTVisitor.ParseNamespacedTypeName(use.Name));
+        foreach (UseFragmentDirectiveContext use in context.useFragmentDirective())
+            shader.Uses(use.Name.ToNamespaceReference(_fileSource));
 
         // --- Shader Members
 
-        foreach (SPSLParser.ShaderMemberContext member in context.shaderMember())
+        foreach (ShaderMemberContext member in context.shaderMember())
             shader.Children.Add(member.Accept(new ShaderMemberVisitor(_fileSource))!);
 
         // --- Shader Functions
 
-        foreach (SPSLParser.ShaderFunctionContext function in context.shaderFunction())
+        foreach (ShaderFunctionContext function in context.shaderFunction())
             shader.Children.Add(function.Accept(new ShaderFunctionVisitor(_fileSource))!);
 
         return shader;

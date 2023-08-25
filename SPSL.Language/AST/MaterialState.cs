@@ -28,21 +28,27 @@ public class MaterialState : IBlock, IMaterialMember
     /// The value of the <see cref="MaterialState"/> if the <see cref="Type"/> is set to <see cref="MaterialStateType.Value"/>.
     /// Otherwise <c>null</c>.
     /// </value>
-    public string? Value { get; set; } = null;
+    public string? Value { get; set; }
 
     #endregion
 
     #region Constructors
 
-    public MaterialState(string name)
+    public MaterialState(Identifier name)
     {
+        name.Parent = this;
+        
         Name = name;
     }
 
-    public MaterialState(string name, IEnumerable<MaterialStateComponent> components)
+    public MaterialState(Identifier name, IEnumerable<MaterialStateComponent> components)
     {
         Name = name;
         Children.AddRange(components);
+        
+        Name.Parent = this;
+        foreach (IBlockChild child in Children)
+            child.Parent = this;
     }
 
     #endregion
@@ -58,17 +64,31 @@ public class MaterialState : IBlock, IMaterialMember
     /// <summary>
     /// The material state name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; set; }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Name.ResolveNode(source, offset) ??
+               Children.FirstOrDefault(c => c.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

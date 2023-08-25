@@ -1,7 +1,7 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a method call through a target shader.
+/// Represents a chained methods/properties expression.
 /// </summary>
 public class ChainedExpression : IAssignableExpression
 {
@@ -10,12 +10,12 @@ public class ChainedExpression : IAssignableExpression
     /// <summary>
     /// The targeted object in which the member is accessed.
     /// </summary>
-    public IExpression Target { get; set; }
+    public IExpression Target { get; }
 
     /// <summary>
     /// The list of members of this chained expression.
     /// </summary>
-    public List<IExpression> Members { get; set; }
+    public List<IExpression> Members { get; }
 
     #endregion
 
@@ -28,19 +28,38 @@ public class ChainedExpression : IAssignableExpression
     /// <param name="members">The list of members in the chained expression.</param>
     public ChainedExpression(IExpression target, IEnumerable<IExpression> members)
     {
+        target.Parent = this;
+
         Target = target;
         Members = new(members);
+
+        foreach (IExpression member in Members)
+            member.Parent = this;
     }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Target.ResolveNode(source, offset) ??
+               Members.FirstOrDefault(m => m.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

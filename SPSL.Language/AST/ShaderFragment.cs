@@ -10,7 +10,7 @@ public class ShaderFragment : INamespaceChild, IBlock
 {
     #region Properties
 
-    public NamespacedReference ExtendedShaderFragment { get; set; } = NamespacedReference.Null;
+    public NamespacedReference ExtendedShaderFragment { get; init; }
 
     public OrderedSet<NamespacedReference> ExtendedInterfaces { get; }
 
@@ -34,37 +34,61 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     #region Constructors
 
-    public ShaderFragment(string name)
+    public ShaderFragment(Identifier name)
     {
+        name.Parent = this;
+
         Name = name;
         ExtendedShaderFragment = NamespacedReference.Null;
-        ExtendedInterfaces = new OrderedSet<NamespacedReference>();
-        Children = new OrderedSet<IBlockChild>();
+        ExtendedInterfaces = new();
+        Children = new();
     }
 
-    public ShaderFragment(string name, IEnumerable<ShaderFunction> functions)
+    public ShaderFragment(Identifier name, IEnumerable<ShaderFunction> functions)
     {
+        name.Parent = this;
+
         Name = name;
         ExtendedShaderFragment = NamespacedReference.Null;
-        ExtendedInterfaces = new OrderedSet<NamespacedReference>();
-        Children = new OrderedSet<IBlockChild>(functions.Cast<IBlockChild>());
+        ExtendedInterfaces = new();
+        Children = new(functions);
+
+        foreach (IBlockChild function in Children)
+            function.Parent = this;
     }
 
-    public ShaderFragment(string name, params ShaderFunction[] functions)
+    public ShaderFragment(Identifier name, params ShaderFunction[] functions)
     {
+        name.Parent = this;
+
         Name = name;
         ExtendedShaderFragment = NamespacedReference.Null;
-        ExtendedInterfaces = new OrderedSet<NamespacedReference>();
-        Children = new OrderedSet<IBlockChild>(functions.Cast<IBlockChild>());
+        ExtendedInterfaces = new();
+        Children = new(functions);
+
+        foreach (IBlockChild function in Children)
+            function.Parent = this;
     }
 
-    public ShaderFragment(string name, IEnumerable<ShaderFunction> functions,
-        IEnumerable<NamespacedReference> interfaces)
+    public ShaderFragment
+    (
+        Identifier name,
+        IEnumerable<ShaderFunction> functions,
+        IEnumerable<NamespacedReference> interfaces
+    )
     {
+        name.Parent = this;
+
         Name = name;
         ExtendedShaderFragment = NamespacedReference.Null;
-        ExtendedInterfaces = new OrderedSet<NamespacedReference>(interfaces);
-        Children = new OrderedSet<IBlockChild>(functions.Cast<IBlockChild>());
+        ExtendedInterfaces = new(interfaces);
+        Children = new(functions);
+
+        foreach (NamespacedReference reference in ExtendedInterfaces)
+            reference.Parent = this;
+
+        foreach (IBlockChild function in Children)
+            function.Parent = this;
     }
 
     #endregion
@@ -73,16 +97,19 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     public void Extends(NamespacedReference @interface)
     {
+        @interface.Parent = this;
         ExtendedInterfaces.Add(@interface);
     }
 
-    public void Extends(string @interface)
+    public void Extends(Identifier @interface)
     {
-        ExtendedInterfaces.Add(new NamespacedReference(@interface));
+        @interface.Parent = this;
+        Extends(new NamespacedReference(@interface));
     }
 
     public void Uses(NamespacedReference name)
     {
+        name.Parent = this;
         ImportedShaderFragments.Add(name);
     }
 
@@ -94,26 +121,31 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     public void AddGlobalVariable(GlobalVariable variable)
     {
+        variable.Parent = this;
         Children.Add(variable);
     }
 
     public void AddPermutationVariable(PermutationVariable permutation)
     {
+        permutation.Parent = this;
         Children.Add(permutation);
     }
 
     public void AddBuffer(StructuredBuffer buffer)
     {
+        buffer.Parent = this;
         Children.Add(buffer);
     }
 
     public void AddFunction(ShaderFunction function)
     {
+        function.Parent = this;
         Children.Add(function);
     }
 
     public void AddShaderMember(IShaderMember member)
     {
+        member.Parent = this;
         Children.Add(member);
     }
 
@@ -125,12 +157,12 @@ public class ShaderFragment : INamespaceChild, IBlock
     /// The parent <see cref="Language.AST.Namespace"/> of this one.
     /// Defaults to <c>null</c> for root namespaces.
     /// </summary>
-    public Namespace? Parent { get; set; }
+    public Namespace? ParentNamespace { get; set; }
 
     /// <summary>
     /// The namespace's name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; set; }
 
     #endregion
 
@@ -142,11 +174,25 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Name.ResolveNode(source, offset) ??
+               Children.FirstOrDefault(x => x.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

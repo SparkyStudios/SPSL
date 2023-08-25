@@ -24,9 +24,9 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
             or SPSLParser.MaterialStateValueContext
             or SPSLParser.MaterialShaderUsageContext;
 
-    public override IMaterialMember? VisitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context)
+    public override IMaterialMember VisitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context)
     {
-        MaterialParameterGroup materialParams = new(context.Name.Text)
+        MaterialParameterGroup materialParams = new(context.Name.ToIdentifier(_fileSource))
         {
             IsPartial = context.IsPartial,
             Start = context.Start.StartIndex,
@@ -40,8 +40,12 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
 
             if (param is SPSLParser.MaterialValueParameterContext v)
             {
-                materialParam = new(v.Type.Accept(new DataTypeVisitor(_fileSource)), v.Name.Text,
-                    MaterialParameterType.Value)
+                materialParam = new
+                (
+                    v.Type.Accept(new DataTypeVisitor(_fileSource)),
+                    v.Name.ToIdentifier(_fileSource),
+                    MaterialParameterType.Value
+                )
                 {
                     DefaultValue = v.DefaultValue?.Accept(new ExpressionVisitor(_fileSource)),
                     Start = v.Start.StartIndex,
@@ -87,9 +91,9 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         return materialParams;
     }
 
-    public override IMaterialMember? VisitMaterialStateValue([NotNull] SPSLParser.MaterialStateValueContext context)
+    public override IMaterialMember VisitMaterialStateValue([NotNull] SPSLParser.MaterialStateValueContext context)
     {
-        return new MaterialState(context.Name.Text)
+        return new MaterialState(context.Name.ToIdentifier(_fileSource))
         {
             Value = context.Value.Text,
             Start = context.Start.StartIndex,
@@ -98,16 +102,16 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         };
     }
 
-    public override IMaterialMember? VisitMaterialStateBlock([NotNull] SPSLParser.MaterialStateBlockContext context)
+    public override IMaterialMember VisitMaterialStateBlock([NotNull] SPSLParser.MaterialStateBlockContext context)
     {
         return new MaterialState
         (
-            context.Name.Text,
+            context.Name.ToIdentifier(_fileSource),
             context.materialStateComponent().Select
             (
                 c => new MaterialStateComponent
                 (
-                    c.Name.Text,
+                    c.Name.ToIdentifier(_fileSource),
                     c.initializationExpression().Accept(new ExpressionVisitor(_fileSource))!
                 )
                 {
@@ -134,11 +138,11 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         return context.Accept(new TypeVisitor(_fileSource));
     }
 
-    public override IMaterialMember? VisitSimpleMaterialShaderUsage(SPSLParser.SimpleMaterialShaderUsageContext context)
+    public override IMaterialMember VisitSimpleMaterialShaderUsage(SPSLParser.SimpleMaterialShaderUsageContext context)
     {
-        return new MaterialShader(context.Definition.Stage.Text)
+        return new MaterialShader(context.Definition.Stage.ToIdentifier(_fileSource))
         {
-            ReferencedShader = ASTVisitor.ParseNamespacedTypeName(context.Definition.Name),
+            ReferencedShader = context.Definition.Name.ToNamespaceReference(_fileSource),
             Stage = context.Definition.Stage.Text.ToShaderStage(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -146,12 +150,15 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         };
     }
 
-    public override IMaterialMember? VisitCustomizedMaterialShaderUsage(
+    public override IMaterialMember VisitCustomizedMaterialShaderUsage(
         SPSLParser.CustomizedMaterialShaderUsageContext context)
     {
-        MaterialShader shader = new(context.Name?.Text ?? context.Definition.Stage.Text)
+        MaterialShader shader = new
+        (
+            context.Name?.ToIdentifier(_fileSource) ?? context.Definition.Stage.ToIdentifier(_fileSource)
+        )
         {
-            ReferencedShader = ASTVisitor.ParseNamespacedTypeName(context.Definition.Name),
+            ReferencedShader = context.Definition.Name.ToNamespaceReference(_fileSource),
             Stage = context.Definition.Stage.Text.ToShaderStage(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -162,9 +169,10 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         (
             context.shaderFunction().Select(f => f.Accept(new ShaderFunctionVisitor(_fileSource))!)
         );
+
         shader.ImportedShaderFragments.AddRange
         (
-            context.useFragmentDirective().Select(c => ASTVisitor.ParseNamespacedTypeName(c.Name))
+            context.useFragmentDirective().Select(c => c.Name.ToNamespaceReference(_fileSource))
         );
 
         return shader;

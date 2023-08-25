@@ -3,7 +3,7 @@ using SPSL.Language.Utils;
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent an SPSL function signature.
+/// Represents an SPSL function signature.
 /// </summary>
 public class FunctionSignature : INode, IEquatable<FunctionSignature>
 {
@@ -23,10 +23,16 @@ public class FunctionSignature : INode, IEquatable<FunctionSignature>
     public FunctionSignature(IEnumerable<FunctionArgument> parameters)
     {
         Parameters = new(parameters);
+
+        foreach (FunctionArgument parameter in Parameters)
+            parameter.Parent = this;
     }
 
     public FunctionSignature(params FunctionArgument[] parameters)
     {
+        foreach (FunctionArgument parameter in parameters)
+            parameter.Parent = this;
+
         Parameters = new(parameters);
     }
 
@@ -36,18 +42,47 @@ public class FunctionSignature : INode, IEquatable<FunctionSignature>
 
     public void AddParameter(FunctionArgument parameter)
     {
+        parameter.Parent = this;
+        
         Parameters.Add(parameter);
+    }
+
+    #endregion
+
+    #region Overrides
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as FunctionSignature);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Parameters, Start, End, Source);
     }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Parameters.FirstOrDefault(p => p.ResolveNode(source, offset) is not null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 

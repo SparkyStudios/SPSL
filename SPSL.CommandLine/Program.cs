@@ -51,7 +51,7 @@ void RunOptions(Options opts)
     if (opts.Shader)
     {
         // Build AST
-        var ast = AST.FromShaderFile(opts.InputFile, opts.LibDirectories);
+        var ast = Ast.FromShaderFile(opts.InputFile, opts.LibDirectories);
 
         switch (opts.Generator)
         {
@@ -82,7 +82,7 @@ void RunOptions(Options opts)
     if (opts.Material)
     {
         // Build AST
-        var ast = AST.FromMaterialFile(opts.InputFile, opts.LibDirectories);
+        var ast = Ast.FromMaterialFile(opts.InputFile, opts.LibDirectories);
 
         Namespace ns;
         Material material;
@@ -99,7 +99,7 @@ void RunOptions(Options opts)
             return;
         }
 
-        MaterialReflection materialReflection = new(material.Name);
+        MaterialReflection materialReflection = new(material.Name.Value);
 
         bool usedMaterialParameters = false;
         List<NamespacedReference> materialShaders = new();
@@ -109,7 +109,7 @@ void RunOptions(Options opts)
             {
                 ExtendedShader = materialShader.ReferencedShader,
                 IsAbstract = false,
-                Parent = material.Parent,
+                ParentNamespace = material.ParentNamespace,
             };
 
             // Imported shader fragments
@@ -145,7 +145,7 @@ void RunOptions(Options opts)
             }
 
             // Entry points
-            var entryPoint = s.Children.SingleOrDefault(child => child is ShaderFunction { IsConstructor: true } || child is IAnnotable a && a.Annotations.Any(a => a.Name == "entry"));
+            var entryPoint = s.Children.SingleOrDefault(child => child is ShaderFunction { IsConstructor: true } || child is IAnnotated a && a.Annotations.Any(a => a.Identifier.Value == "entry"));
             if (entryPoint is null)
             {
                 // Tries in the parent shader
@@ -159,7 +159,7 @@ void RunOptions(Options opts)
                     return;
                 }
 
-                entryPoint = refShader.Children.SingleOrDefault(child => child is ShaderFunction { IsConstructor: true } || child is IAnnotable a && a.Annotations.Any(a => a.Name == "entry"));
+                entryPoint = refShader.Children.SingleOrDefault(child => child is ShaderFunction { IsConstructor: true } || child is IAnnotated a && a.Annotations.Any(a => a.Identifier.Value == "entry"));
                 if (entryPoint is null)
                 {
                     Console.Error.WriteLine($"Unable to find entry point for shader stage {s.Stage}.");
@@ -168,14 +168,14 @@ void RunOptions(Options opts)
                 }
             }
 
-            materialReflection.EntryPoints[s.Stage] = entryPoint.Name;
+            materialReflection.EntryPoints[s.Stage] = entryPoint.Name.Value;
 
             ns.AddChild(s);
             materialShaders.Add(s.GetReference());
         }
 
         List<NamespacedReference> namespaces = new() { ns.GetReference() };
-        namespaces.AddRange(material.Children.OfType<MaterialShader>().Select(shader => new NamespacedReference(shader.ReferencedShader.NamespaceName)));
+        namespaces.AddRange(material.Children.OfType<MaterialShader>().Select(shader => new NamespacedReference(shader.ReferencedShader.Names)));
 
         TranslatorConfiguration config = new()
         {

@@ -1,4 +1,5 @@
 ﻿using Antlr4.Runtime.Misc;
+using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
 using SPSL.Language.Symbols;
 using SPSL.Language.Symbols.Modifiers;
@@ -9,7 +10,6 @@ namespace SPSL.Language.Visitors;
 public class SymbolVisitor : SPSLBaseVisitor<Symbol>
 {
     private readonly SymbolTable _globalSymbolTable;
-    private readonly ReferenceTable _references;
     private readonly string _fileSource;
 
     private readonly Stack<SymbolTable> _stack = new();
@@ -26,8 +26,6 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Scope,
             Source = fileSource,
         };
-
-        _references = new();
     }
 
     protected override Symbol AggregateResult(Symbol aggregate, Symbol nextResult)
@@ -80,39 +78,32 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitUseNamespaceDirective([NotNull] SPSLParser.UseNamespaceDirectiveContext context)
-    {
-        var parts = context.Name.IDENTIFIER().Select(ns => ns.Symbol).ToArray();
-
-        for (uint i = 0; i < parts.Length; i++)
-        {
-            Reference ns = new()
-            {
-                Start = parts[i].StartIndex,
-                End = parts[i].StopIndex,
-                Source = _fileSource,
-            };
-
-            _references.Add(parts[i].Text, ns);
-        }
-
-        return _globalSymbolTable;
-    }
-
     public override Symbol VisitPermutationVariableBool([NotNull] SPSLParser.PermutationVariableBoolContext context)
     {
-        Symbol permutation = new()
+        SymbolTable permutation = new()
         {
             Name = context.Identifier.GetText(),
             Source = _fileSource,
-            Start = context.Identifier.Start.StartIndex,
-            End = context.Identifier.Stop.StopIndex,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
             Type = SymbolType.Permutation,
             Modifiers = new List<ISymbolModifier>
             {
                 new PermutationTypeModifier(Core.PermutationVariableType.Bool)
             }
         };
+
+        permutation.Add
+        (
+            new()
+            {
+                Name = context.Identifier.GetText(),
+                Source = _fileSource,
+                Start = context.Identifier.Start.StartIndex,
+                End = context.Identifier.Stop.StopIndex,
+                Type = SymbolType.Identifier,
+            }
+        );
 
         _stack.Peek().Add(permutation);
 
@@ -121,12 +112,12 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
 
     public override Symbol VisitPermutationVariableEnum([NotNull] SPSLParser.PermutationVariableEnumContext context)
     {
-        Symbol permutation = new()
+        SymbolTable permutation = new()
         {
             Name = context.Identifier.GetText(),
             Source = _fileSource,
-            Start = context.Identifier.Start.StartIndex,
-            End = context.Identifier.Stop.StopIndex,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
             Type = SymbolType.Permutation,
             Modifiers = new List<ISymbolModifier>
             {
@@ -138,6 +129,33 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         };
 
+        permutation.Add
+        (
+            new()
+            {
+                Name = context.Identifier.GetText(),
+                Source = _fileSource,
+                Start = context.Identifier.Start.StartIndex,
+                End = context.Identifier.Stop.StopIndex,
+                Type = SymbolType.Identifier,
+            }
+        );
+
+        foreach (ITerminalNode node in context.IDENTIFIER())
+        {
+            permutation.Add
+            (
+                new()
+                {
+                    Name = node.Symbol.Text,
+                    Source = _fileSource,
+                    Start = node.Symbol.StartIndex,
+                    End = node.Symbol.StopIndex,
+                    Type = SymbolType.Constant,
+                }
+            );
+        }
+
         _stack.Peek().Add(permutation);
 
         return _globalSymbolTable;
@@ -146,18 +164,30 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
     public override Symbol VisitPermutationVariableInteger(
         [NotNull] SPSLParser.PermutationVariableIntegerContext context)
     {
-        Symbol permutation = new()
+        SymbolTable permutation = new()
         {
             Name = context.Identifier.GetText(),
             Source = _fileSource,
-            Start = context.Identifier.Start.StartIndex,
-            End = context.Identifier.Stop.StopIndex,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
             Type = SymbolType.Permutation,
             Modifiers = new List<ISymbolModifier>
             {
                 new PermutationTypeModifier(Core.PermutationVariableType.Integer)
             }
         };
+
+        permutation.Add
+        (
+            new()
+            {
+                Name = context.Identifier.GetText(),
+                Source = _fileSource,
+                Start = context.Identifier.Start.StartIndex,
+                End = context.Identifier.Stop.StopIndex,
+                Type = SymbolType.Identifier,
+            }
+        );
 
         _stack.Peek().Add(permutation);
 
@@ -175,14 +205,15 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Struct,
         };
 
-        structure.Add(
+        structure.Add
+        (
             new()
             {
                 Name = context.Definition.Name.Text,
                 Source = _fileSource,
                 Start = context.Definition.Name.StartIndex,
                 End = context.Definition.Name.StopIndex,
-                Type = SymbolType.Struct
+                Type = SymbolType.Identifier
             }
         );
 
@@ -219,14 +250,26 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         {
             Name = context.Function.Head.Name.Text,
             Source = _fileSource,
-            Start = context.Function.Head.Name.StartIndex,
-            End = context.Function.Head.Name.StopIndex,
+            Start = context.Function.Start.StartIndex,
+            End = context.Function.Stop.StopIndex,
             Type = SymbolType.Function,
             Modifiers = new List<ISymbolModifier>
             {
                 new SymbolTypeModifier(context.Function.Head.Type.GetText()),
             }
         };
+
+        function.Add
+        (
+            new()
+            {
+                Name = context.Function.Head.Name.Text,
+                Source = _fileSource,
+                Start = context.Function.Head.Name.StartIndex,
+                End = context.Function.Head.Name.StopIndex,
+                Type = SymbolType.Identifier
+            }
+        );
 
         _stack.Peek().Add(function);
 
@@ -245,10 +288,22 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         {
             Name = context.Definition.Name.Text,
             Source = _fileSource,
-            Start = context.Definition.Name.StartIndex,
-            End = context.Definition.Name.StopIndex,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
             Type = SymbolType.Struct,
         };
+
+        enumeration.Add
+        (
+            new()
+            {
+                Name = context.Definition.Name.Text,
+                Source = _fileSource,
+                Start = context.Definition.Name.StartIndex,
+                End = context.Definition.Name.StopIndex,
+                Type = SymbolType.Identifier
+            }
+        );
 
         _stack.Peek().Add(enumeration);
 
@@ -288,7 +343,7 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Interface,
         };
 
-        foreach (var function in context.functionHead())
+        foreach (SPSLParser.FunctionHeadContext function in context.functionHead())
         {
             Symbol f = new()
             {
@@ -318,6 +373,18 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Fragment,
         };
 
+        fragment.Add
+        (
+            new()
+            {
+                Name = context.Definition.Name.Text,
+                Source = _fileSource,
+                Start = context.Definition.Name.StartIndex,
+                End = context.Definition.Name.StopIndex,
+                Type = SymbolType.Identifier
+            }
+        );
+
         _stack.Peek().Add(fragment);
 
         _stack.Push(fragment);
@@ -338,8 +405,8 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                 Name = gsd.Name.Text,
                 Type = SymbolType.Shader,
                 Source = _fileSource,
-                Start = gsd.Name.StartIndex,
-                End = gsd.Name.StopIndex,
+                Start = gsd.Start.StartIndex,
+                End = gsd.Stop.StopIndex,
                 Modifiers = new List<ISymbolModifier>
                 {
                     new ShaderStageModifier(gsd.Type.Text.ToShaderStage()),
@@ -351,8 +418,8 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                 Name = csd.Name.Text,
                 Type = SymbolType.Shader,
                 Source = _fileSource,
-                Start = csd.Name.StartIndex,
-                End = csd.Name.StopIndex,
+                Start = csd.Start.StartIndex,
+                End = csd.Stop.StopIndex,
                 Modifiers = new List<ISymbolModifier>
                 {
                     new ShaderStageModifier(csd.Type.Text.ToShaderStage()),
@@ -369,6 +436,19 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             },
         };
 
+        // TODO
+        // shader.Add
+        // (
+        //     new()
+        //     {
+        //         Name = context.Definition.Name.Text,
+        //         Source = _fileSource,
+        //         Start = context.Definition.Name.StartIndex,
+        //         End = context.Definition.Name.StopIndex,
+        //         Type = SymbolType.Identifier
+        //     }
+        // );
+
         _stack.Peek().Add(shader);
 
         _stack.Push(shader);
@@ -376,25 +456,6 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         VisitChildren(context);
 
         _stack.Pop();
-
-        return _globalSymbolTable;
-    }
-
-    public override Symbol VisitUseFragmentDirective([NotNull] SPSLParser.UseFragmentDirectiveContext context)
-    {
-        var parts = context.Name.IDENTIFIER().Select(ns => ns.Symbol).ToArray();
-
-        for (uint i = 0; i < parts.Length; i++)
-        {
-            Reference ns = new()
-            {
-                Start = parts[i].StartIndex,
-                End = parts[i].StopIndex,
-                Source = _fileSource,
-            };
-
-            _references.Add(parts[i].Text, ns);
-        }
 
         return _globalSymbolTable;
     }
@@ -414,6 +475,18 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                 new SymbolTypeModifier(context.Function.Head.Type.GetText()),
             }
         };
+
+        function.Add
+        (
+            new()
+            {
+                Name = context.Function.Head.Name.Text,
+                Source = _fileSource,
+                Start = context.Function.Head.Name.StartIndex,
+                End = context.Function.Head.Name.StopIndex,
+                Type = SymbolType.Identifier
+            }
+        );
 
         _stack.Peek().Add(function);
 
@@ -437,6 +510,18 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Constructor
         };
 
+        constructor.Add
+        (
+            new()
+            {
+                Name = context.Name.Text,
+                Source = _fileSource,
+                Start = context.Name.StartIndex,
+                End = context.Name.StopIndex,
+                Type = SymbolType.Identifier
+            }
+        );
+
         _stack.Peek().Add(constructor);
 
         _stack.Push(constructor);
@@ -444,28 +529,6 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         VisitChildren(context);
 
         _stack.Pop();
-
-        return _globalSymbolTable;
-    }
-
-    public override Symbol VisitFunctionHead(SPSLParser.FunctionHeadContext context)
-    {
-        Symbol function = new()
-        {
-            Name = context.Name.Text,
-            Source = _fileSource,
-            Start = context.Name.StartIndex,
-            End = context.Name.StopIndex,
-            Type = SymbolType.Function,
-            Modifiers = new List<ISymbolModifier>
-            {
-                new SymbolTypeModifier(context.Type.GetText()),
-            }
-        };
-
-        _stack.Peek().Add(function);
-
-        VisitChildren(context);
 
         return _globalSymbolTable;
     }

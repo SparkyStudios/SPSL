@@ -4,9 +4,9 @@ using SPSL.Language.Utils;
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent an SPSL type.
+/// Represents an SPSL type.
 /// </summary>
-public class Type : INamespaceChild, IShaderMember, IMaterialMember
+public class Type : INamespaceChild, IShaderMember, IMaterialMember, IDocumented
 {
     #region Properties
 
@@ -16,7 +16,7 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     /// <value>
     /// A value of the <see cref="TypeKind"/> enumeration.
     /// </value>
-    public TypeKind Kind { get; set; }
+    public TypeKind Kind { get; }
 
     /// <summary>
     /// The collection of members in this types.
@@ -31,7 +31,7 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     /// <summary>
     /// The type which this one extends, if any.
     /// </summary>
-    public NamespacedReference ExtendedType { get; set; }
+    public NamespacedReference ExtendedType { get; init; } = NamespacedReference.Null;
 
     #endregion
 
@@ -40,13 +40,20 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     /// <summary>
     /// Initialize a new instance of the <see cref="Type"/>.
     /// </summary>
-    public Type()
+    /// <param name="kind">The type kind.</param>
+    /// <param name="name">The type name.</param>
+    /// <param name="members">The collection of type members.</param>
+    public Type(TypeKind kind, Identifier name, params TypeProperty[] members)
     {
-        Name = string.Empty;
-        Kind = TypeKind.Unknown;
-        ExtendedType = NamespacedReference.Null;
-        Properties = new();
+        name.Parent = this;
+
+        Kind = kind;
+        Name = name;
+        Properties = new(members);
         Functions = new();
+
+        foreach (TypeProperty member in members)
+            member.Parent = this;
     }
 
     /// <summary>
@@ -55,26 +62,17 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     /// <param name="kind">The type kind.</param>
     /// <param name="name">The type name.</param>
     /// <param name="members">The collection of type members.</param>
-    public Type(TypeKind kind, string name, params TypeProperty[] members)
-        : this()
+    public Type(TypeKind kind, Identifier name, IEnumerable<TypeProperty> members)
     {
-        Kind = kind;
-        Name = name;
-        Properties = new(members);
-    }
+        name.Parent = this;
 
-    /// <summary>
-    /// Initialize a new instance of the <see cref="Type"/>.
-    /// </summary>
-    /// <param name="kind">The type kind.</param>
-    /// <param name="name">The type name.</param>
-    /// <param name="members">The collection of type members.</param>
-    public Type(TypeKind kind, string name, IEnumerable<TypeProperty> members)
-        : this()
-    {
         Kind = kind;
         Name = name;
         Properties = new(members);
+        Functions = new();
+
+        foreach (TypeProperty member in Properties)
+            member.Parent = this;
     }
 
     #endregion
@@ -87,6 +85,7 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     /// <param name="property">The property definition.</param>
     public void AddProperty(TypeProperty property)
     {
+        property.Parent = this;
         Properties.Add(property);
     }
 
@@ -96,6 +95,7 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     /// <param name="function">The function definition.</param>
     public void AddFunction(TypeFunction function)
     {
+        function.Parent = this;
         Functions.Add(function);
     }
 
@@ -107,22 +107,43 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     /// The parent <see cref="Language.AST.Namespace"/> of this one.
     /// Defaults to <c>null</c> for root namespaces.
     /// </summary>
-    public Namespace? Parent { get; set; }
+    public Namespace? ParentNamespace { get; set; }
 
     /// <summary>
     /// The type name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; set; }
+
+    #endregion
+
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Properties.FirstOrDefault(p => p.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               Functions.FirstOrDefault(f => f.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               ExtendedType.ResolveNode(source, offset) ?? Name.ResolveNode(source, offset);
+    }
 
     #endregion
 }

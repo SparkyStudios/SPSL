@@ -9,7 +9,7 @@ namespace SPSL.Language.Visitors;
 
 public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
 {
-    private static uint _streamCount = 0;
+    private static uint _streamCount;
 
     protected override IShaderMember? DefaultResult => null;
 
@@ -27,7 +27,7 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
         StreamProperty property = new
         (
             bufferComponentContext.Type.Accept(new DataTypeVisitor(_fileSource)),
-            bufferComponentContext.Name.Text,
+            bufferComponentContext.Name.ToIdentifier(_fileSource),
             context.Flow.Text switch
             {
                 "input" => StreamPropertyFlow.Input,
@@ -56,7 +56,7 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
     {
         StructuredBuffer buffer = new
         (
-            context.Name.Text,
+            context.Name.ToIdentifier(_fileSource),
             context.bufferComponent().Select(c => c.ToTypeProperty(_fileSource))
         )
         {
@@ -75,7 +75,7 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
     {
         TypedBuffer buffer = new
         (
-            context.Name.Text,
+            context.Name.ToIdentifier(_fileSource),
             context.dataType().Accept(new DataTypeVisitor(_fileSource))
         )
         {
@@ -100,11 +100,11 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
         return context.Accept(new TypeVisitor(_fileSource));
     }
 
-    public override IShaderMember? VisitStream(SPSLParser.StreamContext context)
+    public override IShaderMember VisitStream(SPSLParser.StreamContext context)
     {
         return new Stream
         (
-            $"@stream{++_streamCount}",
+            new() { Value = $"@stream{++_streamCount}" },
             context.streamProperty().Select(ParseStreamProperty)
         )
         {
@@ -114,7 +114,7 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
         };
     }
 
-    public override IShaderMember? VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
+    public override IShaderMember VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
     {
         return new GlobalVariable
         (
@@ -123,7 +123,7 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             context.Definition.Expression.Accept(new ExpressionVisitor(_fileSource))!
         )
         {
-            Name = context.Definition.Identifier.Identifier.Text,
+            Name = context.Definition.Identifier.Identifier.ToIdentifier(_fileSource),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource

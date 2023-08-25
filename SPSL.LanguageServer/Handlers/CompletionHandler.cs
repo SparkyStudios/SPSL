@@ -1,4 +1,3 @@
-using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -6,6 +5,7 @@ using SPSL.Language.Symbols;
 using SPSL.Language.Symbols.Modifiers;
 using SPSL.LanguageServer.Core;
 using SPSL.LanguageServer.Services;
+using SPSL.LanguageServer.Utils;
 
 namespace SPSL.LanguageServer.Handlers;
 
@@ -34,36 +34,6 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
     {
         _symbolProviderService = symbolProviderService;
         _documentManagerService = documentManagerService;
-
-        _symbolProviderService.DataUpdated += SymbolProviderServiceOnDataUpdated;
-    }
-
-    private void SymbolProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<SymbolTable> e)
-    {
-        // Console.WriteLine("Updated symbol table");
-    }
-
-    private SymbolTable GetClosestSymbolTable(DocumentUri uri, SymbolTable table, int offset)
-    {
-        while (true)
-        {
-            SymbolTable currentSymbolTable = table;
-
-            foreach (Symbol item in table.Symbols)
-            {
-                if (item is not SymbolTable symbol || symbol.Source != uri.ToString()) continue;
-
-                int start = item.Start;
-                int end = item.End;
-
-                if (!currentSymbolTable.IsFileSymbol &&
-                    (start < currentSymbolTable.Start || end > currentSymbolTable.End)) continue;
-                if (currentSymbolTable.IsFileSymbol || (start <= offset && offset <= end)) currentSymbolTable = symbol;
-            }
-
-            if (currentSymbolTable == table) return table;
-            table = currentSymbolTable;
-        }
     }
 
     public CompletionRegistrationOptions GetRegistrationOptions
@@ -91,7 +61,12 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
         if (symbolTable == null)
             return Task.FromResult(new CompletionList());
 
-        var scope = GetClosestSymbolTable(request.TextDocument.Uri, symbolTable, document.OffsetAt(request.Position));
+        SymbolTable scope = SymbolTableUtils.GetParentSymbolTableAtOffset
+        (
+            request.TextDocument.Uri,
+            symbolTable,
+            document.OffsetAt(request.Position)
+        );
 
         var parentItem = scope.Parent?.Symbols.Select(symbol => new CompletionItem
         {

@@ -1,7 +1,7 @@
 ﻿namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent any kind of data type.
+/// Represents any kind of data type.
 /// </summary>
 public interface IDataType : INode, IEquatable<IDataType>
 {

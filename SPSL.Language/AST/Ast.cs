@@ -4,15 +4,15 @@ using SPSL.Language.Visitors;
 
 namespace SPSL.Language.AST;
 
-public class AST : IEnumerable<Namespace>
+public class Ast : IEnumerable<Namespace>
 {
     private class NamespaceNameComparer : IComparer<KeyValuePair<string, Namespace>>
     {
         public int Compare(KeyValuePair<string, Namespace> x, KeyValuePair<string, Namespace> y)
         {
-            var l = x.Key;
-            var r = y.Key;
-            var f = -1;
+            string l = x.Key;
+            string r = y.Key;
+            int f = -1;
 
             if (x.Key.Length < y.Key.Length)
             {
@@ -35,34 +35,43 @@ public class AST : IEnumerable<Namespace>
         Material
     }
 
-    private static AST ParseDirectory(string p, IEnumerable<string> libs, HashSet<string> importedNamespaces)
+    private static Ast ParseDirectory
+    (
+        string p,
+        IEnumerable<string> libs,
+        HashSet<string> importedNamespaces
+    )
     {
-        AST ast = new();
+        Ast ast = new();
         IEnumerable<string> paths = libs as string[] ?? libs.ToArray();
 
-        foreach (var libraryPath in paths.Select(Path.GetFullPath))
+        foreach (string libraryPath in paths.Select(Path.GetFullPath))
         {
             if (!Directory.Exists(libraryPath))
                 continue;
 
-            foreach (var file in Directory.GetFiles(Path.Join(libraryPath, p), "*.spsl*",
+            foreach (string file in Directory.GetFiles(Path.Join(libraryPath, p), "*.spsl*",
                          SearchOption.AllDirectories))
             {
-                var ns = Path.GetDirectoryName(file)![(libraryPath.Length + 1)..]
-                    .Replace(Path.DirectorySeparatorChar.ToString(), "::");
-                var pos = ns.LastIndexOf("::", StringComparison.Ordinal);
+                string ns = Path.GetDirectoryName(file)![(libraryPath.Length + 1)..]
+                    .Replace(Path.DirectorySeparatorChar.ToString(), Namespace.Separator);
 
-                ParseFileMode mode = file.EndsWith(".spslm", StringComparison.Ordinal) ? ParseFileMode.Material : ParseFileMode.Shader;
-                AST parsed = ParseFile(mode, file, paths, importedNamespaces);
+                int pos = ns.LastIndexOf(Namespace.Separator, StringComparison.Ordinal);
+
+                ParseFileMode mode = file.EndsWith(".spslm", StringComparison.Ordinal)
+                    ? ParseFileMode.Material
+                    : ParseFileMode.Shader;
+
+                Ast parsed = ParseFile(mode, file, paths, importedNamespaces);
 
                 if (pos >= 0)
                 {
-                    var parent = ns[..pos];
+                    string parent = ns[..pos];
 
                     if (ast.FirstOrDefault(n => n.FullName == parent) is { } parentNode)
                     {
-                        parsed[ns].Name = ns[(pos + 2)..];
-                        parsed[ns].Parent = parentNode;
+                        parsed[ns].Name = new() { Value = ns[(pos + Namespace.SeparatorLength)..] };
+                        parsed[ns].ParentNamespace = parentNode;
 
                         if (parentNode.Namespaces.FirstOrDefault(n => n.FullName == parsed[ns].FullName) is
                             { } parentNamespace)
@@ -80,7 +89,13 @@ public class AST : IEnumerable<Namespace>
         return ast;
     }
 
-    private static AST ParseFile(ParseFileMode mode, string p, IEnumerable<string> libs, HashSet<string> importedNamespaces)
+    private static Ast ParseFile
+    (
+        ParseFileMode mode,
+        string p,
+        IEnumerable<string> libs,
+        HashSet<string> importedNamespaces
+    )
     {
         using var spsl = new StreamReader(p);
         IEnumerable<string> paths = libs as string[] ?? libs.ToArray();
@@ -88,45 +103,45 @@ public class AST : IEnumerable<Namespace>
         // ---- Build AST
 
         SPSLLexer lexer = new(new AntlrInputStream(spsl));
-
         lexer.RemoveErrorListeners();
 
         SPSLParser parser = new(new CommonTokenStream(lexer));
         parser.RemoveErrorListeners();
 
-        ASTVisitor shaderVisitor = new(p);
+        AstVisitor shaderVisitor = new(p);
 
-        AST ast = shaderVisitor.Visit(mode == ParseFileMode.Shader ? parser.shaderFile() : parser.materialFile());
+        Ast ast = shaderVisitor.Visit(mode == ParseFileMode.Shader ? parser.shaderFile() : parser.materialFile());
 
-        foreach (var import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
+        foreach (string import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
         {
-            ast.Merge(ParseDirectory(Path.Join(import.Split("::")), paths, importedNamespaces));
+            ast.Merge(ParseDirectory(Path.Join(import.Split(Namespace.Separator)), paths, importedNamespaces));
             importedNamespaces.Add(import);
         }
 
         return ast;
     }
 
-    public static AST FromShaderFile(string path, IEnumerable<string> libraryPaths)
+    public static Ast FromShaderFile(string path, IEnumerable<string> libraryPaths)
     {
         HashSet<string> importedNamespaces = new();
         return ParseFile(ParseFileMode.Shader, path, libraryPaths, importedNamespaces);
     }
 
-    public static AST FromMaterialFile(string path, IEnumerable<string> libraryPaths)
+    public static Ast FromMaterialFile(string path, IEnumerable<string> libraryPaths)
     {
         HashSet<string> importedNamespaces = new();
         return ParseFile(ParseFileMode.Material, path, libraryPaths, importedNamespaces);
     }
 
-    public AST AddNamespace(Namespace ns)
+    public Ast AddNamespace(Namespace ns)
     {
         if (_namespaces.TryGetValue(ns.FullName, out Namespace? found))
             found.Merge(ns);
         else
             _namespaces.Add(ns.FullName, ns);
 
-        _namespaces = _namespaces.Order(new NamespaceNameComparer()).ToDictionary(name => name.Key, value => value.Value);
+        _namespaces = _namespaces.Order(new NamespaceNameComparer())
+            .ToDictionary(name => name.Key, value => value.Value);
 
         return this;
     }
@@ -141,12 +156,18 @@ public class AST : IEnumerable<Namespace>
         return _namespaces.TryGetValue(name, out Namespace? found) ? found : null;
     }
 
-    public AST Merge(AST ast)
+    public Ast Merge(Ast ast)
     {
         foreach (var ns in ast._namespaces)
             AddNamespace(ns.Value);
 
         return this;
+    }
+
+    public INode? ResolveNode(string source, int offset)
+    {
+        return _namespaces.Values.FirstOrDefault(ns => ns.ResolveNode(source, offset) is not null)
+            ?.ResolveNode(source, offset);
     }
 
     IEnumerator IEnumerable.GetEnumerator()

@@ -1,30 +1,31 @@
+using SPSL.Language.Core;
 using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a property in a <see cref="Language.AST.Stream"/>.
+/// Represents a property in a <see cref="Language.AST.Stream"/>.
 /// </summary>
-public class StreamProperty : IAnnotable, INode
+public class StreamProperty : IAnnotated, INode
 {
     #region Properties
 
     /// <summary>
     /// The reference to the type definition of this member.
     /// </summary>
-    public IDataType Type { get; set; }
+    public IDataType Type { get; }
 
     /// <summary>
     /// The member name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; }
 
     /// <summary>
     /// Specifies the flow direction of this member. <see cref="StreamPropertyFlow.Input"/> are
     /// used as vertex streams, <see cref="StreamPropertyFlow.Output"/> as edge streams.
     /// </summary>
     /// <value></value>
-    public StreamPropertyFlow DataFlow { get; set; }
+    public StreamPropertyFlow DataFlow { get; }
 
     #endregion
 
@@ -36,8 +37,11 @@ public class StreamProperty : IAnnotable, INode
     /// <param name="type">The member type.</param>
     /// <param name="name">The member name.</param>
     /// <param name="dataFlow">Specifies the flow direction of this member.</param>
-    public StreamProperty(IDataType type, string name, StreamPropertyFlow dataFlow)
+    public StreamProperty(IDataType type, Identifier name, StreamPropertyFlow dataFlow)
     {
+        type.Parent = this;
+        name.Parent = this;
+
         Type = type;
         Name = name;
         DataFlow = dataFlow;
@@ -45,7 +49,7 @@ public class StreamProperty : IAnnotable, INode
 
     #endregion
 
-    #region IAnnotable Implementation
+    #region IAnnotated Implementation
 
     public OrderedSet<Annotation> Annotations { get; } = new();
 
@@ -53,11 +57,25 @@ public class StreamProperty : IAnnotable, INode
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Type.ResolveNode(source, offset) ?? Name.ResolveNode(source, offset) ??
+            Annotations.FirstOrDefault(a => a.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

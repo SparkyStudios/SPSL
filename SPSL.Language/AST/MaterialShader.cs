@@ -13,12 +13,12 @@ public class MaterialShader : IBlock, IMaterialMember
     /// <summary>
     /// The fully-qualified name of the referenced <see cref="Shader"/>.
     /// </summary>
-    public NamespacedReference ReferencedShader { get; set; } = NamespacedReference.Null;
+    public NamespacedReference ReferencedShader { get; init; } = NamespacedReference.Null;
 
     /// <summary>
     /// The shader stage.
     /// </summary>
-    public ShaderStage Stage { get; set; }
+    public ShaderStage Stage { get; init; }
 
     /// <summary>
     /// The list of imported <see cref="ShaderFragment"/>s.
@@ -29,8 +29,10 @@ public class MaterialShader : IBlock, IMaterialMember
 
     #region Constructors
 
-    public MaterialShader(string name)
+    public MaterialShader(Identifier name)
     {
+        name.Parent = this;
+
         Name = name;
     }
 
@@ -40,12 +42,14 @@ public class MaterialShader : IBlock, IMaterialMember
 
     public void Uses(NamespacedReference name)
     {
+        name.Parent = this;
         ImportedShaderFragments.Add(name);
     }
 
     public void Uses(IEnumerable<NamespacedReference> names)
     {
-        ImportedShaderFragments.AddRange(names);
+        foreach (NamespacedReference name in names)
+            Uses(name);
     }
 
     #endregion
@@ -61,17 +65,33 @@ public class MaterialShader : IBlock, IMaterialMember
     /// <summary>
     /// The material shader name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; set; }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return ReferencedShader.ResolveNode(source, offset) ??
+               ImportedShaderFragments.FirstOrDefault(x => x.ResolveNode(source, offset) != null)
+                   ?.ResolveNode(source, offset) ??
+               Name.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

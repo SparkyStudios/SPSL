@@ -14,21 +14,25 @@ public class Symbol
 
     public int End { get; init; } = -1;
 
-    public IEnumerable<ISymbolModifier> Modifiers { get; init; } = Array.Empty<ISymbolModifier>();
+    public IEnumerable<ISymbolModifier> Modifiers { get; init; } = Enumerable.Empty<ISymbolModifier>();
 
     public SymbolTable? Parent { get; internal set; }
+    
+    public string Key { get; internal set; } = string.Empty;
+    
+    public ICollection<Reference> References { get; internal set; } = new List<Reference>();
 
     public bool IsFileSymbol => Start == -1 && End == -1;
 
     #region Methods
 
-    public Reference ToReference()
+    public Reference ToReference(string? source = null, int? start = null, int? end = null)
     {
         return new()
         {
-            Source = Source,
-            Start = Start,
-            End = End
+            Source = source ?? Source,
+            Start = start ?? Start,
+            End = end ?? End
         };
     }
     

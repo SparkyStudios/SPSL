@@ -1,7 +1,7 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent an invocation parameter.
+/// Represents an invocation parameter.
 /// </summary>
 public class InvocationParameter : INode
 {
@@ -10,7 +10,7 @@ public class InvocationParameter : INode
     /// <summary>
     /// The invocation parameter expression.
     /// </summary>
-    public IExpression Expression { get; set; }
+    public IExpression Expression { get; }
 
     #endregion
 
@@ -22,6 +22,8 @@ public class InvocationParameter : INode
     /// <param name="expression">The parameter expression.</param>
     public InvocationParameter(IExpression expression)
     {
+        expression.Parent = this;
+
         Expression = expression;
     }
 
@@ -29,11 +31,24 @@ public class InvocationParameter : INode
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Expression.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

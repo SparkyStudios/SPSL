@@ -2,17 +2,26 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
+/// <summary>
+/// Represents a set of statements in SPSL.
+/// </summary>
 public class StatementBlock : IStatement
 {
     #region Constructors
 
     internal StatementBlock(OrderedSet<IStatement> children)
     {
+        foreach (IStatement child in children)
+            child.Parent = this;
+
         Children = children;
     }
 
     public StatementBlock(params IStatement[] children)
     {
+        foreach (IStatement child in children)
+            child.Parent = this;
+
         Children = new(children);
     }
 
@@ -20,17 +29,32 @@ public class StatementBlock : IStatement
 
     #region IBlock Implementation
 
+    /// <inheritdoc cref="IBlock.Children" />
     public OrderedSet<IStatement> Children { get; }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Children.FirstOrDefault(child => child.ResolveNode(source, offset) != null)
+                   ?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

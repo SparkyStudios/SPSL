@@ -2,6 +2,7 @@ using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
 using SPSL.Language.Utils;
+using static SPSL.Language.SPSLParser;
 
 namespace SPSL.Language.Visitors;
 
@@ -24,20 +25,20 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     protected override bool ShouldVisitNextChild(IRuleNode node, IExpression? currentResult)
     {
-        return node is SPSLParser.ExpressionStatementContext or SPSLParser.BasicExpressionContext
-            or SPSLParser.ParenthesizedExpressionContext or SPSLParser.PrimitiveExpressionContext
-            or SPSLParser.ConstantExpressionContext or SPSLParser.MethodMemberReferenceExpressionContext
-            or SPSLParser.InvocationExpressionContext or SPSLParser.ArrayAccessExpressionContext
-            or SPSLParser.NewInstanceExpressionContext or SPSLParser.AssignableExpressionContext
-            or SPSLParser.ChainedExpressionContext or SPSLParser.AssignableChainedExpressionContext
-            or SPSLParser.ChainableExpressionContext or SPSLParser.PropertyMemberReferenceExpressionContext
-            or SPSLParser.ContextAccessExpressionContext or SPSLParser.MemberReferenceExpressionContext
-            or SPSLParser.ReferencableExpressionContext or SPSLParser.AssignableChainableExpressionContext;
+        return node is ExpressionStatementContext or BasicExpressionContext
+            or ParenthesizedExpressionContext or PrimitiveExpressionContext
+            or ConstantExpressionContext or MethodMemberReferenceExpressionContext
+            or InvocationExpressionContext or ArrayAccessExpressionContext
+            or NewInstanceExpressionContext or AssignableExpressionContext
+            or ChainedExpressionContext or AssignableChainedExpressionContext
+            or ChainableExpressionContext or PropertyMemberReferenceExpressionContext
+            or ContextAccessExpressionContext or MemberReferenceExpressionContext
+            or ReferencableExpressionContext or AssignableChainableExpressionContext;
     }
 
-    public override IExpression VisitBasicExpression(SPSLParser.BasicExpressionContext context)
+    public override IExpression VisitBasicExpression(BasicExpressionContext context)
     {
-        return new BasicExpression(context.Identifier.Text)
+        return new BasicExpression(context.Identifier.ToIdentifier(_fileSource))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -45,7 +46,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitParenthesizedExpression(SPSLParser.ParenthesizedExpressionContext context)
+    public override IExpression VisitParenthesizedExpression(ParenthesizedExpressionContext context)
     {
         return new ParenthesizedExpression(context.Expression.Accept(this)!)
         {
@@ -55,22 +56,22 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitPrimitiveExpression(SPSLParser.PrimitiveExpressionContext context)
+    public override IExpression VisitPrimitiveExpression(PrimitiveExpressionContext context)
     {
         return context.Accept(new LiteralVisitor(_fileSource))!;
     }
 
-    public override IExpression VisitPrimitiveConstantExpression(SPSLParser.PrimitiveConstantExpressionContext context)
+    public override IExpression VisitPrimitiveConstantExpression(PrimitiveConstantExpressionContext context)
     {
         return context.Accept(new LiteralVisitor(_fileSource))!;
     }
 
     public override IExpression VisitUserDefinedConstantExpression
     (
-        SPSLParser.UserDefinedConstantExpressionContext context
+        UserDefinedConstantExpressionContext context
     )
     {
-        return new UserDefinedConstantExpression(new(context.namespacedTypeName().GetText()))
+        return new UserDefinedConstantExpression(context.namespacedTypeName().ToNamespaceReference(_fileSource))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -80,13 +81,13 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitPropertyMemberReferenceExpression
     (
-        SPSLParser.PropertyMemberReferenceExpressionContext context
+        PropertyMemberReferenceExpressionContext context
     )
     {
         return new PropertyMemberReferenceExpression
         (
-            context.Target.Text,
-            context.Member.Identifier.Text
+            context.Target.ToIdentifier(_fileSource),
+            context.Member.Identifier.ToIdentifier(_fileSource)
         )
         {
             Start = context.Start.StartIndex,
@@ -97,12 +98,12 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitMethodMemberReferenceExpression
     (
-        SPSLParser.MethodMemberReferenceExpressionContext context
+        MethodMemberReferenceExpressionContext context
     )
     {
         return new MethodMemberReferenceExpression
         (
-            context.Target.Text,
+            context.Target.ToIdentifier(_fileSource),
             (InvocationExpression)context.Member.Accept(this)!
         )
         {
@@ -114,7 +115,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitChainedExpression
     (
-        SPSLParser.ChainedExpressionContext context
+        ChainedExpressionContext context
     )
     {
         return new ChainedExpression
@@ -131,7 +132,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitAssignableChainedExpression
     (
-        SPSLParser.AssignableChainedExpressionContext context
+        AssignableChainedExpressionContext context
     )
     {
         return new ChainedExpression
@@ -146,9 +147,9 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitContextAccessExpression(SPSLParser.ContextAccessExpressionContext context)
+    public override IExpression VisitContextAccessExpression(ContextAccessExpressionContext context)
     {
-        return new ContextAccessExpression(context.Identifier.Text)
+        return new ContextAccessExpression(context.Identifier.ToIdentifier(_fileSource))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -156,12 +157,12 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitInvocationExpression(SPSLParser.InvocationExpressionContext context)
+    public override IExpression VisitInvocationExpression(InvocationExpressionContext context)
     {
         OrderedSet<InvocationParameter> parameters = new();
         if (context.Parameters != null)
         {
-            foreach (SPSLParser.ExpressionStatementContext expression in context.Parameters.expressionStatement())
+            foreach (ExpressionStatementContext expression in context.Parameters.expressionStatement())
             {
                 parameters.Add
                 (
@@ -175,7 +176,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
             }
         }
 
-        return new InvocationExpression(new(context.Name.GetText()), parameters)
+        return new InvocationExpression(context.Name.ToNamespaceReference(_fileSource), parameters)
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -183,7 +184,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitArrayAccessExpression(SPSLParser.ArrayAccessExpressionContext context)
+    public override IExpression VisitArrayAccessExpression(ArrayAccessExpressionContext context)
     {
         ParserRuleContext access;
 
@@ -214,7 +215,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         throw new NotSupportedException();
     }
 
-    public override IExpression VisitNegateOperationExpression(SPSLParser.NegateOperationExpressionContext context)
+    public override IExpression VisitNegateOperationExpression(NegateOperationExpressionContext context)
     {
         return new NegateOperationExpression(context.Expression.Accept(this)!)
         {
@@ -226,7 +227,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitPostfixUnaryOperationExpression
     (
-        SPSLParser.PostfixUnaryOperationExpressionContext context
+        PostfixUnaryOperationExpressionContext context
     )
     {
         return new UnaryOperationExpression
@@ -244,14 +245,13 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitPrefixUnaryOperationExpression
     (
-        SPSLParser.PrefixUnaryOperationExpressionContext context
+        PrefixUnaryOperationExpressionContext context
     )
     {
         return new UnaryOperationExpression
         (
             (IAssignableExpression)context.Expression.Accept(this)!,
-            context.Operator.Text,
-            false
+            context.Operator.Text
         )
         {
             Start = context.Start.StartIndex,
@@ -260,7 +260,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitSignedExpression(SPSLParser.SignedExpressionContext context)
+    public override IExpression VisitSignedExpression(SignedExpressionContext context)
     {
         return new SignedExpression(context.Operator.Text, context.Expression.Accept(this)!)
         {
@@ -270,7 +270,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitBinaryOperationExpression(SPSLParser.BinaryOperationExpressionContext context)
+    public override IExpression VisitBinaryOperationExpression(BinaryOperationExpressionContext context)
     {
         return new BinaryOperationExpression
         (
@@ -285,7 +285,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitTernaryOperationExpression(SPSLParser.TernaryOperationExpressionContext context)
+    public override IExpression VisitTernaryOperationExpression(TernaryOperationExpressionContext context)
     {
         return new TernaryOperationExpression
         (
@@ -300,7 +300,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitAssignmentExpression(SPSLParser.AssignmentExpressionContext context)
+    public override IExpression VisitAssignmentExpression(AssignmentExpressionContext context)
     {
         return new AssignmentExpression
         (
@@ -315,7 +315,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitCastExpression(SPSLParser.CastExpressionContext context)
+    public override IExpression VisitCastExpression(CastExpressionContext context)
     {
         return new CastExpression
         (
@@ -329,12 +329,12 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         };
     }
 
-    public override IExpression VisitNewInstanceExpression(SPSLParser.NewInstanceExpressionContext context)
+    public override IExpression VisitNewInstanceExpression(NewInstanceExpressionContext context)
     {
         OrderedSet<InvocationParameter> parameters = new();
         if (context.Parameters != null)
         {
-            foreach (SPSLParser.ExpressionStatementContext expression in context.Parameters.expressionStatement())
+            foreach (ExpressionStatementContext expression in context.Parameters.expressionStatement())
             {
                 parameters.Add
                 (

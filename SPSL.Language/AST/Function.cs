@@ -4,9 +4,9 @@ public class Function : IBlockChild
 {
     #region Properties
 
-    public FunctionHead Head { get; set; }
+    public FunctionHead Head { get; }
 
-    public StatementBlock Body { get; set; }
+    public StatementBlock Body { get; }
 
     #endregion
 
@@ -14,12 +14,19 @@ public class Function : IBlockChild
 
     public Function(FunctionHead head, StatementBlock body)
     {
+        head.Parent = this;
+        body.Parent = this;
+
         Head = head;
         Body = body;
     }
 
     public Function(FunctionHead head, params IStatement[] children)
     {
+        head.Parent = this;
+        foreach (var child in children)
+            child.Parent = this;
+
         Head = head;
         Body = new(children)
         {
@@ -32,7 +39,7 @@ public class Function : IBlockChild
 
     #region IBlockChild Implementation
 
-    string IBlockChild.Name
+    Identifier IBlockChild.Name
     {
         get => Head.Name;
         set => Head.Name = value;
@@ -42,11 +49,24 @@ public class Function : IBlockChild
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Head.ResolveNode(source, offset) ?? Body.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

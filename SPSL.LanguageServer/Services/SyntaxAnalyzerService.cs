@@ -7,12 +7,12 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace SPSL.LanguageServer.Services;
 
-public class SyntaxDiagnosticService : IDiagnosticService
+public class SyntaxAnalyzerService : IDiagnosticService
 {
     private class SyntaxErrorListener : BaseErrorListener
     {
-        private const string SourceName = "spsl-syntax-analyzer";
-        private const string DiagnosticId = "SPSL_SYNTAX_ERROR";
+        private const string SourceName = "spsl";
+        private const string DiagnosticId = "syntax-error";
 
         private readonly ConfigurationService _configurationService;
         private readonly List<Diagnostic> _diagnostics;
@@ -82,7 +82,7 @@ public class SyntaxDiagnosticService : IDiagnosticService
     private readonly ConfigurationService _configurationService;
     private readonly TokenProviderService _tokenProviderService;
 
-    public SyntaxDiagnosticService
+    public SyntaxAnalyzerService
     (
         DocumentManagerService documentManagerService,
         ConfigurationService configurationService,

@@ -21,3 +21,20 @@ public enum PermutationVariableType : byte
     /// </summary>
     Integer
 }
+
+public static class PermutationVariableTypeExtensions
+{
+    public static bool IsBool(this PermutationVariableType type) => type == PermutationVariableType.Bool;
+
+    public static bool IsEnum(this PermutationVariableType type) => type == PermutationVariableType.Enum;
+
+    public static bool IsInteger(this PermutationVariableType type) => type == PermutationVariableType.Integer;
+
+    public static string GetTypeName(this PermutationVariableType type) => type switch
+    {
+        PermutationVariableType.Bool => "bool",
+        PermutationVariableType.Enum => "enum",
+        PermutationVariableType.Integer => "int",
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+    };
+}

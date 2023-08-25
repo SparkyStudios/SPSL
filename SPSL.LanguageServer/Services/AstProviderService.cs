@@ -8,11 +8,11 @@ using SPSL.LanguageServer.Core;
 namespace SPSL.LanguageServer.Services;
 
 /// <summary>
-/// <see cref="IProviderService{AST}" /> implementation that provides <see cref="AST" /> data.
+/// <see cref="IProviderService{AST}" /> implementation that provides <see cref="Ast" /> data.
 /// </summary>
-public class AstProviderService : IProviderService<AST>
+public class AstProviderService : IProviderService<Ast>
 {
-    private readonly ConcurrentDictionary<DocumentUri, AST> _cache = new();
+    private readonly ConcurrentDictionary<DocumentUri, Ast> _cache = new();
 
     private readonly TokenProviderService _tokenProviderService;
 
@@ -25,8 +25,8 @@ public class AstProviderService : IProviderService<AST>
 
     private void TokenProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<ParserRuleContext> e)
     {
-        ASTVisitor visitor = new(e.Uri.ToString());
-        AST ast = visitor.Visit(e.Data);
+        AstVisitor visitor = new(e.Uri.ToString());
+        Ast ast = visitor.Visit(e.Data);
 
         _cache.AddOrUpdate(e.Uri, ast, (_, _) => ast);
         DataUpdated?.Invoke(this, new(e.Uri, ast));
@@ -34,14 +34,14 @@ public class AstProviderService : IProviderService<AST>
 
     #region IProviderService<AST> Implementation
 
-    public event EventHandler<ProviderDataUpdatedEventArgs<AST>>? DataUpdated;
+    public event EventHandler<ProviderDataUpdatedEventArgs<Ast>>? DataUpdated;
 
-    public AST? GetData(DocumentUri uri)
+    public Ast? GetData(DocumentUri uri)
     {
-        return _cache.TryGetValue(uri, out AST? ast) ? ast : null;
+        return _cache.TryGetValue(uri, out Ast? ast) ? ast : null;
     }
 
-    public void SetData(DocumentUri uri, AST data, bool notify = true)
+    public void SetData(DocumentUri uri, Ast data, bool notify = true)
     {
         _cache.AddOrUpdate(uri, data, (_, _) => data);
 

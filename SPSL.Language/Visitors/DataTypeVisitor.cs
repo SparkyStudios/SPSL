@@ -7,7 +7,7 @@ namespace SPSL.Language.Visitors;
 public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
 {
     private readonly string _fileSource;
-    
+
     public DataTypeVisitor(string fileSource)
     {
         _fileSource = fileSource;
@@ -53,7 +53,7 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
 
         return type;
     }
-    
+
     public override IDataType VisitCustomDataType(SPSLParser.CustomDataTypeContext context)
     {
         IDataType type = context.DataType switch
@@ -140,7 +140,7 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
 
     public override IDataType VisitUserDefinedDataType(SPSLParser.UserDefinedDataTypeContext context)
     {
-        return new UserDefinedDataType(new(context.Type.GetText()))
+        return new UserDefinedDataType(context.Type.ToNamespaceReference(_fileSource))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,

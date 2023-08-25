@@ -1,7 +1,7 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a binary operation expression.
+/// Represents a binary operation expression in SPSL.
 /// </summary>
 public class BinaryOperationExpression : IExpression
 {
@@ -10,17 +10,17 @@ public class BinaryOperationExpression : IExpression
     /// <summary>
     /// The left operand expression.
     /// </summary>
-    public IExpression Left { get; set; }
+    public IExpression Left { get; }
 
     /// <summary>
     /// The operator.
     /// </summary>
-    public string Operator { get; set; }
+    public string Operator { get; }
 
     /// <summary>
     /// The right operand expression.
     /// </summary>
-    public IExpression Right { get; set; }
+    public IExpression Right { get; }
 
     #endregion
 
@@ -34,6 +34,9 @@ public class BinaryOperationExpression : IExpression
     /// <param name="right">The right operand.</param>
     public BinaryOperationExpression(IExpression left, string op, IExpression right)
     {
+        left.Parent = this;
+        right.Parent = this;
+
         Left = left;
         Operator = op;
         Right = right;
@@ -43,11 +46,24 @@ public class BinaryOperationExpression : IExpression
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Left.ResolveNode(source, offset) ?? Right.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

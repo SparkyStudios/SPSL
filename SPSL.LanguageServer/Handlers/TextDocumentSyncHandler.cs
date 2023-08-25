@@ -16,7 +16,9 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
     private readonly ILanguageServerFacade _router;
     private readonly DocumentManagerService _documentManagerService;
     private readonly ConfigurationService _configurationService;
-    private readonly SyntaxDiagnosticService _syntaxDiagnosticService;
+    private readonly SyntaxAnalyzerService _syntaxAnalyzerService;
+    private readonly StaticAnalyzerService _staticAnalyzerService;
+    private readonly DocumentDiagnosticService _documentDiagnosticService;
 
     private readonly DocumentSelector _documentSelector = new
     (
@@ -33,24 +35,27 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
         ILanguageServerFacade router,
         DocumentManagerService documentManagerService,
         ConfigurationService configurationService,
-        SyntaxDiagnosticService syntaxDiagnosticService
+        SyntaxAnalyzerService syntaxAnalyzerService,
+        StaticAnalyzerService staticAnalyzerService,
+        DocumentDiagnosticService documentDiagnosticService
     )
     {
         _router = router;
         _documentManagerService = documentManagerService;
         _configurationService = configurationService;
-        _syntaxDiagnosticService = syntaxDiagnosticService;
+        _syntaxAnalyzerService = syntaxAnalyzerService;
+        _staticAnalyzerService = staticAnalyzerService;
+        _documentDiagnosticService = documentDiagnosticService;
 
         _documentManagerService.DocumentContentChanged += DocumentManagerServiceOnDocumentContentChanged;
 
-        _syntaxDiagnosticService.DataUpdated += SyntaxDiagnosticServiceOnDataUpdated;
+        _syntaxAnalyzerService.DataUpdated += SyntaxAnalyzerServiceOnDataUpdated;
+        _staticAnalyzerService.DataUpdated += StaticAnalyzerServiceOnDataUpdated;
+        
+        _documentDiagnosticService.DataUpdated += DocumentDiagnosticServiceOnDataUpdated;
     }
 
-    private void SyntaxDiagnosticServiceOnDataUpdated
-    (
-        object? sender,
-        ProviderDataUpdatedEventArgs<Container<Diagnostic>> e
-    )
+    private void DocumentDiagnosticServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<Container<Diagnostic>> e)
     {
         if (!_documentManagerService.HasDocument(e.Uri))
             return;
@@ -66,6 +71,24 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
                 Diagnostics = e.Data
             }
         );
+    }
+
+    private void StaticAnalyzerServiceOnDataUpdated
+    (
+        object? sender,
+        ProviderDataUpdatedEventArgs<Container<Diagnostic>> e
+    )
+    {
+        _documentDiagnosticService.SetDiagnostics(e.Uri, nameof(StaticAnalyzerService), e.Data);
+    }
+
+    private void SyntaxAnalyzerServiceOnDataUpdated
+    (
+        object? sender,
+        ProviderDataUpdatedEventArgs<Container<Diagnostic>> e
+    )
+    {
+        _documentDiagnosticService.SetDiagnostics(e.Uri, nameof(SyntaxAnalyzerService), e.Data);
     }
 
     private void DocumentManagerServiceOnDocumentContentChanged(object? sender, DocumentEventArgs e)

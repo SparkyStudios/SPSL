@@ -13,7 +13,7 @@ public static class Extensions
             cancelTokenSource?.Cancel();
             cancelTokenSource = new();
 
-            Task.Delay(milliseconds, cancelTokenSource.Token)
+            _ = Task.Delay(milliseconds, cancelTokenSource.Token)
                 .ContinueWith
                 (t =>
                     {
@@ -38,7 +38,7 @@ public static class Extensions
             cancelTokenSource?.Cancel();
             cancelTokenSource = cancelTokenSources[arg] = new();
 
-            Task.Delay(milliseconds, cancelTokenSource.Token)
+            _ = Task.Delay(milliseconds, cancelTokenSource.Token)
                 .ContinueWith
                 (t =>
                     {

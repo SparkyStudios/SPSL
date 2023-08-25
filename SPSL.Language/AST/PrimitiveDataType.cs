@@ -1,21 +1,10 @@
+using System.Text;
+using SPSL.Language.Core;
+
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// The list of primitive data types in SPSL.
-/// </summary>
-public enum PrimitiveDataTypeKind : byte
-{
-    Void,
-    Boolean,
-    Integer,
-    UnsignedInteger,
-    Float,
-    Double,
-    String,
-}
-
-/// <summary>
-/// Represent data type for primitive values.
+/// Represents data type for primitive values.
 /// </summary>
 public class PrimitiveDataType : IDataType
 {
@@ -24,7 +13,7 @@ public class PrimitiveDataType : IDataType
     /// <summary>
     /// The effective type of the primitive value.
     /// </summary>
-    public PrimitiveDataTypeKind Type { get; set; }
+    public PrimitiveDataTypeKind Type { get; }
 
     #endregion
 
@@ -41,6 +30,51 @@ public class PrimitiveDataType : IDataType
 
     #endregion
 
+    #region Overrides
+
+    public override string ToString()
+    {
+        StringBuilder sb = new();
+
+        switch (Type)
+        {
+            case PrimitiveDataTypeKind.Void:
+                sb.Append("void");
+                break;
+            case PrimitiveDataTypeKind.Boolean:
+                sb.Append("bool");
+                break;
+            case PrimitiveDataTypeKind.Integer:
+                sb.Append("int");
+                break;
+            case PrimitiveDataTypeKind.UnsignedInteger:
+                sb.Append("uint");
+                break;
+            case PrimitiveDataTypeKind.Float:
+                sb.Append("float");
+                break;
+            case PrimitiveDataTypeKind.String:
+                sb.Append("string");
+                break;
+            case PrimitiveDataTypeKind.Double:
+                sb.Append("double");
+                break;
+            default: throw new ArgumentOutOfRangeException();
+        }
+
+        if (IsArray)
+        {
+            sb.Append('[');
+            if (ArraySize != null)
+                sb.Append(ArraySize);
+            sb.Append(']');
+        }
+
+        return sb.ToString();
+    }
+
+    #endregion
+
     #region IDataType Implementation
 
     /// <inheritdoc cref="IDataType.IsArray"/>
@@ -53,11 +87,23 @@ public class PrimitiveDataType : IDataType
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Source == source && offset >= Start && offset <= End ? this as INode : null;
+    }
 
     #endregion
 

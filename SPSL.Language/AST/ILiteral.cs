@@ -1,7 +1,7 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a literal value.
+/// Represents a literal value.
 /// </summary>
 public interface ILiteral : IPrimitiveExpression
 {

@@ -11,7 +11,7 @@ public class BasicExpression : IAssignableExpression
     /// <summary>
     /// The expression's identifier.
     /// </summary>
-    public string Identifier { get; set; }
+    public Identifier Identifier { get; }
 
     #endregion
 
@@ -21,8 +21,10 @@ public class BasicExpression : IAssignableExpression
     /// Initializes a new instance of <see cref="BasicExpression"/>.
     /// </summary>
     /// <param name="identifier">The identifier of the expression.</param>
-    public BasicExpression(string identifier)
+    public BasicExpression(Identifier identifier)
     {
+        identifier.Parent = this;
+
         Identifier = identifier;
     }
 
@@ -30,11 +32,23 @@ public class BasicExpression : IAssignableExpression
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
-    
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
+
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Identifier.ResolveNode(source, offset);
+    }
 
     #endregion
 }

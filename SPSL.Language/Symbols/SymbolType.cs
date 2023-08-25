@@ -20,4 +20,6 @@ public enum SymbolType : byte
     Material,
     Fragment,
     Buffer,
+    Identifier,
+    Constant,
 }

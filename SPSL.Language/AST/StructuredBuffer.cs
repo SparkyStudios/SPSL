@@ -3,7 +3,7 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
-public class StructuredBuffer : IShaderMember, IAnnotable
+public class StructuredBuffer : IShaderMember, IAnnotated
 {
     #region Properties
 
@@ -12,25 +12,30 @@ public class StructuredBuffer : IShaderMember, IAnnotable
     /// </summary>
     public OrderedSet<TypeProperty> Properties { get; }
 
-    public string Name { get; set; }
+    public Identifier Name { get; set; }
 
-    public BufferStorage Storage { get; set; }
+    public BufferStorage Storage { get; init; }
 
-    public BufferAccess Access { get; set; }
+    public BufferAccess Access { get; init; }
 
     #endregion
 
     #region Constructors
 
-    public StructuredBuffer(string name, IEnumerable<TypeProperty> properties)
+    public StructuredBuffer(Identifier name, IEnumerable<TypeProperty> properties)
     {
+        name.Parent = this;
+
         Name = name;
         Properties = new(properties);
+
+        foreach (TypeProperty property in Properties)
+            property.Parent = this;
     }
 
     #endregion
 
-    #region IAnnotable Implementation
+    #region IAnnotated Implementation
 
     public OrderedSet<Annotation> Annotations { get; } = new();
 
@@ -38,11 +43,27 @@ public class StructuredBuffer : IShaderMember, IAnnotable
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Properties.FirstOrDefault(p => p.ResolveNode(source, offset) is not null)?.ResolveNode(source, offset) ??
+               Name.ResolveNode(source, offset) ??
+               Annotations.FirstOrDefault(p => p.ResolveNode(source, offset) is not null)
+                   ?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

@@ -1,7 +1,7 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a value cast expression.
+/// Represents a value cast expression.
 /// </summary>
 public class CastExpression : IExpression
 {
@@ -10,12 +10,12 @@ public class CastExpression : IExpression
     /// <summary>
     /// The type to cast to.
     /// </summary>
-    public IDataType Type { get; set; }
+    public IDataType Type { get; }
 
     /// <summary>
     /// The expression to cast.
     /// </summary>
-    public IExpression Expression { get; set; }
+    public IExpression Expression { get; }
 
     #endregion
 
@@ -28,6 +28,9 @@ public class CastExpression : IExpression
     /// <param name="expression">The expression to cast into the given <paramref name="type"/>.</param>
     public CastExpression(IDataType type, IExpression expression)
     {
+        type.Parent = this;
+        expression.Parent = this;
+        
         Type = type;
         Expression = expression;
     }
@@ -36,11 +39,24 @@ public class CastExpression : IExpression
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Type.ResolveNode(source, offset) ?? Expression.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

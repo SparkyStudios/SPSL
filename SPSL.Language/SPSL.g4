@@ -194,67 +194,67 @@ TYPE_STRING
   : 'string'
   ;
 TYPE_VECTOR2B
-  : 'vector2b'
+  : 'vec2b'
   ;
 TYPE_VECTOR2F
-  : 'vector2f'
+  : 'vec2f'
   ;
 TYPE_VECTOR2I
-  : 'vector2i'
+  : 'vec2i'
   ;
 TYPE_VECTOR2UI
-  : 'vector2ui'
+  : 'vec2ui'
   ;
 TYPE_VECTOR3B
-  : 'vector3b'
+  : 'vec3b'
   ;
 TYPE_VECTOR3F
-  : 'vector3f'
+  : 'vec3f'
   ;
 TYPE_VECTOR3I
-  : 'vector3i'
+  : 'vec3i'
   ;
 TYPE_VECTOR3UI
-  : 'vector3ui'
+  : 'vec3ui'
   ;
 TYPE_VECTOR4B
-  : 'vector4b'
+  : 'vec4b'
   ;
 TYPE_VECTOR4F
-  : 'vector4f'
+  : 'vec4f'
   ;
 TYPE_VECTOR4I
-  : 'vector4i'
+  : 'vec4i'
   ;
 TYPE_VECTOR4UI
-  : 'vector4ui'
+  : 'vec4ui'
   ;
 TYPE_MATRIX2F
-  : 'matrix2f'
+  : 'mat2f'
   ;
 TYPE_MATRIX3F
-  : 'matrix3f'
+  : 'mat3f'
   ;
 TYPE_MATRIX4F
-  : 'matrix4f'
+  : 'mat4f'
   ;
 TYPE_MATRIX2X3F
-  : 'matrix2x3f'
+  : 'mat2x3f'
   ;
 TYPE_MATRIX2X4F
-  : 'matrix2x4f'
+  : 'mat2x4f'
   ;
 TYPE_MATRIX3X2F
-  : 'matrix3x2f'
+  : 'mat3x2f'
   ;
 TYPE_MATRIX3X4F
-  : 'matrix3x4f'
+  : 'mat3x4f'
   ;
 TYPE_MATRIX4X2F
-  : 'matrix4x2f'
+  : 'mat4x2f'
   ;
 TYPE_MATRIX4X3F
-  : 'matrix4x3f'
+  : 'mat4x3f'
   ;
 TYPE_COLOR3
   : 'color3'
@@ -266,25 +266,25 @@ TYPE_SAMPLER
   : 'sampler'
   ;
 TYPE_TEXTURE1D
-  : 'texture1d'
+  : 'tex1d'
   ;
 TYPE_TEXTURE2D
-  : 'texture2d'
+  : 'tex2d'
   ;
 TYPE_TEXTURE1DARRAY
-  : 'texture1dArray'
+  : 'arraytex1d'
   ;
 TYPE_TEXTURE2DARRAY
-  : 'texture2dArray'
+  : 'arraytex2d'
   ;
 TYPE_TEXTURE3D
-  : 'texture3d'
+  : 'tex3d'
   ;
 TYPE_CUBEMAP
-  : 'cubemap'
+  : 'texcube'
   ;
 TYPE_CUBEMAPARRAY
-  : 'cubemapArray'
+  : 'arraytexcube'
   ;
 
 TOK_OPEN_PAREN
@@ -448,11 +448,11 @@ OP_RSHIFT
  Parser rules
  */
 shaderFile
-  : Directives = directive* DOC_COMMENT* Namespace = namespaceDefinition? (DOC_COMMENT* useNamespaceDirective)* FileLevelDefinitions = fileLevelDefinition* EOF
+  : DOC_COMMENT? Directives = directive* Namespace = namespaceDefinition? (DOC_COMMENT* useNamespaceDirective)* FileLevelDefinitions = fileLevelDefinition* EOF
   ;
 
 materialFile
-  : Directives = directive* DOC_COMMENT* Namespace = namespaceDefinition? (DOC_COMMENT* useNamespaceDirective)* Material = material EOF
+  : DOC_COMMENT? Directives = directive* Namespace = namespaceDefinition? (DOC_COMMENT* useNamespaceDirective)* Material = material EOF
   ;
 
 namespaceDefinition
@@ -477,15 +477,15 @@ globalVariable
   ;
 
 permutationVariableBool
-  : KEYWORD_PERMUTATION TYPE_BOOL Identifier = basicExpression OP_ASSIGN Value = BoolLiteral TOK_SEMICOLON
+  : DOC_COMMENT? KEYWORD_PERMUTATION TYPE_BOOL Identifier = basicExpression OP_ASSIGN Value = BoolLiteral TOK_SEMICOLON
   ;
 
 permutationVariableEnum
-  : KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_CLOSE_BRACE OP_ASSIGN Value = basicExpression TOK_SEMICOLON
+  : DOC_COMMENT? KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_CLOSE_BRACE OP_ASSIGN Value = basicExpression TOK_SEMICOLON
   ;
 
 permutationVariableInteger
-  : KEYWORD_PERMUTATION TYPE_INT Identifier = basicExpression OP_ASSIGN Value = IntegerLiteral TOK_SEMICOLON
+  : DOC_COMMENT? KEYWORD_PERMUTATION TYPE_INT Identifier = basicExpression OP_ASSIGN Value = IntegerLiteral TOK_SEMICOLON
   ;
 
 permutationVariable
@@ -495,16 +495,16 @@ permutationVariable
   ;
 
 type
-  : DOC_COMMENT* Definition = structDefinition TOK_OPEN_BRACE (DOC_COMMENT* structComponent)* TOK_CLOSE_BRACE # Struct
-  | DOC_COMMENT* Definition = enumDefinition TOK_OPEN_BRACE (DOC_COMMENT* enumComponent)* TOK_CLOSE_BRACE     # Enum
+  : Definition = structDefinition TOK_OPEN_BRACE structComponent* TOK_CLOSE_BRACE # Struct
+  | Definition = enumDefinition TOK_OPEN_BRACE enumComponent* TOK_CLOSE_BRACE     # Enum
   ;
 
 structDefinition
-  : KEYWORD_TYPE Name = IDENTIFIER KEYWORD_AS KEYWORD_STRUCT (KEYWORD_EXTENDS ExtendedType = namespacedTypeName)?
+  : DOC_COMMENT? KEYWORD_TYPE Name = IDENTIFIER KEYWORD_AS KEYWORD_STRUCT (KEYWORD_EXTENDS ExtendedType = namespacedTypeName)?
   ;
 
 enumDefinition
-  : KEYWORD_TYPE Name = IDENTIFIER KEYWORD_AS KEYWORD_ENUM
+  : DOC_COMMENT? KEYWORD_TYPE Name = IDENTIFIER KEYWORD_AS KEYWORD_ENUM
   ;
 
 interface
@@ -670,12 +670,12 @@ materialParamsComponent
   ;
 
 structComponent
-  : annotation* Type = dataType Name = IDENTIFIER TOK_SEMICOLON # StructProperty
-  | annotation* Function = function                             # StructFunction
+  : DOC_COMMENT? annotation* Type = dataType Name = IDENTIFIER TOK_SEMICOLON # StructProperty
+  | DOC_COMMENT? annotation* Function = function                             # StructFunction
   ;
 
 enumComponent
-  : Name = IDENTIFIER (OP_ASSIGN Value = constantExpression)? TOK_COMMA
+  : DOC_COMMENT? annotation* Name = IDENTIFIER (OP_ASSIGN Value = constantExpression)? TOK_COMMA
   ;
 
 // Inner function variables
@@ -906,7 +906,7 @@ assignableExpression
   ;
 
 returnStatement
-  : KEYWORD_RETURN Expression = expressionStatement TOK_SEMICOLON
+  : KEYWORD_RETURN Expression = expressionStatement? TOK_SEMICOLON
   ;
 
 breakStatement

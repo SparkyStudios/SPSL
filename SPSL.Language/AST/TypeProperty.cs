@@ -3,23 +3,23 @@ using SPSL.Language.Utils;
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a member of an <see cref="Language.AST.Type"/>.
+/// Represents a member of an <see cref="Language.AST.Type"/>.
 /// </summary>
-public class TypeProperty : IAnnotable, INode
+public class TypeProperty : IAnnotated, IDocumented, INode
 {
     #region Properties
 
     /// <summary>
     /// The reference to the type definition of this member.
     /// </summary>
-    public IDataType Type { get; set; }
+    public IDataType Type { get; }
 
     /// <summary>
     /// The member name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; }
 
-    public IConstantExpression? Initializer { get; set; }
+    public IConstantExpression? Initializer { get; init; }
 
     #endregion
 
@@ -30,27 +30,52 @@ public class TypeProperty : IAnnotable, INode
     /// </summary>
     /// <param name="type">The member type.</param>
     /// <param name="name">The member name.</param>
-    public TypeProperty(IDataType type, string name)
+    public TypeProperty(IDataType type, Identifier name)
     {
+        type.Parent = this;
+        name.Parent = this;
+
         Type = type;
         Name = name;
     }
 
     #endregion
 
-    #region IAnnotable Implementation
+    #region IAnnotated Implementation
 
-    public OrderedSet<Annotation> Annotations { get; } = new();
+    /// <inheritdoc cref="IAnnotated.Annotations"/>
+    public OrderedSet<Annotation> Annotations { get; init; } = new();
+
+    #endregion
+
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = string.Empty;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Type.ResolveNode(source, offset) ?? Name.ResolveNode(source, offset) ??
+            Initializer?.ResolveNode(source, offset) ??
+            Annotations.FirstOrDefault(a => a.ResolveNode(source, offset) != null)?.ResolveNode(source, offset);
+    }
 
     #endregion
 }

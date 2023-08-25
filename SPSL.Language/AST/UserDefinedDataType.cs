@@ -1,7 +1,7 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent a data type created by the user in code.
+/// Represents a data type created by the user in code.
 /// </summary>
 public class UserDefinedDataType : IDataType
 {
@@ -10,7 +10,7 @@ public class UserDefinedDataType : IDataType
     /// <summary>
     /// The reference to the user-defined type.
     /// </summary>
-    public NamespacedReference Type { get; set; }
+    public NamespacedReference Type { get; }
 
     #endregion
 
@@ -22,8 +22,16 @@ public class UserDefinedDataType : IDataType
     /// <param name="type">The data type reference.</param>
     public UserDefinedDataType(NamespacedReference type)
     {
+        type.Parent = this;
+
         Type = type;
     }
+
+    #endregion
+
+    #region Overrides
+
+    public override string ToString() => Type.ToString();
 
     #endregion
 
@@ -50,11 +58,24 @@ public class UserDefinedDataType : IDataType
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Type.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

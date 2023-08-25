@@ -1,6 +1,8 @@
+using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
 using SPSL.Language.Utils;
+using static SPSL.Language.SPSLParser;
 
 namespace SPSL.Language.Visitors;
 
@@ -25,21 +27,21 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
     {
         switch (node)
         {
-            case SPSLParser.StatementContext _:
-            case SPSLParser.StayControlFlowStatementContext _:
-            case SPSLParser.LeaveControlFlowStatementContext _:
+            case StatementContext _:
+            case StayControlFlowStatementContext _:
+            case LeaveControlFlowStatementContext _:
 
-            case SPSLParser.VariableDeclarationContext _:
-            case SPSLParser.ExpressionStatementContext _:
-            case SPSLParser.StatementBlockContext _:
-            case SPSLParser.IfStatementContext _:
-            case SPSLParser.SwitchStatementContext _:
-            case SPSLParser.WhileStatementContext _:
+            case VariableDeclarationContext _:
+            case ExpressionStatementContext _:
+            case StatementBlockContext _:
+            case IfStatementContext _:
+            case SwitchStatementContext _:
+            case WhileStatementContext _:
 
-            case SPSLParser.BreakStatementContext _:
-            case SPSLParser.ReturnStatementContext _:
-            case SPSLParser.ContinueStatementContext _:
-            case SPSLParser.DiscardStatementContext _:
+            case BreakStatementContext _:
+            case ReturnStatementContext _:
+            case ContinueStatementContext _:
+            case DiscardStatementContext _:
                 return true;
 
             // Not parsed
@@ -48,7 +50,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         }
     }
 
-    public override IStatement VisitStatement(SPSLParser.StatementContext context)
+    public override IStatement VisitStatement([NotNull] StatementContext context)
     {
         if (context.StayControlFlowStatement != null)
             return context.StayControlFlowStatement.Accept(this)!;
@@ -59,7 +61,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         throw new NotSupportedException();
     }
 
-    public override IStatement VisitStayControlFlowStatement(SPSLParser.StayControlFlowStatementContext context)
+    public override IStatement VisitStayControlFlowStatement([NotNull] StayControlFlowStatementContext context)
     {
         if (context.VariableDeclaration != null)
             return context.VariableDeclaration.Accept(this)!;
@@ -95,7 +97,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         };
     }
 
-    public override IStatement VisitLeaveControlFlowStatement(SPSLParser.LeaveControlFlowStatementContext context)
+    public override IStatement VisitLeaveControlFlowStatement([NotNull] LeaveControlFlowStatementContext context)
     {
         if (context.BreakStatement != null)
             return context.BreakStatement.Accept(this)!;
@@ -112,16 +114,16 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         throw new NotSupportedException();
     }
 
-    public override IStatement VisitTypedVariableDeclaration(SPSLParser.TypedVariableDeclarationContext context)
+    public override IStatement VisitTypedVariableDeclaration([NotNull] TypedVariableDeclarationContext context)
     {
         OrderedSet<VariableDeclarationStatement> declarations = new();
         IDataType type = context.Type.Accept(new DataTypeVisitor(_fileSource))!;
         ExpressionVisitor expressionVisitor = new(_fileSource);
 
-        foreach (SPSLParser.VariableIdentityContext variableIdentity in context.variableIdentity())
+        foreach (VariableIdentityContext variableIdentity in context.variableIdentity())
         {
             IExpression? value = null;
-            SPSLParser.BasicExpressionContext identifier = variableIdentity.Identifier;
+            BasicExpressionContext identifier = variableIdentity.Identifier;
             if (variableIdentity.IsAssignment)
             {
                 identifier = variableIdentity.Declaration.Identifier;
@@ -130,12 +132,9 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
             declarations.Add
             (
-                new()
+                new(type, identifier.Identifier.ToIdentifier(_fileSource), value)
                 {
                     IsConst = context.IsConst,
-                    Type = type,
-                    Name = (BasicExpression)identifier.Accept(expressionVisitor)!,
-                    Initializer = value,
                     Start = variableIdentity.Start.StartIndex,
                     End = variableIdentity.Stop.StopIndex,
                     Source = _fileSource
@@ -151,27 +150,29 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         };
     }
 
-    public override IStatement VisitUntypedVariableDeclaration(SPSLParser.UntypedVariableDeclarationContext context)
+    public override IStatement VisitUntypedVariableDeclaration([NotNull] UntypedVariableDeclarationContext context)
     {
         ExpressionVisitor visitor = new(_fileSource);
 
         return new VariableDeclarationStatement
-        {
-            Type = new UnknownDataType
+        (
+            type: new UnknownDataType
             {
                 Start = context.Start.StartIndex,
                 End = context.Stop.StopIndex,
                 Source = _fileSource
             },
-            Name = (BasicExpression)context.Identifier.Accept(visitor)!,
-            Initializer = context.Expression.Accept(visitor),
+            name: context.Identifier.Identifier.ToIdentifier(_fileSource),
+            initializer: context.Expression.Accept(visitor)
+        )
+        {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource
         };
     }
 
-    public override IStatement VisitStatementBlock(SPSLParser.StatementBlockContext context)
+    public override IStatement VisitStatementBlock([NotNull] StatementBlockContext context)
     {
         StatementBlock block = new()
         {
@@ -180,13 +181,13 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             Source = _fileSource
         };
 
-        foreach (SPSLParser.StatementContext statement in context.statement())
+        foreach (StatementContext statement in context.statement())
             block.Children.Add(statement.Accept(this)!);
 
         return block;
     }
 
-    public override IStatement VisitIfStatement(SPSLParser.IfStatementContext context)
+    public override IStatement VisitIfStatement([NotNull] IfStatementContext context)
     {
         ExpressionVisitor expressionVisitor = new(_fileSource);
 
@@ -197,7 +198,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         };
 
         OrderedSet<IfStatement.IfStatementConditionBlock> elif = new();
-        foreach (SPSLParser.ElifStatementContext ctx in context.elifStatement())
+        foreach (ElifStatementContext ctx in context.elifStatement())
         {
             elif.Add
             (
@@ -221,21 +222,23 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         };
     }
 
-    public override IStatement VisitWhileStatement(SPSLParser.WhileStatementContext context)
+    public override IStatement VisitWhileStatement([NotNull] WhileStatementContext context)
     {
         ExpressionVisitor expressionVisitor = new(_fileSource);
 
         return new WhileStatement
+        (
+            condition: context.Expression.Accept(expressionVisitor)!,
+            block: (StatementBlock)context.Block.Accept(this)!
+        )
         {
-            Condition = context.Expression.Accept(expressionVisitor)!,
-            Block = (StatementBlock)context.Block.Accept(this)!,
             Start = context.Start.StartIndex,
             End = context.Stop.StartIndex,
             Source = _fileSource
         };
     }
 
-    public override IStatement VisitPermuteStatement(SPSLParser.PermuteStatementContext context)
+    public override IStatement VisitPermuteStatement([NotNull] PermuteStatementContext context)
     {
         ExpressionVisitor expressionVisitor = new(_fileSource);
 
@@ -265,7 +268,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         };
     }
 
-    public override IStatement VisitBreakStatement(SPSLParser.BreakStatementContext context)
+    public override IStatement VisitBreakStatement([NotNull] BreakStatementContext context)
     {
         return new BreakStatement
         {
@@ -275,9 +278,9 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         };
     }
 
-    public override IStatement VisitReturnStatement(SPSLParser.ReturnStatementContext context)
+    public override IStatement VisitReturnStatement([NotNull] ReturnStatementContext context)
     {
-        return new ReturnStatement(context.Expression.Accept(new ExpressionVisitor(_fileSource)))
+        return new ReturnStatement(context.Expression?.Accept(new ExpressionVisitor(_fileSource)))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StartIndex,
@@ -285,7 +288,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         };
     }
 
-    public override IStatement VisitContinueStatement(SPSLParser.ContinueStatementContext context)
+    public override IStatement VisitContinueStatement([NotNull] ContinueStatementContext context)
     {
         return new ContinueStatement
         {
@@ -295,7 +298,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         };
     }
 
-    public override IStatement VisitDiscardStatement(SPSLParser.DiscardStatementContext context)
+    public override IStatement VisitDiscardStatement([NotNull] DiscardStatementContext context)
     {
         return new DiscardStatement
         {

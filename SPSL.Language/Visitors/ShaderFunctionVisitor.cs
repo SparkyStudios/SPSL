@@ -1,4 +1,5 @@
 ﻿using SPSL.Language.AST;
+using SPSL.Language.Core;
 
 namespace SPSL.Language.Visitors;
 
@@ -13,7 +14,7 @@ public class ShaderFunctionVisitor : SPSLBaseVisitor<ShaderFunction?>
         _fileSource = fileSource;
     }
 
-    public override ShaderFunction? VisitBasicShaderFunction(SPSLParser.BasicShaderFunctionContext context)
+    public override ShaderFunction VisitBasicShaderFunction(SPSLParser.BasicShaderFunctionContext context)
     {
         var function = new ShaderFunction(context.Function.ToFunction(_fileSource))
         {
@@ -27,7 +28,7 @@ public class ShaderFunctionVisitor : SPSLBaseVisitor<ShaderFunction?>
         return function;
     }
 
-    public override ShaderFunction? VisitShaderConstructorFunction(SPSLParser.ShaderConstructorFunctionContext context)
+    public override ShaderFunction VisitShaderConstructorFunction(SPSLParser.ShaderConstructorFunctionContext context)
     {
         var function = new ShaderFunction
         (
@@ -36,7 +37,7 @@ public class ShaderFunctionVisitor : SPSLBaseVisitor<ShaderFunction?>
                 new
                 (
                     new PrimitiveDataType(PrimitiveDataTypeKind.Void),
-                    context.Name.Text,
+                    context.Name.ToIdentifier(_fileSource),
                     new()
                 ),
                 context.Body.ToStatementBlock(_fileSource)

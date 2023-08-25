@@ -2,15 +2,15 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
-public class ShaderFunction : IAnnotable, IShaderMember, IMaterialMember
+public class ShaderFunction : IAnnotated, IShaderMember, IMaterialMember
 {
     #region Properties
 
-    public bool IsOverride { get; set; }
+    public bool IsOverride { get; init; }
 
-    public Function Function { get; set; }
+    public Function Function { get; }
 
-    public bool IsConstructor { get; set; }
+    public bool IsConstructor { get; init; }
 
     #endregion
 
@@ -18,6 +18,8 @@ public class ShaderFunction : IAnnotable, IShaderMember, IMaterialMember
 
     public ShaderFunction(Function function)
     {
+        function.Parent = this;
+        
         Annotations = new();
         IsOverride = false;
         Function = function;
@@ -25,7 +27,7 @@ public class ShaderFunction : IAnnotable, IShaderMember, IMaterialMember
 
     #endregion
 
-    #region IAnnotable Implementation
+    #region IAnnotated Implementation
 
     public OrderedSet<Annotation> Annotations { get; }
 
@@ -33,7 +35,7 @@ public class ShaderFunction : IAnnotable, IShaderMember, IMaterialMember
 
     #region IBlockChild Implementation
 
-    public string Name
+    public Identifier Name
     {
         get => ((IBlockChild)Function).Name;
         set => ((IBlockChild)Function).Name = value;
@@ -43,11 +45,25 @@ public class ShaderFunction : IAnnotable, IShaderMember, IMaterialMember
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; }
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return Function.ResolveNode(source, offset) ??
+               Annotations.FirstOrDefault(a => a.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+               (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

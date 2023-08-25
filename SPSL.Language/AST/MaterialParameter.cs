@@ -6,7 +6,7 @@ namespace SPSL.Language.AST;
 /// A single parameter within a <see cref="MaterialParameterGroup"/> of
 /// an SPSL <see cref="Material"/>.
 /// </summary>
-public class MaterialParameter : IAnnotable, IBlockChild
+public class MaterialParameter : IAnnotated, IBlockChild
 {
     #region Properties
 
@@ -16,24 +16,27 @@ public class MaterialParameter : IAnnotable, IBlockChild
     /// <value>
     /// Whether this parameter affects a permutation variable or a constant buffer variable.
     /// </value>
-    public MaterialParameterType Type { get; set; }
+    public MaterialParameterType Type { get; }
 
     /// <summary>
     /// The parameter default value.
     /// </summary>
-    public IExpression? DefaultValue { get; set; }
+    public IExpression? DefaultValue { get; init; }
 
     /// <summary>
     /// The type of the value of this parameter.
     /// </summary>
-    public IDataType ValueType { get; set; }
+    public IDataType ValueType { get; }
 
     #endregion
 
     #region Constructors
 
-    public MaterialParameter(IDataType valueType, string name, MaterialParameterType type)
+    public MaterialParameter(IDataType valueType, Identifier name, MaterialParameterType type)
     {
+        valueType.Parent = this;
+        name.Parent = this;
+        
         ValueType = valueType;
         Name = name;
         Type = type;
@@ -42,7 +45,7 @@ public class MaterialParameter : IAnnotable, IBlockChild
 
     #endregion
 
-    #region IAnnotable Implementation
+    #region IAnnotated Implementation
 
     public OrderedSet<Annotation> Annotations { get; } = new();
 
@@ -53,17 +56,32 @@ public class MaterialParameter : IAnnotable, IBlockChild
     /// <summary>
     /// The parameter name.
     /// </summary>
-    public string Name { get; set; }
+    public Identifier Name { get; set; }
 
     #endregion
 
     #region INode Implementation
 
-    public string Source { get; set; } = null!;
+    /// <inheritdoc cref="INode.Start"/>
+    public int Start { get; init; }
 
-    public int Start { get; set; } = -1;
+    /// <inheritdoc cref="INode.End"/>
+    public int End { get; init; }
 
-    public int End { get; set; } = -1;
+    /// <inheritdoc cref="INode.Source"/>
+    public string Source { get; init; } = null!;
+
+    /// <inheritdoc cref="INode.Parent"/>
+    public INode? Parent { get; set; } = null;
+
+    /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
+    public INode? ResolveNode(string source, int offset)
+    {
+        return DefaultValue?.ResolveNode(source, offset) ?? ValueType.ResolveNode(source, offset) ??
+            Name.ResolveNode(source, offset) ??
+            Annotations.FirstOrDefault(a => a.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
 
     #endregion
 }

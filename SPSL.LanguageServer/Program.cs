@@ -15,8 +15,10 @@ static void ConfigureServices(IServiceCollection services)
     services.AddSingleton<ConfigurationService>();
     services.AddSingleton<TokenProviderService>();
     services.AddSingleton<AstProviderService>();
-    services.AddSingleton<SyntaxDiagnosticService>();
+    services.AddSingleton<SyntaxAnalyzerService>();
     services.AddSingleton<SymbolProviderService>();
+    services.AddSingleton<StaticAnalyzerService>();
+    services.AddSingleton<DocumentDiagnosticService>();
 }
 
 static Task<InitializeResult> OnInitialize
