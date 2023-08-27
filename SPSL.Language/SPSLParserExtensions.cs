@@ -4,14 +4,15 @@ using SPSL.Language.AST;
 using SPSL.Language.Core;
 using SPSL.Language.Utils;
 using SPSL.Language.Visitors;
+using static SPSL.Language.SPSLParser;
 
 namespace SPSL.Language;
 
 internal static class SPSLParserExtensions
 {
-    internal static string ToDocumentation(this ITerminalNode? node)
+    internal static string ToDocumentation(this IToken? node)
     {
-        return node?.GetText()
+        return node?.Text
             .Replace("\r\n", "\n")
             .Replace("/**", "")
             .Replace("*/", "")
@@ -32,7 +33,7 @@ internal static class SPSLParserExtensions
 
     internal static NamespacedReference ToNamespaceReference
     (
-        this SPSLParser.NamespacedTypeNameContext? context,
+        this NamespacedTypeNameContext? context,
         string fileSource
     )
     {
@@ -46,7 +47,7 @@ internal static class SPSLParserExtensions
             : NamespacedReference.Null;
     }
 
-    internal static Annotation ToAnnotation(this SPSLParser.AnnotationContext context, string fileSource)
+    internal static Annotation ToAnnotation(this AnnotationContext context, string fileSource)
     {
         Annotation annotation = new()
         {
@@ -73,7 +74,7 @@ internal static class SPSLParserExtensions
         return annotation;
     }
 
-    internal static Function ToFunction(this SPSLParser.FunctionContext context, string fileSource)
+    internal static Function ToFunction(this FunctionContext context, string fileSource)
     {
         return new
         (
@@ -87,7 +88,7 @@ internal static class SPSLParserExtensions
         };
     }
 
-    internal static FunctionHead ToFunctionHead(this SPSLParser.FunctionHeadContext context, string fileSource)
+    internal static FunctionHead ToFunctionHead(this FunctionHeadContext context, string fileSource)
     {
         return new
         (
@@ -98,13 +99,14 @@ internal static class SPSLParserExtensions
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = fileSource
+            Source = fileSource,
+            Documentation = context.Documentation.ToDocumentation()
         };
     }
 
     internal static FunctionSignature ToFunctionSignature
     (
-        this SPSLParser.FunctionSignatureContext context,
+        this FunctionSignatureContext context,
         string fileSource
     )
     {
@@ -117,7 +119,7 @@ internal static class SPSLParserExtensions
 
         if (context.Arguments == null) return signature;
 
-        foreach (SPSLParser.ArgDefContext arg in context.Arguments.argDef())
+        foreach (ArgDefContext arg in context.Arguments.argDef())
         {
             signature.AddParameter
             (
@@ -137,7 +139,8 @@ internal static class SPSLParserExtensions
                 {
                     Start = arg.Start.StartIndex,
                     End = arg.Stop.StopIndex,
-                    Source = fileSource
+                    Source = fileSource,
+                    Documentation = arg.Documentation.ToDocumentation()
                 }
             );
         }
@@ -145,12 +148,12 @@ internal static class SPSLParserExtensions
         return signature;
     }
 
-    internal static StatementBlock ToStatementBlock(this SPSLParser.FunctionBodyContext context, string fileSource)
+    internal static StatementBlock ToStatementBlock(this FunctionBodyContext context, string fileSource)
     {
         OrderedSet<IStatement> statements = new();
         StatementVisitor statementVisitor = new(fileSource);
 
-        foreach (SPSLParser.StayControlFlowStatementContext statement in context.stayControlFlowStatement())
+        foreach (StayControlFlowStatementContext statement in context.stayControlFlowStatement())
             statements.Add(statement.Accept(statementVisitor)!);
 
         if (context.ReturnStatement != null)
@@ -166,7 +169,7 @@ internal static class SPSLParserExtensions
 
     internal static PermutationVariable ToPermutationVariable
     (
-        this SPSLParser.PermutationVariableContext context,
+        this PermutationVariableContext context,
         string fileSource
     )
     {
@@ -184,7 +187,7 @@ internal static class SPSLParserExtensions
 
     internal static PermutationVariable ToPermutationVariable
     (
-        this SPSLParser.PermutationVariableBoolContext context,
+        this PermutationVariableBoolContext context,
         string fileSource
     )
     {
@@ -203,13 +206,13 @@ internal static class SPSLParserExtensions
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = fileSource,
-            Documentation = context.DOC_COMMENT().ToDocumentation()
+            Documentation = context.Documentation.ToDocumentation()
         };
     }
 
     internal static PermutationVariable ToPermutationVariable
     (
-        this SPSLParser.PermutationVariableEnumContext context,
+        this PermutationVariableEnumContext context,
         string fileSource
     )
     {
@@ -224,13 +227,13 @@ internal static class SPSLParserExtensions
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = fileSource,
-            Documentation = context.DOC_COMMENT().ToDocumentation()
+            Documentation = context.Documentation.ToDocumentation()
         };
     }
 
     internal static PermutationVariable ToPermutationVariable
     (
-        this SPSLParser.PermutationVariableIntegerContext context,
+        this PermutationVariableIntegerContext context,
         string fileSource
     )
     {
@@ -249,11 +252,11 @@ internal static class SPSLParserExtensions
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = fileSource,
-            Documentation = context.DOC_COMMENT().ToDocumentation()
+            Documentation = context.Documentation.ToDocumentation()
         };
     }
 
-    internal static TypeProperty ToTypeProperty(this SPSLParser.BufferComponentContext context, string fileSource)
+    internal static TypeProperty ToTypeProperty(this BufferComponentContext context, string fileSource)
     {
         return new
         (

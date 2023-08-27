@@ -405,8 +405,8 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                 Name = gsd.Name.Text,
                 Type = SymbolType.Shader,
                 Source = _fileSource,
-                Start = gsd.Start.StartIndex,
-                End = gsd.Stop.StopIndex,
+                Start = context.Start.StartIndex,
+                End = context.Stop.StopIndex,
                 Modifiers = new List<ISymbolModifier>
                 {
                     new ShaderStageModifier(gsd.Type.Text.ToShaderStage()),
@@ -418,8 +418,8 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                 Name = csd.Name.Text,
                 Type = SymbolType.Shader,
                 Source = _fileSource,
-                Start = csd.Start.StartIndex,
-                End = csd.Stop.StopIndex,
+                Start = context.Start.StartIndex,
+                End = context.Stop.StopIndex,
                 Modifiers = new List<ISymbolModifier>
                 {
                     new ShaderStageModifier(csd.Type.Text.ToShaderStage()),

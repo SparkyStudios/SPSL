@@ -32,7 +32,7 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource,
-            Documentation = context.Definition.DOC_COMMENT().ToDocumentation()
+            Documentation = context.Documentation.ToDocumentation()
         };
 
         // Register struct members
@@ -53,7 +53,7 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
                             End = property.Stop.StopIndex,
                             Source = _fileSource,
                             Annotations = new(property.annotation().Select(a => a.ToAnnotation(_fileSource))),
-                            Documentation = property.DOC_COMMENT().ToDocumentation()
+                            Documentation = property.Documentation.ToDocumentation()
                         }
                     );
                     break;
@@ -68,7 +68,6 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
                             End = function.Stop.StopIndex,
                             Source = _fileSource,
                             Annotations = new(function.annotation().Select(a => a.ToAnnotation(_fileSource))),
-                            Documentation = function.DOC_COMMENT().ToDocumentation()
                         }
                     );
                     break;
@@ -89,7 +88,7 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource,
-            Documentation = context.Definition.DOC_COMMENT().ToDocumentation()
+            Documentation = context.Documentation.ToDocumentation()
         };
 
         uint lastValue = 0;
@@ -119,7 +118,7 @@ public class TypeVisitor : SPSLBaseVisitor<Type?>
                     End = member.Stop.StopIndex,
                     Source = _fileSource,
                     Annotations = new(member.annotation().Select(a => a.ToAnnotation(_fileSource))),
-                    Documentation = member.DOC_COMMENT().ToDocumentation()
+                    Documentation = member.Documentation.ToDocumentation()
                 }
             );
 

@@ -477,15 +477,15 @@ globalVariable
   ;
 
 permutationVariableBool
-  : DOC_COMMENT? KEYWORD_PERMUTATION TYPE_BOOL Identifier = basicExpression OP_ASSIGN Value = BoolLiteral TOK_SEMICOLON
+  : Documentation = DOC_COMMENT? KEYWORD_PERMUTATION TYPE_BOOL Identifier = basicExpression OP_ASSIGN Value = BoolLiteral TOK_SEMICOLON
   ;
 
 permutationVariableEnum
-  : DOC_COMMENT? KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_CLOSE_BRACE OP_ASSIGN Value = basicExpression TOK_SEMICOLON
+  : Documentation = DOC_COMMENT? KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_CLOSE_BRACE OP_ASSIGN Value = basicExpression TOK_SEMICOLON
   ;
 
 permutationVariableInteger
-  : DOC_COMMENT? KEYWORD_PERMUTATION TYPE_INT Identifier = basicExpression OP_ASSIGN Value = IntegerLiteral TOK_SEMICOLON
+  : Documentation = DOC_COMMENT? KEYWORD_PERMUTATION TYPE_INT Identifier = basicExpression OP_ASSIGN Value = IntegerLiteral TOK_SEMICOLON
   ;
 
 permutationVariable
@@ -495,20 +495,20 @@ permutationVariable
   ;
 
 type
-  : Definition = structDefinition TOK_OPEN_BRACE structComponent* TOK_CLOSE_BRACE # Struct
-  | Definition = enumDefinition TOK_OPEN_BRACE enumComponent* TOK_CLOSE_BRACE     # Enum
+  : Documentation = DOC_COMMENT? Definition = structDefinition TOK_OPEN_BRACE structComponent* TOK_CLOSE_BRACE # Struct
+  | Documentation = DOC_COMMENT? Definition = enumDefinition TOK_OPEN_BRACE enumComponent* TOK_CLOSE_BRACE     # Enum
   ;
 
 structDefinition
-  : DOC_COMMENT? KEYWORD_TYPE Name = IDENTIFIER KEYWORD_AS KEYWORD_STRUCT (KEYWORD_EXTENDS ExtendedType = namespacedTypeName)?
+  : KEYWORD_TYPE Name = IDENTIFIER KEYWORD_AS KEYWORD_STRUCT (KEYWORD_EXTENDS ExtendedType = namespacedTypeName)?
   ;
 
 enumDefinition
-  : DOC_COMMENT? KEYWORD_TYPE Name = IDENTIFIER KEYWORD_AS KEYWORD_ENUM
+  : KEYWORD_TYPE Name = IDENTIFIER KEYWORD_AS KEYWORD_ENUM
   ;
 
 interface
-  : DOC_COMMENT* Definition = interfaceDefinition TOK_OPEN_BRACE (DOC_COMMENT* functionHead TOK_SEMICOLON)* TOK_CLOSE_BRACE
+  : Documentation = DOC_COMMENT? Definition = interfaceDefinition TOK_OPEN_BRACE (functionHead TOK_SEMICOLON)* TOK_CLOSE_BRACE
   ;
 
 interfaceDefinition
@@ -670,12 +670,12 @@ materialParamsComponent
   ;
 
 structComponent
-  : DOC_COMMENT? annotation* Type = dataType Name = IDENTIFIER TOK_SEMICOLON # StructProperty
-  | DOC_COMMENT? annotation* Function = function                             # StructFunction
+  : Documentation = DOC_COMMENT? annotation* Type = dataType Name = IDENTIFIER TOK_SEMICOLON # StructProperty
+  | annotation* Function = function                                                          # StructFunction
   ;
 
 enumComponent
-  : DOC_COMMENT? annotation* Name = IDENTIFIER (OP_ASSIGN Value = constantExpression)? TOK_COMMA
+  : Documentation = DOC_COMMENT? annotation* Name = IDENTIFIER (OP_ASSIGN Value = constantExpression)? TOK_COMMA
   ;
 
 // Inner function variables
@@ -706,7 +706,7 @@ function
   ;
 
 functionHead
-  : Type = dataType Name = IDENTIFIER Signature = functionSignature
+  : Documentation = DOC_COMMENT? Type = dataType Name = IDENTIFIER Signature = functionSignature
   ;
 
 functionSignature
@@ -718,7 +718,7 @@ argList
   ;
 
 argDef
-  : DOC_COMMENT* Flow = (KEYWORD_IN | KEYWORD_OUT | KEYWORD_INOUT | KEYWORD_CONST)? Type = dataType Name = IDENTIFIER (
+  : Documentation = DOC_COMMENT? Flow = (KEYWORD_IN | KEYWORD_OUT | KEYWORD_INOUT | KEYWORD_CONST)? Type = dataType Name = IDENTIFIER (
     OP_ASSIGN DefaultValue = constantExpression
   )?
   ;

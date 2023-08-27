@@ -1,6 +1,6 @@
 namespace SPSL.Language.AST;
 
-public class FunctionHead : INode, IEquatable<FunctionHead>
+public class FunctionHead : IDocumented, INode, IEquatable<FunctionHead>
 {
     public IDataType ReturnType { get; set; }
 
@@ -19,6 +19,13 @@ public class FunctionHead : INode, IEquatable<FunctionHead>
         Signature = signature;
     }
 
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
+
+    #endregion
+    
     #region INode Implementation
 
     /// <inheritdoc cref="INode.Start"/>

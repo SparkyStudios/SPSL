@@ -3,7 +3,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent an SPSL shader interface.
 /// </summary>
-public class Interface : INamespaceChild
+public class Interface : INamespaceChild, IDocumented
 {
     #region Properties
 
@@ -74,6 +74,13 @@ public class Interface : INamespaceChild
     /// The namespace's name.
     /// </summary>
     public Identifier Name { get; set; }
+
+    #endregion
+
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
 
     #endregion
 

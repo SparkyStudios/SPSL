@@ -39,7 +39,8 @@ public class Function : IBlockChild
 
     #region IBlockChild Implementation
 
-    Identifier IBlockChild.Name
+    /// <inheritdoc cref="IBlockChild.Name"/>
+    public Identifier Name
     {
         get => Head.Name;
         set => Head.Name = value;

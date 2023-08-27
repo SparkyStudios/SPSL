@@ -4,7 +4,7 @@ namespace SPSL.Language.Utils;
 
 public static class StringConversions
 {
-    public static BufferStorage ToBufferStorage(this string storage)
+    public static BufferStorage ToBufferStorage(this string? storage)
     {
         return storage switch
         {
@@ -13,7 +13,7 @@ public static class StringConversions
         };
     }
 
-    public static BufferAccess ToBufferAccess(this string access)
+    public static BufferAccess ToBufferAccess(this string? access)
     {
         return access switch
         {
@@ -25,7 +25,7 @@ public static class StringConversions
         };
     }
 
-    public static ShaderStage ToShaderStage(this string stage)
+    public static ShaderStage ToShaderStage(this string? stage)
     {
         return stage switch
         {
@@ -40,7 +40,7 @@ public static class StringConversions
         };
     }
 
-    public static DataFlow ToDataFlow(this string flow)
+    public static DataFlow ToDataFlow(this string? flow)
     {
         return flow switch
         {

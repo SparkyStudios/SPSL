@@ -5,7 +5,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represents an SPSL function argument.
 /// </summary>
-public class FunctionArgument : INode, IEquatable<FunctionArgument>
+public class FunctionArgument : IDocumented, INode, IEquatable<FunctionArgument>
 {
     #region Properties
 
@@ -30,6 +30,8 @@ public class FunctionArgument : INode, IEquatable<FunctionArgument>
 
     public FunctionArgument(DataFlow flow, IDataType type, Identifier name)
     {
+        name.Parent = this;
+        
         Flow = flow;
         Type = type;
         Name = name;
@@ -51,6 +53,13 @@ public class FunctionArgument : INode, IEquatable<FunctionArgument>
 
     #endregion
 
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; }
+
+    #endregion
+    
     #region INode Implementation
 
     /// <inheritdoc cref="INode.Start"/>

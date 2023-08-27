@@ -10,17 +10,17 @@ public class AssignmentExpression : IExpression
     /// <summary>
     /// The left operand, the expression in which define the value.
     /// </summary>
-    public IAssignableExpression Left { get; set; }
+    public IAssignableExpression Left { get; }
 
     /// <summary>
     /// The assignment operator.
     /// </summary>
-    public string Operator { get; set; }
+    public string Operator { get; }
 
     /// <summary>
     /// The right operand, the value to assign.
     /// </summary>
-    public IExpression Right { get; set; }
+    public IExpression Right { get; }
 
     #endregion
 

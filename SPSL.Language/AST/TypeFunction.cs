@@ -32,7 +32,7 @@ public class TypeFunction : IAnnotated, IDocumented, IBlockChild
     #region IDocumented Implementation
 
     /// <inheritdoc cref="IDocumented.Documentation"/>
-    public string Documentation { get; init; } = string.Empty;
+    public string Documentation => Function.Head.Documentation;
 
     #endregion
 
@@ -63,8 +63,7 @@ public class TypeFunction : IAnnotated, IDocumented, IBlockChild
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)
     {
-        return Function.ResolveNode(source, offset) ??
-               Annotations.FirstOrDefault(a => a.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
+        return Annotations.FirstOrDefault(a => a.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
                (Source == source && offset >= Start && offset <= End ? this as INode : null);
     }
 
