@@ -3,7 +3,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represent an SPSL shader interface.
 /// </summary>
-public class Interface : INamespaceChild, IDocumented
+public class Interface : INamespaceChild
 {
     #region Properties
 

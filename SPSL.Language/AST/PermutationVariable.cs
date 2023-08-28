@@ -5,7 +5,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// An SPSL shader permutation variable.
 /// </summary>
-public class PermutationVariable : INamespaceChild, IBlockChild, IDocumented
+public class PermutationVariable : INamespaceChild, IBlockChild
 {
     #region Properties
 

@@ -2,7 +2,7 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
-public class Material : INamespaceChild, IBlock
+public class Material : IBlock, INamespaceChild
 {
     #region Properties
 
@@ -50,6 +50,13 @@ public class Material : INamespaceChild, IBlock
 
     #endregion
 
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
+
+    #endregion
+    
     #region INode Implementation
 
     /// <inheritdoc cref="INode.Start"/>

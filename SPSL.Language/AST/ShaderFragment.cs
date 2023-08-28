@@ -166,6 +166,13 @@ public class ShaderFragment : INamespaceChild, IBlock
 
     #endregion
 
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
+
+    #endregion
+
     #region IBlock Implementation
 
     public OrderedSet<IBlockChild> Children { get; }

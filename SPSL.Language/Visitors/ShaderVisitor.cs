@@ -32,7 +32,8 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
             ExtendedShader = context.ExtendedShader.ToNamespaceReference(_fileSource),
             Start = ((ShaderContext)context.Parent).Start.StartIndex,
             End = ((ShaderContext)context.Parent).Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            Documentation = ((ShaderContext)context.Parent).Documentation.ToDocumentation()
         };
 
         if (context.Interfaces is not null)
@@ -74,20 +75,18 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
 
         Shader shader = context.Definition.Accept(this)!;
 
-        // --- Use Directives
-
-        foreach (UseFragmentDirectiveContext use in context.useFragmentDirective())
-            shader.Uses(use.Name.ToNamespaceReference(_fileSource));
-
         // --- Shader Members
 
         foreach (ShaderMemberContext member in context.shaderMember())
+        {
+            if (member.useFragmentDirective() is not null)
+            {
+                shader.Uses(member.useFragmentDirective().Name.ToNamespaceReference(_fileSource));
+                continue;
+            }
+
             shader.Children.Add(member.Accept(new ShaderMemberVisitor(_fileSource))!);
-
-        // --- Shader Functions
-
-        foreach (ShaderFunctionContext function in context.shaderFunction())
-            shader.Children.Add(function.Accept(new ShaderFunctionVisitor(_fileSource))!);
+        }
 
         return shader;
     }

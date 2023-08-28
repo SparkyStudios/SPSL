@@ -51,6 +51,13 @@ public class GlobalVariable : IShaderMember
 
     #endregion
 
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
+
+    #endregion
+
     #region INode Implementation
 
     /// <inheritdoc cref="INode.Start"/>

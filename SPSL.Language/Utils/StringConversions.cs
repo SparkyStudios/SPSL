@@ -36,7 +36,7 @@ public static class StringConversions
             "hull" => ShaderStage.Hull,
             "domain" => ShaderStage.Domain,
             "compute" => ShaderStage.Compute,
-            _ => ShaderStage.Unknown,
+            _ => ShaderStage.Unspecified,
         };
     }
 

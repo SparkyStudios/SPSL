@@ -19,7 +19,7 @@ public class ShaderFunction : IAnnotated, IShaderMember, IMaterialMember
     public ShaderFunction(Function function)
     {
         function.Parent = this;
-        
+
         Annotations = new();
         IsOverride = false;
         Function = function;
@@ -40,6 +40,13 @@ public class ShaderFunction : IAnnotated, IShaderMember, IMaterialMember
         get => ((IBlockChild)Function).Name;
         set => ((IBlockChild)Function).Name = value;
     }
+
+    #endregion
+
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
 
     #endregion
 

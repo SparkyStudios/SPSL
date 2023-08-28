@@ -473,7 +473,7 @@ fileLevelDefinition
 
 globalVariable
   locals[bool IsStatic]
-  : (KEYWORD_STATIC {$IsStatic = true;})? KEYWORD_CONST Type = dataType Definition = variableDeclarationAssignment TOK_SEMICOLON
+  : Documentation = DOC_COMMENT? (KEYWORD_STATIC {$IsStatic = true;})? KEYWORD_CONST Type = dataType Definition = variableDeclarationAssignment TOK_SEMICOLON
   ;
 
 permutationVariableBool
@@ -520,9 +520,7 @@ interfacesList
   ;
 
 shaderFragment
-  : DOC_COMMENT* Definition = shaderFragmentDefinition TOK_OPEN_BRACE (
-    DOC_COMMENT* (shaderMember | permutationVariable | shaderFunction | useFragmentDirective)
-  )* TOK_CLOSE_BRACE
+  : Documentation = DOC_COMMENT? Definition = shaderFragmentDefinition TOK_OPEN_BRACE (shaderMember | permutationVariable)* TOK_CLOSE_BRACE
   ;
 
 shaderFragmentDefinition
@@ -532,18 +530,16 @@ shaderFragmentDefinition
   ;
 
 shader
-  : DOC_COMMENT* Definition = shaderDefinition TOK_OPEN_BRACE (
-    DOC_COMMENT* (shaderMember | shaderFunction | useFragmentDirective)
-  )* TOK_CLOSE_BRACE
+  : Documentation = DOC_COMMENT? Definition = shaderDefinition TOK_OPEN_BRACE shaderMember* TOK_CLOSE_BRACE
   ;
 
 material
-  : DOC_COMMENT* Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* (materialMember | useFragmentDirective))* TOK_CLOSE_BRACE
+  : Documentation = DOC_COMMENT? Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* (materialMember | useFragmentDirective))* TOK_CLOSE_BRACE
   ;
 
 stream
   locals[bool IsPartial]
-  : DOC_COMMENT* KEYWORD_STREAM TOK_OPEN_BRACE (DOC_COMMENT* streamProperty)* TOK_CLOSE_BRACE
+  : Documentation = DOC_COMMENT? KEYWORD_STREAM TOK_OPEN_BRACE (DOC_COMMENT* streamProperty)* TOK_CLOSE_BRACE
   ;
 
 materialDefinition
@@ -584,15 +580,17 @@ shaderMember
   | type
   | stream
   | samplerState
+  | shaderFunction
+  | useFragmentDirective
   ;
 
 samplerState
-  : TYPE_SAMPLER Name = IDENTIFIER OP_ASSIGN IDENTIFIER                                 # DefaultSamplerState
-  | TYPE_SAMPLER Name = IDENTIFIER TOK_OPEN_BRACE samplerStateProperty+ TOK_CLOSE_BRACE # CustomSamplerState
+  : Documentation = DOC_COMMENT? TYPE_SAMPLER Name = IDENTIFIER OP_ASSIGN IDENTIFIER                                 # DefaultSamplerState
+  | Documentation = DOC_COMMENT? TYPE_SAMPLER Name = IDENTIFIER TOK_OPEN_BRACE samplerStateProperty+ TOK_CLOSE_BRACE # CustomSamplerState
   ;
 
 samplerStateProperty
-  : Property = IDENTIFIER OP_ASSIGN Value = primitiveExpression
+  : Documentation = DOC_COMMENT? Property = IDENTIFIER OP_ASSIGN Value = primitiveExpression
   ;
 
 materialMember
@@ -654,9 +652,9 @@ materialStateComponent
 
 // Uniform block for GLSL CBuffer for HLSL
 bufferDefinition
-  : annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite' | 'constant')? KEYWORD_BUFFER Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent*
+  : Documentation = DOC_COMMENT? annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite' | 'constant')? KEYWORD_BUFFER Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent*
     TOK_CLOSE_BRACE # InPlaceStructuredBufferDefinition
-  | annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite')? KEYWORD_BUFFER OP_LESSER_THAN Type = dataType OP_GREATER_THAN Name = IDENTIFIER
+  | Documentation = DOC_COMMENT? annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite')? KEYWORD_BUFFER OP_LESSER_THAN Type = dataType OP_GREATER_THAN Name = IDENTIFIER
     TOK_SEMICOLON # TypedBufferDefinition
   ;
 
@@ -697,8 +695,8 @@ variableIdentity
 
 shaderFunction
   locals[bool IsOverride]
-  : annotation* (KEYWORD_OVERRIDE                                                                                   {$IsOverride = true;})? Function = function # BasicShaderFunction
-  | annotation* Name = IDENTIFIER TOK_OPEN_PAREN TOK_CLOSE_PAREN TOK_OPEN_BRACE Body = functionBody TOK_CLOSE_BRACE # ShaderConstructorFunction
+  : Documentation = DOC_COMMENT? annotation* (KEYWORD_OVERRIDE                                                                                   {$IsOverride = true;})? Function = function # BasicShaderFunction
+  | Documentation = DOC_COMMENT? annotation* Name = IDENTIFIER TOK_OPEN_PAREN TOK_CLOSE_PAREN TOK_OPEN_BRACE Body = functionBody TOK_CLOSE_BRACE # ShaderConstructorFunction
   ;
 
 function
@@ -1054,13 +1052,13 @@ BoolLiteral
   ;
 
 DoubleLiteral
-  : (OP_PLUS | OP_MINUS)? (FractionalConstant DoubleSuffix | DecimalDigit+ DoubleSuffix)
+  : (OP_PLUS | OP_MINUS)? (FractionalConstant DoubleSuffix? | DecimalDigit+ DoubleSuffix)
   ;
 
 FloatLiteral
   : (OP_PLUS | OP_MINUS)? (
-    FractionalConstant ExponentPart? FloatingSuffix?
-    | DecimalDigit+ ExponentPart FloatingSuffix?
+    FractionalConstant ExponentPart? FloatingSuffix
+    | DecimalDigit+ ExponentPart FloatingSuffix
   )
   ;
 

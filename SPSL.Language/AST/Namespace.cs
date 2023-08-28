@@ -193,6 +193,13 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 
     #endregion
 
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
+
+    #endregion
+
     #region INode Implementation
 
     /// <inheritdoc cref="INode.Start"/>

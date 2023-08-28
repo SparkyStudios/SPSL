@@ -3,7 +3,7 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
-public class Shader : INamespaceChild, IBlock
+public class Shader : IBlock, INamespaceChild
 {
     #region Nested Types
 
@@ -99,6 +99,13 @@ public class Shader : INamespaceChild, IBlock
     /// The namespace's name.
     /// </summary>
     public Identifier Name { get; set; }
+
+    #endregion
+
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
 
     #endregion
 

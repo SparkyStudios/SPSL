@@ -60,11 +60,9 @@ public class HoverHandler : IHoverHandler
     {
         return node switch
         {
-            PermutationVariable variable => CreateHover(document, variable),
-            Type type => CreateHover(document, type),
+            INamespaceChild namespaceChild => CreateHover(document, namespaceChild),
             TypeProperty property => CreateHover(document, property),
             TypeFunction function => CreateHover(document, function),
-            Interface @interface => CreateHover(document, @interface),
             FunctionArgument argument => CreateHover(document, argument),
             ILiteral literal => CreateHover(document, literal),
             Identifier identifier => CreateHover(document, identifier),
@@ -94,33 +92,7 @@ public class HoverHandler : IHoverHandler
         };
     }
 
-    private static Hover CreateHover(Document document, PermutationVariable symbol)
-    {
-        return new()
-        {
-            Contents = new
-            (
-                new MarkupContent
-                {
-                    Kind = MarkupKind.Markdown,
-                    Value = $"""
-                             ```spsl
-                             {DeclarationString.From(symbol)}
-                             ```
-                             ---
-                             {symbol.Documentation}
-                             """,
-                }
-            ),
-            Range = new()
-            {
-                Start = document.PositionAt(symbol.Name.Start),
-                End = document.PositionAt(symbol.Name.End + 1)
-            }
-        };
-    }
-
-    private static Hover CreateHover(Document document, Type symbol)
+    private static Hover CreateHover(Document document, INamespaceChild symbol)
     {
         return new()
         {
@@ -173,32 +145,6 @@ public class HoverHandler : IHoverHandler
     }
 
     private static Hover CreateHover(Document document, TypeFunction symbol)
-    {
-        return new()
-        {
-            Contents = new
-            (
-                new MarkupContent
-                {
-                    Kind = MarkupKind.Markdown,
-                    Value = $"""
-                             ```spsl
-                             {DeclarationString.From(symbol)}
-                             ```
-                             ---
-                             {symbol.Documentation}
-                             """,
-                }
-            ),
-            Range = new()
-            {
-                Start = document.PositionAt(symbol.Name.Start),
-                End = document.PositionAt(symbol.Name.End + 1)
-            }
-        };
-    }
-
-    private static Hover CreateHover(Document document, Interface symbol)
     {
         return new()
         {

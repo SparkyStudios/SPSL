@@ -11,6 +11,27 @@ namespace SPSL.Language.Utils;
 public static class DeclarationString
 {
     /// <summary>
+    /// Gets the declaration of the given <see cref="INamespaceChild"/>.
+    /// </summary>
+    /// <param name="child">The <see cref="INamespaceChild"/> to get the declaration from.</param>
+    /// <exception cref="NotImplementedException">
+    /// When the given <see cref="INamespaceChild"/> is not yet implemented.
+    /// </exception>
+    public static string From(INamespaceChild child)
+    {
+        return child switch
+        {
+            PermutationVariable variable => From(variable),
+            Type type => From(type),
+            Interface @interface => From(@interface),
+            ShaderFragment fragment => From(fragment),
+            Shader shader => From(shader),
+            Material material => From(material),
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    /// <summary>
     /// Gets the declaration of the given <see cref="PermutationVariable"/>.
     /// </summary>
     /// <param name="variable">The <see cref="PermutationVariable"/> to get the declaration from.</param>
@@ -50,11 +71,8 @@ public static class DeclarationString
         return From(variable.Function);
     }
 
-    public static string From(Function function)
-    {
-        return
-            $"{function.Head.ReturnType} {function.Name}({string.Join(", ", function.Head.Signature.Parameters.Select(From))})";
-    }
+    public static string From(Function function) =>
+        $"{function.Head.ReturnType} {function.Name}({string.Join(", ", function.Head.Signature.Parameters.Select(From))})";
 
     public static string From(FunctionArgument parameter)
     {
@@ -72,7 +90,6 @@ public static class DeclarationString
     /// Gets the declaration of the given <see cref="Interface"/>.
     /// </summary>
     /// <param name="variable">The <see cref="Interface"/> to get the declaration from.</param>
-    /// <exception cref="NotImplementedException"></exception>
     public static string From(Interface variable)
     {
         StringBuilder sb = new($"interface {variable.Name.Value}");
@@ -85,6 +102,58 @@ public static class DeclarationString
                 sb.Append($" {extends.Name},");
         }
 
+        return sb.ToString().TrimEnd(',');
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="ShaderFragment"/>.
+    /// </summary>
+    /// <param name="fragment">The <see cref="ShaderFragment"/> to get the declaration from.</param>
+    public static string From(ShaderFragment fragment)
+    {
+        StringBuilder sb = new($"fragment {fragment.Name.Value}");
+        
+        if (fragment.ExtendedShaderFragment != NamespacedReference.Null)
+            sb.Append($" extends {fragment.ExtendedShaderFragment.Name}");
+
+        if (fragment.ExtendedInterfaces.Count > 0)
+        {
+            sb.Append(" implements");
+
+            foreach (NamespacedReference extends in fragment.ExtendedInterfaces)
+                sb.Append($" {extends.Name},");
+        }
+        
+        return sb.ToString().TrimEnd(',');
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="Shader"/>.
+    /// </summary>
+    /// <param name="shader">The <see cref="Shader"/> to get the declaration from.</param>
+    public static string From(Shader shader)
+    {
+        StringBuilder sb = new();
+        
+        if (shader.IsAbstract)
+            sb.Append("abstract ");
+        
+        if (shader.Stage != ShaderStage.Unspecified)
+            sb.Append($"{shader.Stage.ToString().ToLower()} ");
+
+        sb.Append($"shader {shader.Name.Value}");
+
+        if (shader.ExtendedShader != NamespacedReference.Null)
+            sb.Append($" extends {shader.ExtendedShader.Name}");
+
+        if (shader.Interfaces.Count > 0)
+        {
+            sb.Append(" implements");
+
+            foreach (NamespacedReference implements in shader.Interfaces)
+                sb.Append($" {implements.Name},");
+        }
+        
         return sb.ToString().TrimEnd(',');
     }
 }

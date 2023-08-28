@@ -1,5 +1,5 @@
-﻿using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
+﻿using System.Text.RegularExpressions;
+using Antlr4.Runtime;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
 using SPSL.Language.Utils;
@@ -8,16 +8,17 @@ using static SPSL.Language.SPSLParser;
 
 namespace SPSL.Language;
 
-internal static class SPSLParserExtensions
+internal static partial class SPSLParserExtensions
 {
     internal static string ToDocumentation(this IToken? node)
     {
-        return node?.Text
-            .Replace("\r\n", "\n")
+        Regex regex = StripDocumentationStarRegex();
+
+        return regex.Replace(node?.Text
+            .ReplaceLineEndings("\n")
             .Replace("/**", "")
             .Replace("*/", "")
-            .Replace("* ", "")
-            .Trim() ?? string.Empty;
+            .Trim() ?? string.Empty, "\n");
     }
 
     internal static Identifier ToIdentifier(this IToken token, string fileSource)
@@ -269,4 +270,7 @@ internal static class SPSLParserExtensions
             Source = fileSource
         };
     }
+
+    [GeneratedRegex(@"(\s*\*)(?:[\s\n\r])?")]
+    private static partial Regex StripDocumentationStarRegex();
 }

@@ -3,6 +3,7 @@ using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
 using SPSL.Language.Utils;
+using static SPSL.Language.SPSLParser;
 using Stream = SPSL.Language.AST.Stream;
 
 namespace SPSL.Language.Visitors;
@@ -20,9 +21,9 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
         _fileSource = fileSource;
     }
 
-    private StreamProperty ParseStreamProperty(SPSLParser.StreamPropertyContext context)
+    private StreamProperty ParseStreamProperty(StreamPropertyContext context)
     {
-        SPSLParser.BufferComponentContext bufferComponentContext = context.bufferComponent();
+        BufferComponentContext bufferComponentContext = context.bufferComponent();
 
         StreamProperty property = new
         (
@@ -48,11 +49,11 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
     }
 
     protected override bool ShouldVisitNextChild(IRuleNode node, IShaderMember? currentResult)
-        => node is SPSLParser.ShaderMemberContext or SPSLParser.BufferDefinitionContext
-            or SPSLParser.TypeContext or SPSLParser.StructContext or SPSLParser.EnumContext;
+        => node is ShaderMemberContext or BufferDefinitionContext
+            or TypeContext or StructContext or EnumContext or ShaderFunctionContext;
 
     public override IShaderMember VisitInPlaceStructuredBufferDefinition(
-        [NotNull] SPSLParser.InPlaceStructuredBufferDefinitionContext context)
+        [NotNull] InPlaceStructuredBufferDefinitionContext context)
     {
         StructuredBuffer buffer = new
         (
@@ -64,14 +65,15 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             Access = context.Access.Text.ToBufferAccess(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            Documentation = context.Documentation.ToDocumentation()
         };
 
         buffer.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation(_fileSource)));
         return buffer;
     }
 
-    public override IShaderMember VisitTypedBufferDefinition([NotNull] SPSLParser.TypedBufferDefinitionContext context)
+    public override IShaderMember VisitTypedBufferDefinition([NotNull] TypedBufferDefinitionContext context)
     {
         TypedBuffer buffer = new
         (
@@ -83,38 +85,40 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             Access = context.Access.Text.ToBufferAccess(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            Documentation = context.Documentation.ToDocumentation()
         };
 
         buffer.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation(_fileSource)));
         return buffer;
     }
 
-    public override IShaderMember? VisitStruct(SPSLParser.StructContext context)
+    public override IShaderMember? VisitStruct(StructContext context)
     {
         return context.Accept(new TypeVisitor(_fileSource));
     }
 
-    public override IShaderMember? VisitEnum(SPSLParser.EnumContext context)
+    public override IShaderMember? VisitEnum(EnumContext context)
     {
         return context.Accept(new TypeVisitor(_fileSource));
     }
 
-    public override IShaderMember VisitStream(SPSLParser.StreamContext context)
+    public override IShaderMember VisitStream(StreamContext context)
     {
         return new Stream
         (
-            new() { Value = $"@stream{++_streamCount}" },
+            new() { Value = $"stream@{++_streamCount}" },
             context.streamProperty().Select(ParseStreamProperty)
         )
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            Documentation = context.Documentation.ToDocumentation()
         };
     }
 
-    public override IShaderMember VisitGlobalVariable(SPSLParser.GlobalVariableContext context)
+    public override IShaderMember VisitGlobalVariable(GlobalVariableContext context)
     {
         return new GlobalVariable
         (
@@ -126,7 +130,51 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             Name = context.Definition.Identifier.Identifier.ToIdentifier(_fileSource),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            Documentation = context.Documentation.ToDocumentation()
         };
+    }
+
+    public override IShaderMember VisitBasicShaderFunction(BasicShaderFunctionContext context)
+    {
+        var function = new ShaderFunction(context.Function.ToFunction(_fileSource))
+        {
+            IsOverride = context.IsOverride,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
+            Source = _fileSource,
+            Documentation = context.Documentation.ToDocumentation()
+        };
+
+        function.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation(_fileSource)));
+        return function;
+    }
+
+    public override IShaderMember VisitShaderConstructorFunction(ShaderConstructorFunctionContext context)
+    {
+        var function = new ShaderFunction
+        (
+            new
+            (
+                new
+                (
+                    new PrimitiveDataType(PrimitiveDataTypeKind.Void),
+                    context.Name.ToIdentifier(_fileSource),
+                    new()
+                ),
+                context.Body.ToStatementBlock(_fileSource)
+            )
+        )
+        {
+            IsOverride = false,
+            IsConstructor = true,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
+            Source = _fileSource,
+            Documentation = context.Documentation.ToDocumentation()
+        };
+
+        function.Annotations.AddRange(context.annotation().Select(a => a.ToAnnotation(_fileSource)));
+        return function;
     }
 }

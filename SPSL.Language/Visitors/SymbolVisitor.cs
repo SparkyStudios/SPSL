@@ -290,7 +290,7 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Source = _fileSource,
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Type = SymbolType.Struct,
+            Type = SymbolType.Enum,
         };
 
         enumeration.Add

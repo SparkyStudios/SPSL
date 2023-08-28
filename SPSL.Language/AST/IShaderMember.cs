@@ -1,5 +1,5 @@
 namespace SPSL.Language.AST;
 
-public interface IShaderMember : IBlockChild
+public interface IShaderMember : IBlockChild, IDocumented
 {
 }

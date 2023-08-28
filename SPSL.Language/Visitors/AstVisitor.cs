@@ -139,18 +139,14 @@ public class AstVisitor : SPSLBaseVisitor<Ast>
             ExtendedShaderFragment = context.Definition.ExtendedFragment.ToNamespaceReference(_fileSource),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            Documentation = context.Documentation.ToDocumentation()
         };
 
         if (context.Definition.ExtendedInterfaces != null)
             foreach (NamespacedTypeNameContext nsd in context.Definition.ExtendedInterfaces
                          .namespacedTypeName())
                 fragment.Extends(nsd.ToNamespaceReference(_fileSource));
-
-        // --- Use Directives
-
-        foreach (UseFragmentDirectiveContext use in context.useFragmentDirective())
-            fragment.Uses(use.Name.ToNamespaceReference(_fileSource));
 
         // --- Permutation variables
 
@@ -166,21 +162,18 @@ public class AstVisitor : SPSLBaseVisitor<Ast>
 
         foreach (ShaderMemberContext memberContext in context.shaderMember())
         {
+            if (memberContext.useFragmentDirective() is not null)
+            {
+                fragment.Uses(memberContext.useFragmentDirective().Name.ToNamespaceReference(_fileSource));
+                continue;
+            }
+
             IShaderMember member = memberContext.Accept(new ShaderMemberVisitor(_fileSource))!;
 
             if (member is INamespaceChild child)
                 child.ParentNamespace = _currentNamespace;
 
             fragment.AddShaderMember(member);
-        }
-
-        // --- Functions
-
-        foreach (ShaderFunctionContext function in context.shaderFunction())
-        {
-            ShaderFunction? f = function.Accept(new ShaderFunctionVisitor(_fileSource));
-            if (f is null) continue;
-            fragment.AddFunction(f);
         }
 
         _currentNamespace.AddChild(fragment);

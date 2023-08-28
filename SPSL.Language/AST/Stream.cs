@@ -27,13 +27,20 @@ public class Stream : IShaderMember
     public Stream(Identifier name, IEnumerable<StreamProperty> properties)
     {
         name.Parent = this;
-        
+
         Name = name;
         Properties = new(properties);
-        
+
         foreach (StreamProperty property in Properties)
             property.Parent = this;
     }
+
+    #endregion
+
+    #region IDocumented Implementation
+
+    /// <inheritdoc cref="IDocumented.Documentation"/>
+    public string Documentation { get; init; } = string.Empty;
 
     #endregion
 

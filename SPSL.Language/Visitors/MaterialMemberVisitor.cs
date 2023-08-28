@@ -3,6 +3,7 @@ using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
 using SPSL.Language.Utils;
+using static SPSL.Language.SPSLParser;
 
 namespace SPSL.Language.Visitors;
 
@@ -18,13 +19,13 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
     }
 
     protected override bool ShouldVisitNextChild(IRuleNode node, IMaterialMember? currentResult)
-        => node is SPSLParser.MaterialMemberContext or SPSLParser.MaterialParamsContext
-            or SPSLParser.TypeContext or SPSLParser.StructContext or SPSLParser.EnumContext
-            or SPSLParser.MaterialStateContext or SPSLParser.MaterialStateBlockContext
-            or SPSLParser.MaterialStateValueContext
-            or SPSLParser.MaterialShaderUsageContext;
+        => node is MaterialMemberContext or MaterialParamsContext
+            or TypeContext or StructContext or EnumContext
+            or MaterialStateContext or MaterialStateBlockContext
+            or MaterialStateValueContext
+            or MaterialShaderUsageContext;
 
-    public override IMaterialMember VisitMaterialParams([NotNull] SPSLParser.MaterialParamsContext context)
+    public override IMaterialMember VisitMaterialParams([NotNull] MaterialParamsContext context)
     {
         MaterialParameterGroup materialParams = new(context.Name.ToIdentifier(_fileSource))
         {
@@ -38,7 +39,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         {
             MaterialParameter materialParam;
 
-            if (param is SPSLParser.MaterialValueParameterContext v)
+            if (param is MaterialValueParameterContext v)
             {
                 materialParam = new
                 (
@@ -55,7 +56,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
 
                 materialParam.Annotations.AddRange(v.annotation().Select(a => a.ToAnnotation(_fileSource)));
             }
-            else if (param is SPSLParser.MaterialPermutationParameterContext p)
+            else if (param is MaterialPermutationParameterContext p)
             {
                 var permutation = p.permutationVariable().ToPermutationVariable(_fileSource);
 
@@ -91,7 +92,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         return materialParams;
     }
 
-    public override IMaterialMember VisitMaterialStateValue([NotNull] SPSLParser.MaterialStateValueContext context)
+    public override IMaterialMember VisitMaterialStateValue([NotNull] MaterialStateValueContext context)
     {
         return new MaterialState(context.Name.ToIdentifier(_fileSource))
         {
@@ -102,7 +103,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         };
     }
 
-    public override IMaterialMember VisitMaterialStateBlock([NotNull] SPSLParser.MaterialStateBlockContext context)
+    public override IMaterialMember VisitMaterialStateBlock([NotNull] MaterialStateBlockContext context)
     {
         return new MaterialState
         (
@@ -128,17 +129,17 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         };
     }
 
-    public override IMaterialMember? VisitStruct(SPSLParser.StructContext context)
+    public override IMaterialMember? VisitStruct(StructContext context)
     {
         return context.Accept(new TypeVisitor(_fileSource));
     }
 
-    public override IMaterialMember? VisitEnum(SPSLParser.EnumContext context)
+    public override IMaterialMember? VisitEnum(EnumContext context)
     {
         return context.Accept(new TypeVisitor(_fileSource));
     }
 
-    public override IMaterialMember VisitSimpleMaterialShaderUsage(SPSLParser.SimpleMaterialShaderUsageContext context)
+    public override IMaterialMember VisitSimpleMaterialShaderUsage(SimpleMaterialShaderUsageContext context)
     {
         return new MaterialShader(context.Definition.Stage.ToIdentifier(_fileSource))
         {
@@ -150,8 +151,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         };
     }
 
-    public override IMaterialMember VisitCustomizedMaterialShaderUsage(
-        SPSLParser.CustomizedMaterialShaderUsageContext context)
+    public override IMaterialMember VisitCustomizedMaterialShaderUsage(CustomizedMaterialShaderUsageContext context)
     {
         MaterialShader shader = new
         (
@@ -167,7 +167,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
 
         shader.Children.AddRange
         (
-            context.shaderFunction().Select(f => f.Accept(new ShaderFunctionVisitor(_fileSource))!)
+            context.shaderFunction().Select(f => f.Accept(new ShaderMemberVisitor(_fileSource))!)
         );
 
         shader.ImportedShaderFragments.AddRange
