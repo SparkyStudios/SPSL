@@ -120,6 +120,8 @@ public class Translator
 
     private TranslatorConfiguration _configuration;
 
+    public Stream ShaderStream => _shaderStream;
+
     private string TranslateShaderFragment(NamespacedReference name, Namespace ns, Ast ast,
         IDictionary<string, uint>? conflicts, IEnumerable<IBlockChild>? overriddenFunctions)
     {
@@ -302,38 +304,38 @@ public class Translator
         switch (type.Kind)
         {
             case TypeKind.Struct:
-            {
-                Template template = _hlslTemplate.GetInstanceOf("struct");
-                template.Add("name", type.Name);
-                foreach (TypeProperty property in type.Properties)
-                    template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name.Value));
-                foreach (TypeFunction function in type.Functions)
-                    template.Add("functions", Translate(function.Function, ns, ast));
-
-                output.Append(template.Render());
-                break;
-            }
-            case TypeKind.Enum:
-            {
-                Template template = _hlslTemplate.GetInstanceOf("enum");
-                template.Add("name", type.Name);
-                foreach (TypeProperty member in type.Properties)
                 {
-                    template.Add
-                    (
-                        "properties",
-                        new Prop
-                        (
-                            Translate(member.Type, ns, ast),
-                            member.Name.Value,
-                            member.Initializer != null ? Translate(member.Initializer, ns, ast) : null
-                        )
-                    );
-                }
+                    Template template = _hlslTemplate.GetInstanceOf("struct");
+                    template.Add("name", type.Name);
+                    foreach (TypeProperty property in type.Properties)
+                        template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name.Value));
+                    foreach (TypeFunction function in type.Functions)
+                        template.Add("functions", Translate(function.Function, ns, ast));
 
-                output.Append(template.Render());
-                break;
-            }
+                    output.Append(template.Render());
+                    break;
+                }
+            case TypeKind.Enum:
+                {
+                    Template template = _hlslTemplate.GetInstanceOf("enum");
+                    template.Add("name", type.Name);
+                    foreach (TypeProperty member in type.Properties)
+                    {
+                        template.Add
+                        (
+                            "properties",
+                            new Prop
+                            (
+                                Translate(member.Type, ns, ast),
+                                member.Name.Value,
+                                member.Initializer != null ? Translate(member.Initializer, ns, ast) : null
+                            )
+                        );
+                    }
+
+                    output.Append(template.Render());
+                    break;
+                }
             case TypeKind.Unknown:
             default:
                 output.AppendLine("// <spsl-error>");
@@ -400,8 +402,8 @@ public class Translator
         }
 
         foreach (Stream stream in fragment.Streams)
-        foreach (StreamProperty property in stream.Properties)
-            _shaderStream.Properties.Add(property);
+            foreach (StreamProperty property in stream.Properties)
+                _shaderStream.Properties.Add(property);
 
         _currentBase = Translate(fragment.ExtendedShaderFragment, ns, ast);
 
@@ -417,7 +419,7 @@ public class Translator
                     permutationVariable.Name.Value.Equals(permutation.Name.Value)) != null ||
                 (conflicts is not null && conflicts.ContainsKey(name.Value) && conflicts[name.Value] > 1))
                 permutation.Name = new()
-                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{permutation.Name.Value}" };
+                { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{permutation.Name.Value}" };
 
             output.Append(Translate(permutation, ns, ast));
         }
@@ -488,7 +490,7 @@ public class Translator
                     shaderFunction.Function.Head.Equals(function.Function.Head)) != null ||
                 (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
                 function.Function.Head.Name = new()
-                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{function.Function.Head.Name}" };
+                { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{function.Function.Head.Name}" };
 
             output.Append(Translate(function, ns, ast));
         }
@@ -496,10 +498,18 @@ public class Translator
         return output.ToString();
     }
 
-    public string Translate(Shader shader, Namespace ns, Ast ast, IEnumerable<IBlockChild>? shouldOverride = null)
+    public enum ShaderTranslationStage
     {
-        _currentShader = shader;
+        Full,
+        Fragments,
+        Types,
+        FunctionDeclarations,
+        Streams,
+        FunctionDefinitions
+    }
 
+    public string Translate(Shader shader, Namespace ns, Ast ast, IEnumerable<IBlockChild>? shouldOverride = null, ShaderTranslationStage stage = ShaderTranslationStage.Full)
+    {
         // 1. Process base shaders recursively
         //    - Rename overridden methods with BaseShader_MethodName
         // 2. Process shader fragments recursively
@@ -509,6 +519,22 @@ public class Translator
         //    - Calls to base are renamed with the parent shader name
 
         StringBuilder output = new();
+
+        Shader? parent = null;
+        if (shader.ExtendedShader != NamespacedReference.Null)
+        {
+            parent = Resolve(shader.ExtendedShader.Name, ns, ast) as Shader;
+            if (parent is null)
+            {
+                output.AppendLine("// <spsl-error>");
+                output.AppendLine(
+                    $"// Shader not found: {shader.ExtendedShader.Name}. Make sure it exists or his namespace is imported.");
+                output.AppendLine("// </spsl-error>");
+                output.AppendLine();
+                return string.Empty;
+            }
+        }
+
         HashSet<IBlockChild> overriddenChildren = new();
 
         foreach (IBlockChild child in shader.Children)
@@ -517,255 +543,283 @@ public class Translator
 
         IEnumerable<IBlockChild>? blockChildren = shouldOverride as HashSet<IBlockChild> ?? shouldOverride?.ToHashSet();
 
-        if (shader.ImportedShaderFragments.Count > 0)
+        void UpdateScope()
         {
-            Dictionary<string, uint> fragmentChildren = new();
+            _currentShader = shader;
+            _currentBase = Translate(shader.ExtendedShader, ns, ast);
+        }
 
-            foreach (NamespacedReference fragment in shader.ImportedShaderFragments)
+        // Imported shader fragments
+        if (stage == ShaderTranslationStage.Fragments)
+        {
+            if (parent != null)
+                output.Append(Translate(parent, ns, ast, overriddenChildren, ShaderTranslationStage.Fragments));
+
+            UpdateScope();
+            if (shader.ImportedShaderFragments.Count > 0)
             {
-                if (fragment == NamespacedReference.Null)
-                    continue;
+                Dictionary<string, uint> fragmentChildren = new();
 
-                INamespaceChild? frag = Resolve(fragment.Name, ns, ast);
-                if (frag is not ShaderFragment shaderFragment) continue;
-
-                foreach (IBlockChild child in shaderFragment.Children)
+                foreach (NamespacedReference fragment in shader.ImportedShaderFragments)
                 {
-                    string name = child.Name.Value;
+                    if (fragment == NamespacedReference.Null)
+                        continue;
 
-                    if (child is ShaderFunction function)
+                    INamespaceChild? frag = Resolve(fragment.Name, ns, ast);
+                    if (frag is not ShaderFragment shaderFragment) continue;
+
+                    foreach (IBlockChild child in shaderFragment.Children)
                     {
-                        name = Translate(function.Function.Head, ns, ast);
+                        string name = child.Name.Value;
+
+                        if (child is ShaderFunction function)
+                        {
+                            name = Translate(function.Function.Head, ns, ast);
+                        }
+
+                        if (fragmentChildren.ContainsKey(name))
+                            fragmentChildren[name] += 1;
+                        else
+                            fragmentChildren.Add(name, 1);
                     }
-
-                    if (fragmentChildren.ContainsKey(name))
-                        fragmentChildren[name] += 1;
-                    else
-                        fragmentChildren.Add(name, 1);
                 }
-            }
 
-            foreach (NamespacedReference import in shader.ImportedShaderFragments)
-            {
-                if (import == NamespacedReference.Null)
-                    continue;
+                foreach (NamespacedReference import in shader.ImportedShaderFragments)
+                {
+                    if (import == NamespacedReference.Null)
+                        continue;
 
-                output.Append(TranslateShaderFragment(import, ns, ast, fragmentChildren, null));
+                    output.Append(TranslateShaderFragment(import, ns, ast, fragmentChildren, null));
+                }
             }
         }
 
         // Shader members
-        foreach (IBlockChild child in shader.Children)
+        if (stage == ShaderTranslationStage.Types)
         {
-            var code = child switch
-            {
-                GlobalVariable v => Translate(v, ns, ast),
-                TypedBuffer tb => Translate(tb, ns, ast),
-                StructuredBuffer sb => Translate(sb, ns, ast),
-                Type t => Translate(t, ns, ast),
-                // TODO: Sampler states
-                _ => string.Empty,
-            };
+            if (parent != null)
+                output.Append(Translate(parent, ns, ast, overriddenChildren, ShaderTranslationStage.Types));
 
-            output.AppendLine(code);
-        }
-
-        if (shader.ExtendedShader != NamespacedReference.Null)
-        {
-            INamespaceChild? parent = Resolve(shader.ExtendedShader.Name, ns, ast);
-            if (parent is Shader parentShader)
+            UpdateScope();
+            foreach (IBlockChild child in shader.Children)
             {
-                output.Append(Translate(parentShader, ns, ast, overriddenChildren));
+                var code = child switch
+                {
+                    GlobalVariable v => Translate(v, ns, ast),
+                    TypedBuffer tb => Translate(tb, ns, ast),
+                    StructuredBuffer sb => Translate(sb, ns, ast),
+                    Type t => Translate(t, ns, ast),
+                    // TODO: Sampler states
+                    _ => string.Empty,
+                };
 
-                // Set back the current shader
-                _currentShader = shader;
-            }
-            else
-            {
-                output.AppendLine("// <spsl-error>");
-                output.AppendLine(
-                    $"// Shader not found: {shader.ExtendedShader.Name}. Make sure it exists or his namespace is imported.");
-                output.AppendLine("// </spsl-error>");
-                output.AppendLine();
+                output.AppendLine(code);
             }
         }
 
         // Functions declaration
-        foreach (IBlockChild child in shader.Children)
+        if (stage == ShaderTranslationStage.FunctionDeclarations)
         {
-            if (child is not ShaderFunction shaderFunction)
-                continue;
+            if (parent != null)
+                output.Append(Translate(parent, ns, ast, overriddenChildren, ShaderTranslationStage.FunctionDeclarations));
 
-            if (blockChildren?.SingleOrDefault(m =>
-                    m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
-                shaderFunction.Function.Head.Name = new()
-                    { Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}" };
-
-            Annotation? entry = shaderFunction.Annotations.SingleOrDefault(a => a.Identifier.Value == "entry");
-
-            if (entry != null || shaderFunction.Name.Value == _currentShader.Name.Value && shaderFunction.IsConstructor)
+            _currentShader = shader;
+            foreach (IBlockChild child in shader.Children)
             {
-                if (_currentShader.Stage == ShaderStage.Compute)
-                {
-                    // -- Ensure that we have all our compute shader keywords as parameters
+                if (child is not ShaderFunction shaderFunction)
+                    continue;
 
-                    if (shaderFunction.Function.Head.Signature.Parameters.Any(p =>
-                            p.Name.Value == "sp_GroupThreadId") ==
-                        false)
-                    {
-                        shaderFunction.Function.Head.Signature.Parameters.Add
-                        (
-                            new
-                            (
-                                DataFlow.Unspecified,
-                                new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
-                                new() { Value = "sp_GroupThreadId : SV_GroupThreadID" }
-                            )
-                        );
-                    }
-
-                    if (shaderFunction.Function.Head.Signature.Parameters.Any(p => p.Name.Value == "sp_GroupId") ==
-                        false)
-                    {
-                        shaderFunction.Function.Head.Signature.Parameters.Add
-                        (
-                            new
-                            (
-                                DataFlow.Unspecified,
-                                new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
-                                new() { Value = "sp_GroupId : SV_GroupID" }
-                            )
-                        );
-                    }
-
-                    if (shaderFunction.Function.Head.Signature.Parameters.Any(
-                            p => p.Name.Value == "sp_DispatchThreadId") ==
-                        false)
-                    {
-                        shaderFunction.Function.Head.Signature.Parameters.Add
-                        (
-                            new
-                            (
-                                DataFlow.Unspecified,
-                                new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
-                                new() { Value = "sp_DispatchThreadId : SV_DispatchThreadID" }
-                            )
-                        );
-                    }
-
-                    if (shaderFunction.Function.Head.Signature.Parameters.Any(p => p.Name.Value == "sp_GroupIndex") ==
-                        false)
-                    {
-                        shaderFunction.Function.Head.Signature.Parameters.Add
-                        (
-                            new
-                            (
-                                DataFlow.Unspecified,
-                                new PrimitiveDataType(PrimitiveDataTypeKind.UnsignedInteger),
-                                new() { Value = "sp_GroupIndex : SV_GroupIndex" }
-                            )
-                        );
-                    }
-                }
-
-                if (_currentShader.Stage == ShaderStage.Vertex)
-                {
-                    // Vertex shader entry point always returns a TransientStream struct
-                    shaderFunction.Function.Head.ReturnType =
-                        new UserDefinedDataType(new(new Identifier { Value = "TransientStream" }));
-
-                    shaderFunction.Function.Body.Children.Prepend
-                    (
-                        new VariableDeclarationStatement
-                        (
-                            type: new UserDefinedDataType(new(new Identifier { Value = "TransientStream" })),
-                            name: new() { Value = "out_streams" }
-                        )
-                    );
-
-                    shaderFunction.Function.Body.Children.Append
-                    (
-                        new ReturnStatement(new BasicExpression(new() { Value = "out_streams" }))
-                    );
-
-                    // Vertex shader entry point always takes as arguments a single InputStream struct
-                    shaderFunction.Function.Head.Signature.Parameters.Clear();
-                    shaderFunction.Function.Head.Signature.Parameters.Add
-                    (
-                        new
-                        (
-                            DataFlow.In,
-                            new UserDefinedDataType(new(new Identifier { Value = "InputStream" })),
-                            new() { Value = "in_streams" }
-                        )
-                    );
-                }
-
-                if (_currentShader.Stage == ShaderStage.Pixel)
-                {
-                    // Pixel shader entry point always returns a OutputStream struct
-                    shaderFunction.Function.Head.ReturnType =
-                        new UserDefinedDataType(new(new Identifier { Value = "OutputStream" }));
-
-                    shaderFunction.Function.Body.Children.Prepend
-                    (
-                        new VariableDeclarationStatement
-                        (
-                            type: new UserDefinedDataType(new(new Identifier { Value = "OutputStream" })),
-                            name: new() { Value = "out_streams" }
-                        )
-                    );
-
-                    shaderFunction.Function.Body.Children.Append
-                    (
-                        new ReturnStatement(new BasicExpression(new() { Value = "out_streams" }))
-                    );
-
-                    // Pixel shader entry point always takes as arguments a single TransientStream struct
-                    shaderFunction.Function.Head.Signature.Parameters.Clear();
-                    shaderFunction.Function.Head.Signature.Parameters.Add
-                    (
-                        new
-                        (
-                            DataFlow.In,
-                            new UserDefinedDataType(new(new Identifier { Value = "TransientStream" })),
-                            new() { Value = "in_streams" }
-                        )
-                    );
-                }
-            }
-
-            output.Append(Translate(shaderFunction.Function.Head, ns, ast));
-            output.AppendLine(";");
-        }
-
-        _currentBase = Translate(shader.ExtendedShader, ns, ast);
-
-        output.AppendLine();
-
-        // Streams
-        foreach (IBlockChild child in shader.Children)
-            if (child is Stream stream)
-                foreach (StreamProperty property in stream.Properties)
-                    _shaderStream.Properties.Add(property);
-
-        // Functions definition
-        foreach (IBlockChild child in shader.Children)
-        {
-            if (child is ShaderFunction shaderFunction)
                 if (blockChildren?.SingleOrDefault(m =>
                         m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
                     shaderFunction.Function.Head.Name = new()
+                    { Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}" };
+
+                Annotation? entry = shaderFunction.Annotations.SingleOrDefault(a => a.Identifier.Value == "entry");
+
+                if (entry != null || shaderFunction.Name.Value == _currentShader.Name.Value && shaderFunction.IsConstructor)
+                {
+                    if (_currentShader.Stage == ShaderStage.Compute)
+                    {
+                        // -- Ensure that we have all our compute shader keywords as parameters
+
+                        if (shaderFunction.Function.Head.Signature.Parameters.Any(p =>
+                                p.Name.Value == "sp_GroupThreadId") ==
+                            false)
+                        {
+                            shaderFunction.Function.Head.Signature.Parameters.Add
+                            (
+                                new
+                                (
+                                    DataFlow.Unspecified,
+                                    new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                                    new() { Value = "sp_GroupThreadId : SV_GroupThreadID" }
+                                )
+                            );
+                        }
+
+                        if (shaderFunction.Function.Head.Signature.Parameters.Any(p => p.Name.Value == "sp_GroupId") ==
+                            false)
+                        {
+                            shaderFunction.Function.Head.Signature.Parameters.Add
+                            (
+                                new
+                                (
+                                    DataFlow.Unspecified,
+                                    new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                                    new() { Value = "sp_GroupId : SV_GroupID" }
+                                )
+                            );
+                        }
+
+                        if (shaderFunction.Function.Head.Signature.Parameters.Any(
+                                p => p.Name.Value == "sp_DispatchThreadId") ==
+                            false)
+                        {
+                            shaderFunction.Function.Head.Signature.Parameters.Add
+                            (
+                                new
+                                (
+                                    DataFlow.Unspecified,
+                                    new BuiltInDataType(BuiltInDataTypeKind.Vector3ui),
+                                    new() { Value = "sp_DispatchThreadId : SV_DispatchThreadID" }
+                                )
+                            );
+                        }
+
+                        if (shaderFunction.Function.Head.Signature.Parameters.Any(p => p.Name.Value == "sp_GroupIndex") ==
+                            false)
+                        {
+                            shaderFunction.Function.Head.Signature.Parameters.Add
+                            (
+                                new
+                                (
+                                    DataFlow.Unspecified,
+                                    new PrimitiveDataType(PrimitiveDataTypeKind.UnsignedInteger),
+                                    new() { Value = "sp_GroupIndex : SV_GroupIndex" }
+                                )
+                            );
+                        }
+                    }
+
+                    if (_currentShader.Stage == ShaderStage.Vertex)
+                    {
+                        // Vertex shader entry point always returns a TransientStream struct
+                        shaderFunction.Function.Head.ReturnType =
+                            new UserDefinedDataType(new(new Identifier { Value = "TransientStream" }));
+
+                        shaderFunction.Function.Body.Children.Prepend
+                        (
+                            new VariableDeclarationStatement
+                            (
+                                type: new UserDefinedDataType(new(new Identifier { Value = "TransientStream" })),
+                                name: new() { Value = "out_streams" }
+                            )
+                        );
+
+                        shaderFunction.Function.Body.Children.Append
+                        (
+                            new ReturnStatement(new BasicExpression(new() { Value = "out_streams" }))
+                        );
+
+                        // Vertex shader entry point always takes as arguments a single InputStream struct
+                        shaderFunction.Function.Head.Signature.Parameters.Clear();
+                        shaderFunction.Function.Head.Signature.Parameters.Add
+                        (
+                            new
+                            (
+                                DataFlow.In,
+                                new UserDefinedDataType(new(new Identifier { Value = "InputStream" })),
+                                new() { Value = "in_streams" }
+                            )
+                        );
+                    }
+
+                    if (_currentShader.Stage == ShaderStage.Pixel)
+                    {
+                        // Pixel shader entry point always returns a OutputStream struct
+                        shaderFunction.Function.Head.ReturnType =
+                            new UserDefinedDataType(new(new Identifier { Value = "OutputStream" }));
+
+                        shaderFunction.Function.Body.Children.Prepend
+                        (
+                            new VariableDeclarationStatement
+                            (
+                                type: new UserDefinedDataType(new(new Identifier { Value = "OutputStream" })),
+                                name: new() { Value = "out_streams" }
+                            )
+                        );
+
+                        shaderFunction.Function.Body.Children.Append
+                        (
+                            new ReturnStatement(new BasicExpression(new() { Value = "out_streams" }))
+                        );
+
+                        // Pixel shader entry point always takes as arguments a single TransientStream struct
+                        shaderFunction.Function.Head.Signature.Parameters.Clear();
+                        shaderFunction.Function.Head.Signature.Parameters.Add
+                        (
+                            new
+                            (
+                                DataFlow.In,
+                                new UserDefinedDataType(new(new Identifier { Value = "TransientStream" })),
+                                new() { Value = "in_streams" }
+                            )
+                        );
+                    }
+                }
+
+                output.Append(Translate(shaderFunction.Function.Head, ns, ast));
+                output.AppendLine(";");
+            }
+        }
+
+        // Streams
+        if (stage == ShaderTranslationStage.Streams)
+        {
+            if (parent != null)
+                output.Append(Translate(parent, ns, ast, overriddenChildren, ShaderTranslationStage.Streams));
+
+            UpdateScope();
+            foreach (Stream stream in shader.Children.OfType<Stream>())
+                foreach (StreamProperty property in stream.Properties)
+                    _shaderStream.Properties.Add(property);
+        }
+
+        // Functions definition
+        if (stage == ShaderTranslationStage.FunctionDefinitions)
+        {
+            output.AppendLine();
+
+            if (parent != null)
+                output.Append(Translate(parent, ns, ast, overriddenChildren, ShaderTranslationStage.FunctionDefinitions));
+
+            UpdateScope();
+            foreach (IBlockChild child in shader.Children)
+            {
+                if (child is ShaderFunction shaderFunction)
+                    if (blockChildren?.SingleOrDefault(m =>
+                            m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
+                        shaderFunction.Function.Head.Name = new()
                         { Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}" };
 
-            var code = child switch
-            {
-                Function function => Translate(function, ns, ast),
-                ShaderFunction sf => Translate(sf, ns, ast),
-                _ => string.Empty,
-            };
+                var code = child switch
+                {
+                    Function function => Translate(function, ns, ast),
+                    ShaderFunction sf => Translate(sf, ns, ast),
+                    _ => string.Empty,
+                };
 
-            output.AppendLine(code);
+                output.AppendLine(code);
+            }
+        }
+
+        if (stage == ShaderTranslationStage.Full)
+        {
+            output.Append(Translate(shader, ns, ast, shouldOverride, ShaderTranslationStage.Fragments));
+            output.Append(Translate(shader, ns, ast, shouldOverride, ShaderTranslationStage.Types));
+            output.Append(Translate(shader, ns, ast, shouldOverride, ShaderTranslationStage.FunctionDeclarations));
+            output.Append(Translate(shader, ns, ast, shouldOverride, ShaderTranslationStage.Streams));
+            output.Append(Translate(shader, ns, ast, shouldOverride, ShaderTranslationStage.FunctionDefinitions));
         }
 
         return output.ToString();
