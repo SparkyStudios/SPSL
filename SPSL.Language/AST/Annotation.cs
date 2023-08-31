@@ -22,6 +22,14 @@ public class Annotation : INode
     /// </summary>
     public OrderedSet<IExpression> Arguments { get; init; } = new();
 
+    /// <summary>
+    /// Checks whether the annotation is a semantic annotation.
+    /// 
+    /// Semantic annotations are annotations used on stream properties to specify the semantics
+    /// of the generated property.
+    /// </summary>
+    public bool IsSemantic => Identifier.Value is "semantic" or "position" or "texcoord" or "normal" or "tangent" or "bitangent" or "color" or "boneweights" or "boneindices";
+
     #endregion
 
     #region INode Implementation

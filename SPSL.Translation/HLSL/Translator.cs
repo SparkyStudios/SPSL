@@ -1009,9 +1009,33 @@ public class Translator
 
         void TranslateProperty(StreamProperty property, Template template)
         {
-            Annotation? annotation = property.Annotations.SingleOrDefault(a => a.Identifier.Value == "semantic");
-            IExpression? expression = annotation?.Arguments.SingleOrDefault();
-            var semantic = expression is not null ? Translate(expression, ns, ast) : null;
+            string? semantic = null;
+            Annotation? annotation = property.Annotations.SingleOrDefault(a => a.IsSemantic);
+
+            if (annotation?.Identifier.Value == "semantic")
+            {
+                IExpression? expression = annotation?.Arguments.SingleOrDefault();
+                semantic = expression is not null ? Translate(expression, ns, ast) : null;
+            }
+            else
+            {
+                semantic = annotation?.Identifier.Value switch
+                {
+                    "position" => "POSITION",
+                    "texcoord" => "TEXCOORD",
+                    "normal" => "NORMAL",
+                    "tangent" => "TANGENT",
+                    "bitangent" => "BITANGENT",
+                    "color" => "COLOR",
+                    "boneweights" => "BONEWEIGHTS",
+                    "boneindices" => "BONEINDICES",
+                    _ => null
+                };
+
+                IExpression? expression = annotation?.Arguments.SingleOrDefault();
+                semantic += expression is not null ? Translate(expression, ns, ast) : string.Empty;
+            }
+
             template.Add("properties",
                 new Prop(Translate(property.Type, ns, ast), property.Name.Value, null, semantic));
         }
