@@ -49,7 +49,7 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
     }
 
     protected override bool ShouldVisitNextChild(IRuleNode node, IShaderMember? currentResult)
-        => node is ShaderMemberContext or BufferDefinitionContext
+        => node is ShaderMemberContext or GlobalVariableContext or BufferDefinitionContext
             or TypeContext or StructContext or EnumContext or ShaderFunctionContext;
 
     public override IShaderMember VisitInPlaceStructuredBufferDefinition(

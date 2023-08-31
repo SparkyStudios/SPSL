@@ -99,12 +99,6 @@ KEYWORD_TRANSIENT
 KEYWORD_BUFFER
   : 'buffer'
   ;
-KEYWORD_LOCAL
-  : 'local'
-  ;
-KEYWORD_GLOBAL
-  : 'global'
-  ;
 KEYWORD_OVERRIDE
   : 'override'
   ;
@@ -444,9 +438,8 @@ OP_RSHIFT
   : '>>'
   ;
 
-/* ====================
- Parser rules
- */
+// ========== Parser rules
+
 shaderFile
   : DOC_COMMENT? Directives = directive* Namespace = namespaceDefinition? (DOC_COMMENT* useNamespaceDirective)* FileLevelDefinitions = fileLevelDefinition* EOF
   ;
@@ -481,7 +474,9 @@ permutationVariableBool
   ;
 
 permutationVariableEnum
-  : Documentation = DOC_COMMENT? KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE IDENTIFIER (TOK_COMMA IDENTIFIER)* TOK_CLOSE_BRACE OP_ASSIGN Value = basicExpression TOK_SEMICOLON
+  : Documentation = DOC_COMMENT? KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE IDENTIFIER (
+    TOK_COMMA IDENTIFIER
+  )* TOK_CLOSE_BRACE OP_ASSIGN Value = basicExpression TOK_SEMICOLON
   ;
 
 permutationVariableInteger
@@ -520,7 +515,10 @@ interfacesList
   ;
 
 shaderFragment
-  : Documentation = DOC_COMMENT? Definition = shaderFragmentDefinition TOK_OPEN_BRACE (shaderMember | permutationVariable)* TOK_CLOSE_BRACE
+  : Documentation = DOC_COMMENT? Definition = shaderFragmentDefinition TOK_OPEN_BRACE (
+    shaderMember
+    | permutationVariable
+  )* TOK_CLOSE_BRACE
   ;
 
 shaderFragmentDefinition
@@ -534,7 +532,9 @@ shader
   ;
 
 material
-  : Documentation = DOC_COMMENT? Definition = materialDefinition TOK_OPEN_BRACE (DOC_COMMENT* (materialMember | useFragmentDirective))* TOK_CLOSE_BRACE
+  : Documentation = DOC_COMMENT? Definition = materialDefinition TOK_OPEN_BRACE (
+    DOC_COMMENT* (materialMember | useFragmentDirective)
+  )* TOK_CLOSE_BRACE
   ;
 
 stream
@@ -652,10 +652,14 @@ materialStateComponent
 
 // Uniform block for GLSL CBuffer for HLSL
 bufferDefinition
-  : Documentation = DOC_COMMENT? annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite' | 'constant')? KEYWORD_BUFFER Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent*
-    TOK_CLOSE_BRACE # InPlaceStructuredBufferDefinition
-  | Documentation = DOC_COMMENT? annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite')? KEYWORD_BUFFER OP_LESSER_THAN Type = dataType OP_GREATER_THAN Name = IDENTIFIER
-    TOK_SEMICOLON # TypedBufferDefinition
+  : Documentation = DOC_COMMENT? annotation* Storage = 'coherent'? Access = (
+    'readonly'
+    | 'writeonly'
+    | 'readwrite'
+    | 'constant'
+  )? KEYWORD_BUFFER Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent* TOK_CLOSE_BRACE # InPlaceStructuredBufferDefinition
+  | Documentation = DOC_COMMENT? annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite')? KEYWORD_BUFFER OP_LESSER_THAN Type = dataType OP_GREATER_THAN
+    Name = IDENTIFIER TOK_SEMICOLON # TypedBufferDefinition
   ;
 
 bufferComponent
@@ -680,7 +684,7 @@ enumComponent
 variableDeclaration
   locals[bool IsConst]
   : (KEYWORD_CONST {$IsConst = true;})? Type = dataType variableIdentity (TOK_COMMA variableIdentity)* # TypedVariableDeclaration
-  | {$IsConst = true;} KEYWORD_CONST KEYWORD_VAR Identifier = basicExpression OP_ASSIGN Expression = primitiveExpression  # UntypedVariableDeclaration
+  |                {$IsConst = true;} KEYWORD_CONST KEYWORD_VAR Identifier = basicExpression OP_ASSIGN Expression = primitiveExpression # UntypedVariableDeclaration
   ;
 
 variableDeclarationAssignment
@@ -1056,10 +1060,7 @@ DoubleLiteral
   ;
 
 FloatLiteral
-  : (OP_PLUS | OP_MINUS)? (
-    FractionalConstant ExponentPart? FloatingSuffix
-    | DecimalDigit+ ExponentPart FloatingSuffix
-  )
+  : (OP_PLUS | OP_MINUS)? (FractionalConstant ExponentPart? FloatingSuffix | DecimalDigit+ ExponentPart FloatingSuffix)
   ;
 
 IntegerLiteral

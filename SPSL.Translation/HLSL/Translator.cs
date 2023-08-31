@@ -678,8 +678,8 @@ public class Translator
                     (
                         new VariableDeclarationStatement
                         (
-                            type: new UserDefinedDataType(new(new Identifier { Value = "Vertex" })),
-                            name: new Identifier { Value = "vertex" }
+                            type: new UserDefinedDataType(new(new Identifier { Value = "TransientStream" })),
+                            name: new() { Value = "out_streams" }
                         )
                     );
 

@@ -60,12 +60,17 @@ public class HoverHandler : IHoverHandler
     {
         return node switch
         {
+            Identifier identifier => CreateHover(document, identifier),
+            Function function => CreateHover(document, function.Parent!),
+
             INamespaceChild namespaceChild => CreateHover(document, namespaceChild),
+            IShaderMember shaderMember => CreateHover(document, shaderMember),
+            ILiteral literal => CreateHover(document, literal),
+            IExpression expression => CreateHover(document, expression),
+
             TypeProperty property => CreateHover(document, property),
             TypeFunction function => CreateHover(document, function),
             FunctionArgument argument => CreateHover(document, argument),
-            ILiteral literal => CreateHover(document, literal),
-            Identifier identifier => CreateHover(document, identifier),
             _ => new()
             {
                 Contents = new(new MarkedString($"Not yet implemented ({node})")),
@@ -93,6 +98,32 @@ public class HoverHandler : IHoverHandler
     }
 
     private static Hover CreateHover(Document document, INamespaceChild symbol)
+    {
+        return new()
+        {
+            Contents = new
+            (
+                new MarkupContent
+                {
+                    Kind = MarkupKind.Markdown,
+                    Value = $"""
+                             ```spsl
+                             {DeclarationString.From(symbol)}
+                             ```
+                             ---
+                             {symbol.Documentation}
+                             """,
+                }
+            ),
+            Range = new()
+            {
+                Start = document.PositionAt(symbol.Name.Start),
+                End = document.PositionAt(symbol.Name.End + 1)
+            }
+        };
+    }
+
+    private static Hover CreateHover(Document document, IShaderMember symbol)
     {
         return new()
         {
@@ -222,25 +253,47 @@ public class HoverHandler : IHoverHandler
         };
     }
 
+    private Hover? CreateHover(Document document, IExpression expression)
+    {
+        Hover? IdentifiedExpression(Identifier identifier)
+        {
+            SymbolTable? table = _symbolProviderService.GetData(document.Uri);
+            Symbol? symbol = table?.Resolve(document.Uri.ToString(), identifier.Value);
+
+            if (symbol == null)
+                return null;
+
+            Ast? ast = _astProviderService.GetData(document.Uri);
+            INode? node = ast?.ResolveNode(document.Uri.ToString(), symbol.Start);
+
+            return node == null ? null : CreateHover(document, node);
+        }
+
+        switch (expression)
+        {
+            case BasicExpression basicExpression:
+                return IdentifiedExpression(basicExpression.Identifier);
+
+            case InvocationExpression { Name.Names.Length: 1 } invocationExpression:
+                return IdentifiedExpression(invocationExpression.Name.Names[0]);
+
+            default:
+                return null;
+        }
+    }
+
     private Hover? CreateHover(Document document, Identifier identifier)
     {
         switch (identifier.Parent)
         {
             case null:
                 return null;
+            case InvocationExpression:
             case BasicExpression:
-            {
-                SymbolTable? table = _symbolProviderService.GetData(document.Uri);
-                Symbol? symbol = table?.Resolve(document.Uri.ToString(), identifier.Value, identifier.Start);
-
-                if (symbol == null)
-                    return null;
-                
-                Ast? ast = _astProviderService.GetData(document.Uri);
-                INode? node = ast?.ResolveNode(document.Uri.ToString(), symbol.Start);
-                
-                return node == null ? null : CreateHover(document, node);
-            }
+                return CreateHover(document, identifier.Parent);
+            case NamespacedReference:
+            case FunctionHead:
+                return CreateHover(document, identifier.Parent.Parent!);
             default:
                 return CreateHover(document, identifier.Parent);
         }

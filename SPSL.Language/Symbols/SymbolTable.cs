@@ -64,7 +64,7 @@ public class SymbolTable : Symbol
         return _symbols.ContainsKey(name);
     }
 
-    public Symbol? Resolve(string source, string name, int position)
+    public Symbol? Resolve(string source, string name)
     {
         if (Contains(name))
             return Lookup(name);
@@ -76,16 +76,13 @@ public class SymbolTable : Symbol
             switch (item)
             {
                 case SymbolTable table:
-                    if (table.Source == source &&
-                        (table.IsFileSymbol || (table.Start <= position && position <= table.End)))
-                        foundSymbol = table.Resolve(source, name, position);
+                    if (table.Source == source)
+                        foundSymbol = table.Resolve(source, name);
                     break;
                 case Symbol { IsFileSymbol: false } symbol:
-                {
-                    if (symbol.Source == source && symbol.Start <= position && symbol.End >= position)
+                    if (symbol.Source == source && symbol.Name == name)
                         foundSymbol = symbol;
                     break;
-                }
             }
 
             if (foundSymbol is not null) break;
