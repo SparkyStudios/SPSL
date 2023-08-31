@@ -44,6 +44,9 @@ public class BuiltInDataType : IDataType
             case BuiltInDataTypeKind.Vector2f:
                 sb.Append("vec2f");
                 break;
+            case BuiltInDataTypeKind.Vector2d:
+                sb.Append("vec2d");
+                break;
             case BuiltInDataTypeKind.Vector2i:
                 sb.Append("vec2i");
                 break;
@@ -55,6 +58,9 @@ public class BuiltInDataType : IDataType
                 break;
             case BuiltInDataTypeKind.Vector3f:
                 sb.Append("vec3f");
+                break;
+            case BuiltInDataTypeKind.Vector3d:
+                sb.Append("vec3d");
                 break;
             case BuiltInDataTypeKind.Vector3i:
                 sb.Append("vec3i");
@@ -68,6 +74,9 @@ public class BuiltInDataType : IDataType
             case BuiltInDataTypeKind.Vector4f:
                 sb.Append("vec4f");
                 break;
+            case BuiltInDataTypeKind.Vector4d:
+                sb.Append("vec4d");
+                break;
             case BuiltInDataTypeKind.Vector4i:
                 sb.Append("vec4i");
                 break;
@@ -77,29 +86,56 @@ public class BuiltInDataType : IDataType
             case BuiltInDataTypeKind.Matrix2f:
                 sb.Append("mat2f");
                 break;
+            case BuiltInDataTypeKind.Matrix2d:
+                sb.Append("mat2d");
+                break;
             case BuiltInDataTypeKind.Matrix3f:
                 sb.Append("mat3f");
+                break;
+            case BuiltInDataTypeKind.Matrix3d:
+                sb.Append("mat3d");
                 break;
             case BuiltInDataTypeKind.Matrix4f:
                 sb.Append("mat4f");
                 break;
+            case BuiltInDataTypeKind.Matrix4d:
+                sb.Append("mat4d");
+                break;
             case BuiltInDataTypeKind.Matrix2x3f:
                 sb.Append("mat2x3f");
+                break;
+            case BuiltInDataTypeKind.Matrix2x3d:
+                sb.Append("mat2x3d");
                 break;
             case BuiltInDataTypeKind.Matrix2x4f:
                 sb.Append("mat2x4f");
                 break;
+            case BuiltInDataTypeKind.Matrix2x4d:
+                sb.Append("mat2x4d");
+                break;
             case BuiltInDataTypeKind.Matrix3x2f:
                 sb.Append("mat3x2f");
+                break;
+            case BuiltInDataTypeKind.Matrix3x2d:
+                sb.Append("mat3x2d");
                 break;
             case BuiltInDataTypeKind.Matrix3x4f:
                 sb.Append("mat3x4f");
                 break;
+            case BuiltInDataTypeKind.Matrix3x4d:
+                sb.Append("mat3x4d");
+                break;
             case BuiltInDataTypeKind.Matrix4x2f:
                 sb.Append("mat4x2f");
                 break;
+            case BuiltInDataTypeKind.Matrix4x2d:
+                sb.Append("mat4x2d");
+                break;
             case BuiltInDataTypeKind.Matrix4x3f:
                 sb.Append("mat4x3f");
+                break;
+            case BuiltInDataTypeKind.Matrix4x3d:
+                sb.Append("mat4x3d");
                 break;
             case BuiltInDataTypeKind.Color3:
                 sb.Append("color3");

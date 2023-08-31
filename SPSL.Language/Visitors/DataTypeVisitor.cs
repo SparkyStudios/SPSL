@@ -86,8 +86,8 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
 
         return new PrimitiveDataType(kind)
         {
-            Start = context.Start.Line,
-            End = context.Stop.Line,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
             Source = _fileSource
         };
     }
