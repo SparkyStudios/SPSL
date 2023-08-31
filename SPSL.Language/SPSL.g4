@@ -190,6 +190,9 @@ TYPE_STRING
 TYPE_VECTOR2B
   : 'vec2b'
   ;
+TYPE_VECTOR2D
+  : 'vec2d'
+  ;
 TYPE_VECTOR2F
   : 'vec2f'
   ;
@@ -202,6 +205,9 @@ TYPE_VECTOR2UI
 TYPE_VECTOR3B
   : 'vec3b'
   ;
+TYPE_VECTOR3D
+  : 'vec3d'
+  ;
 TYPE_VECTOR3F
   : 'vec3f'
   ;
@@ -213,6 +219,9 @@ TYPE_VECTOR3UI
   ;
 TYPE_VECTOR4B
   : 'vec4b'
+  ;
+TYPE_VECTOR4D
+  : 'vec4d'
   ;
 TYPE_VECTOR4F
   : 'vec4f'
@@ -249,6 +258,33 @@ TYPE_MATRIX4X2F
   ;
 TYPE_MATRIX4X3F
   : 'mat4x3f'
+  ;
+TYPE_MATRIX2D
+  : 'mat2d'
+  ;
+TYPE_MATRIX3D
+  : 'mat3d'
+  ;
+TYPE_MATRIX4D
+  : 'mat4d'
+  ;
+TYPE_MATRIX2X3D
+  : 'mat2x3d'
+  ;
+TYPE_MATRIX2X4D
+  : 'mat2x4d'
+  ;
+TYPE_MATRIX3X2D
+  : 'mat3x2d'
+  ;
+TYPE_MATRIX3X4D
+  : 'mat3x4d'
+  ;
+TYPE_MATRIX4X2D
+  : 'mat4x2d'
+  ;
+TYPE_MATRIX4X3D
+  : 'mat4x3d'
   ;
 TYPE_COLOR3
   : 'color3'
@@ -995,25 +1031,37 @@ primitiveDataType
 builtinDataType
   : Type = TYPE_VECTOR2B
   | Type = TYPE_VECTOR2F
+  | Type = TYPE_VECTOR2D
   | Type = TYPE_VECTOR2I
   | Type = TYPE_VECTOR2UI
   | Type = TYPE_VECTOR3B
   | Type = TYPE_VECTOR3F
+  | Type = TYPE_VECTOR3D
   | Type = TYPE_VECTOR3I
   | Type = TYPE_VECTOR3UI
   | Type = TYPE_VECTOR4B
   | Type = TYPE_VECTOR4F
+  | Type = TYPE_VECTOR4D
   | Type = TYPE_VECTOR4I
   | Type = TYPE_VECTOR4UI
   | Type = TYPE_MATRIX2F
+  | Type = TYPE_MATRIX2D
   | Type = TYPE_MATRIX3F
+  | Type = TYPE_MATRIX3D
   | Type = TYPE_MATRIX4F
+  | Type = TYPE_MATRIX4D
   | Type = TYPE_MATRIX2X3F
+  | Type = TYPE_MATRIX2X3D
   | Type = TYPE_MATRIX2X4F
+  | Type = TYPE_MATRIX2X4D
   | Type = TYPE_MATRIX3X2F
+  | Type = TYPE_MATRIX3X2D
   | Type = TYPE_MATRIX3X4F
+  | Type = TYPE_MATRIX3X4D
   | Type = TYPE_MATRIX4X2F
+  | Type = TYPE_MATRIX4X2D
   | Type = TYPE_MATRIX4X3F
+  | Type = TYPE_MATRIX4X3D
   | Type = TYPE_COLOR3
   | Type = TYPE_COLOR4
   | Type = TYPE_SAMPLER

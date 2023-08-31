@@ -1704,6 +1704,8 @@ public class Translator
             output.Append("bool2");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2F))
             output.Append("float2");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2D))
+            output.Append("double2");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2I))
             output.Append("int2");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2UI))
@@ -1712,6 +1714,8 @@ public class Translator
             output.Append("bool3");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3F))
             output.Append("float3");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3D))
+            output.Append("double3");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3I))
             output.Append("int3");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3UI))
@@ -1720,28 +1724,48 @@ public class Translator
             output.Append("bool4");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4F))
             output.Append("float4");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4D))
+            output.Append("double4");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4I))
             output.Append("int4");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4UI))
             output.Append("uint4");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2F))
             output.Append("float2x2");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2D))
+            output.Append("double2x2");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3F))
             output.Append("float3x3");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3D))
+            output.Append("double3x3");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4F))
             output.Append("float4x4");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4D))
+            output.Append("double4x4");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2X3F))
             output.Append("float2x3");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2X3D))
+            output.Append("double2x3");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2X4F))
             output.Append("float2x4");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2X4D))
+            output.Append("double2x4");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3X2F))
             output.Append("float3x2");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3X2D))
+            output.Append("double3x2");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3X4F))
             output.Append("float3x4");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3X4D))
+            output.Append("double3x4");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4X2F))
             output.Append("float4x2");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4X2D))
+            output.Append("double4x2");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4X3F))
             output.Append("float4x3");
+        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4X3D))
+            output.Append("double4x3");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_COLOR3))
             output.Append("float3");
         else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_COLOR4))
