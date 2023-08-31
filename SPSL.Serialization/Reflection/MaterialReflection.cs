@@ -12,10 +12,10 @@ public class MaterialReflection
     public string Name { get; } = string.Empty;
 
     [DataMember(Order = 1)]
-    public IEnumerable<InputAttributeDescription> InputAttributes { get; } = new List<InputAttributeDescription>();
+    public ICollection<InputAttributeDescription> InputAttributes { get; } = new List<InputAttributeDescription>();
 
     [DataMember(Order = 2)]
-    public IEnumerable<MaterialSamplerStateBinding> Samplers { get; } = new List<MaterialSamplerStateBinding>();
+    public ICollection<MaterialSamplerStateBinding> Samplers { get; } = new List<MaterialSamplerStateBinding>();
 
     [DataMember(Order = 3)]
     public ShaderByteCode ShaderByteCode { get; } = new();

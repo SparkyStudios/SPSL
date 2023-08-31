@@ -94,7 +94,7 @@ void RunOptions(Options opts)
         }
         catch (InvalidOperationException)
         {
-            Console.Error.WriteLine("No material or more than one material has been found. Please make sure you compile only one one non-abstract material at a time.");
+            Console.Error.WriteLine("No material or more than one material has been found. Please make sure you compile only one non-abstract material at a time.");
             Environment.Exit(1);
             return;
         }
@@ -162,7 +162,7 @@ void RunOptions(Options opts)
                 entryPoint = refShader.Children.SingleOrDefault(child => child is ShaderFunction { IsConstructor: true } || child is IAnnotated a && a.Annotations.Any(a => a.Identifier.Value == "entry"));
                 if (entryPoint is null)
                 {
-                    Console.Error.WriteLine($"Unable to find entry point for shader stage {s.Stage}.");
+                    Console.Error.WriteLine($"Unable to find entry point for shader stage: {s.Stage}.");
                     Environment.Exit(1);
                     return;
                 }
@@ -198,6 +198,77 @@ void RunOptions(Options opts)
                     string code = hlsl.Translate(ast);
                     using var stream = new StreamWriter(Path.Join(opts.OutputDirectory, $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.hlsl"));
                     stream.Write(code);
+
+                    foreach (StreamProperty property in hlsl.ShaderStream.Inputs)
+                    {
+                        if (property.Type is BuiltInDataType { Type: BuiltInDataTypeKind.Sampler })
+                        {
+                        }
+                        else
+                        {
+                            InputAttributeDescription description = new()
+                            {
+                                Format = property.Type switch
+                                {
+                                    PrimitiveDataType type => type.Type switch
+                                    {
+                                        PrimitiveDataTypeKind.Boolean => InputAttributeFormat.UInt1,
+                                        PrimitiveDataTypeKind.Integer => InputAttributeFormat.Int1,
+                                        PrimitiveDataTypeKind.UnsignedInteger => InputAttributeFormat.UInt1,
+                                        PrimitiveDataTypeKind.Float => InputAttributeFormat.Float1,
+                                        _ => throw new NotSupportedException("Invalid type for shader stream input")
+                                    },
+                                    BuiltInDataType type => type.Type switch
+                                    {
+                                        BuiltInDataTypeKind.Vector2b => InputAttributeFormat.UInt2,
+                                        BuiltInDataTypeKind.Vector3b => InputAttributeFormat.UInt3,
+                                        BuiltInDataTypeKind.Vector4b => InputAttributeFormat.UInt4,
+                                        BuiltInDataTypeKind.Vector2f => InputAttributeFormat.Float2,
+                                        BuiltInDataTypeKind.Vector3f => InputAttributeFormat.Float3,
+                                        BuiltInDataTypeKind.Vector4f => InputAttributeFormat.Float4,
+                                        BuiltInDataTypeKind.Vector2i => InputAttributeFormat.Int2,
+                                        BuiltInDataTypeKind.Vector3i => InputAttributeFormat.Int3,
+                                        BuiltInDataTypeKind.Vector4i => InputAttributeFormat.Int4,
+                                        BuiltInDataTypeKind.Vector2ui => InputAttributeFormat.UInt2,
+                                        BuiltInDataTypeKind.Vector3ui => InputAttributeFormat.UInt3,
+                                        BuiltInDataTypeKind.Vector4ui => InputAttributeFormat.UInt4,
+                                        BuiltInDataTypeKind.Color3 => InputAttributeFormat.Float3,
+                                        BuiltInDataTypeKind.Color4 => InputAttributeFormat.Float4,
+                                        _ => throw new NotSupportedException("Invalid type for shader stream input")
+                                    },
+                                    _ => throw new NotSupportedException("Invalid type for shader stream input")
+                                },
+                            };
+
+                            if (property.Annotations.Last(a => a.IsSemantic) is Annotation annotation)
+                            {
+                                if (annotation.Identifier.Value == "semantic")
+                                {
+                                    description.SemanticName = annotation.Arguments[0].ToString();
+                                }
+                                else
+                                {
+                                    description.SemanticName = annotation.Identifier.Value switch
+                                    {
+                                        "position" => "POSITION",
+                                        "texcoord" => "TEXCOORD",
+                                        "normal" => "NORMAL",
+                                        "tangent" => "TANGENT",
+                                        "bitangent" => "BITANGENT",
+                                        "color" => "COLOR",
+                                        "boneweights" => "BONEWEIGHTS",
+                                        "boneindices" => "BONEINDICES",
+                                        _ => throw new NotSupportedException("Invalid semantic for shader stream input")
+                                    };
+
+                                    IExpression? expression = annotation?.Arguments.SingleOrDefault();
+                                    description.SemanticIndex = expression is not null ? Convert.ToUInt32(expression.ToString()) : 0;
+                                }
+                            }
+
+                            materialReflection.InputAttributes.Add(description);
+                        }
+                    }
 
                     materialReflection.ShaderByteCode.Data = Encoding.UTF8.GetBytes(code);
                 }
