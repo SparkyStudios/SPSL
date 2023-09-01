@@ -464,7 +464,7 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
     {
         SymbolTable function = new()
         {
-            Name = context.Function.Head.GetText(),
+            Name = $"{context.Function.Head.Name.Text}({string.Join(", ", context.Function.Head.Signature.Arguments.argDef().Select(p => $"{p.Flow?.Text ?? "in"} {p.Type.GetText()}"))})",
             Source = _fileSource,
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,

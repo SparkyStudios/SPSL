@@ -99,43 +99,46 @@ public class StaticAnalyzerService : IDiagnosticService
 
     private void CheckConflictingVariables(Document document, SymbolTable table, ICollection<Diagnostic> diagnostics)
     {
-        if (table.Type is SymbolType.Scope or SymbolType.Function)
+        table.Symbols.Where(symbol => symbol.Key.Contains('@')).ToList().ForEach(symbol =>
         {
-            table.Symbols.Where(symbol => symbol.Key.Contains('@')).ToList().ForEach(symbol =>
+            Range range = new()
             {
-                Range range = new()
-                {
-                    Start = document.PositionAt(symbol.Start),
-                    End = document.PositionAt(symbol.End + 1)
-                };
+                Start = document.PositionAt(symbol.Start),
+                End = document.PositionAt(symbol.End + 1)
+            };
 
-                diagnostics.Add
-                (
-                    new()
-                    {
-                        Severity = DiagnosticSeverity.Error,
-                        Range = range,
-                        Message = "Conflicting identifier.",
-                        Source = SourceName,
-                        Code = ConflictingIdentifierNameErrorCode,
-                        RelatedInformation = _configurationService.HasDiagnosticRelatedInformationCapability
-                            ? new
-                            (
-                                new DiagnosticRelatedInformation
+            diagnostics.Add
+            (
+                new()
+                {
+                    Severity = DiagnosticSeverity.Error,
+                    Range = range,
+                    Message = symbol.Type switch {
+                        SymbolType.Function => "A function with this signature already exists.",
+                        _ => "Conflicting identifier."
+                    },
+                    Source = SourceName,
+                    Code = ConflictingIdentifierNameErrorCode,
+                    RelatedInformation = _configurationService.HasDiagnosticRelatedInformationCapability
+                        ? new
+                        (
+                            new DiagnosticRelatedInformation
+                            {
+                                Message = symbol.Type switch {
+                                    SymbolType.Function => "You cannot declare two function with the exact same signature, on only with different return values.",
+                                    _ => "The name given to this identifier is already used."
+                                },
+                                Location = new()
                                 {
-                                    Message = "The name given to this identifier is already used.",
-                                    Location = new()
-                                    {
-                                        Uri = document.Uri,
-                                        Range = range
-                                    }
+                                    Uri = document.Uri,
+                                    Range = range
                                 }
-                            )
-                            : new Container<DiagnosticRelatedInformation>()
-                    }
-                );
-            });
-        }
+                            }
+                        )
+                        : new Container<DiagnosticRelatedInformation>()
+                }
+            );
+        });
 
         foreach (Symbol symbol in table.Symbols)
             if (symbol is SymbolTable t)
