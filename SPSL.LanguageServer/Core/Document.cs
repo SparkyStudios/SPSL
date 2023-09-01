@@ -77,6 +77,11 @@ public class Document
     /// </summary>
     public int LineCount => GetLineOffsets().Count();
 
+    /// <summary>
+    /// Gets the number of characters in this document.
+    /// </summary>
+    public int Length => _content.Length;
+
     public Document(DocumentUri uri, string languageId, int? version = null, string? initialContent = null)
     {
         Uri = uri;

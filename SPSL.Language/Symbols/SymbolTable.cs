@@ -64,30 +64,46 @@ public class SymbolTable : Symbol
         return _symbols.ContainsKey(name);
     }
 
-    public Symbol? Resolve(string source, string name)
+    public Symbol? Resolve(string name)
     {
-        if (Contains(name))
-            return Lookup(name);
+        SymbolTable? currentScope = this;
 
-        Symbol? foundSymbol = null;
-
-        foreach (var item in _symbols.Values)
+        while (currentScope is not null)
         {
-            switch (item)
-            {
-                case SymbolTable table:
-                    if (table.Source == source)
-                        foundSymbol = table.Resolve(source, name);
-                    break;
-                case Symbol { IsFileSymbol: false } symbol:
-                    if (symbol.Source == source && symbol.Name == name)
-                        foundSymbol = symbol;
-                    break;
-            }
+            if (currentScope.Contains(name))
+                return currentScope.Lookup(name);
 
-            if (foundSymbol is not null) break;
+            // TODO: This DOESNT fetch the correct override, but instead the first one.
+            var foundFunction = currentScope.Symbols.OfType<SymbolTable>()
+                .Where(table => table.Type == SymbolType.Function && table.Symbols.Any(symbol =>
+                    symbol.Type == SymbolType.Identifier && symbol.Name == name));
+
+            if (foundFunction.Any())
+                return foundFunction.First().Resolve(name);
+
+            currentScope = currentScope.Parent;
         }
 
-        return foundSymbol;
+        return null;
+    }
+
+    public SymbolTable? FindEnclosingScope(string source, int position)
+    {
+        SymbolTable currentScope = this;
+
+        while (true)
+        {
+            var enclosingScopes = currentScope.Symbols.OfType<SymbolTable>()
+                .Where(s => s.Source == source && (s.IsFileSymbol || (s.Start <= position && s.End >= position)))
+                .OrderByDescending(t => t.Start)
+                .ToArray();
+
+            if (enclosingScopes.Any())
+                currentScope = enclosingScopes.First();
+            else
+                break;
+        }
+
+        return currentScope;
     }
 }
