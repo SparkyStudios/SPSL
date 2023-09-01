@@ -256,10 +256,11 @@ public class HoverHandler : IHoverHandler
 
     private Hover? CreateHover(Document document, IExpression expression)
     {
-        Hover? IdentifiedExpression(Identifier identifier)
+        Hover? IdentifiedExpression(string identifier, int position)
         {
             SymbolTable? table = _symbolProviderService.GetData(document.Uri);
-            Symbol? symbol = table?.Resolve(document.Uri.ToString(), identifier.Value);
+            SymbolTable? scope = table?.FindEnclosingScope(document.Uri.ToString(), position);
+            Symbol? symbol = scope?.Resolve(identifier);
 
             if (symbol == null)
                 return null;
@@ -273,10 +274,10 @@ public class HoverHandler : IHoverHandler
         switch (expression)
         {
             case BasicExpression basicExpression:
-                return IdentifiedExpression(basicExpression.Identifier);
+                return IdentifiedExpression(basicExpression.Identifier.Value, basicExpression.Identifier.Start);
 
-            case InvocationExpression { Name.Names.Length: 1 } invocationExpression:
-                return IdentifiedExpression(invocationExpression.Name.Names[0]);
+            case InvocationExpression invocationExpression:
+                return IdentifiedExpression(invocationExpression.Name.Name, invocationExpression.Start);
 
             default:
                 return null;
