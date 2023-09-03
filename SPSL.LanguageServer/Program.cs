@@ -60,6 +60,7 @@ static Task<InitializeResult> OnInitialize
                     TriggerCharacters = new(".")
                 },
                 HoverProvider = new(true),
+                ColorProvider = new(true),
                 Workspace = new()
                 {
                     WorkspaceFolders = new()
@@ -95,8 +96,10 @@ try
             )
             .WithServices(ConfigureServices)
             .WithHandler<TextDocumentSyncHandler>()
-            .WithHandler<HoverHandler>()
             .WithHandler<CompletionHandler>()
+            .WithHandler<HoverHandler>()
+            .WithHandler<DocumentColorHandler>()
+            .WithHandler<ColorPresentationHandler>()
             .OnInitialize(OnInitialize)
     );
 }
