@@ -85,7 +85,7 @@ public class Translator
         if (root == string.Empty)
             return null;
 
-        var pos = root.IndexOf(Namespace.Separator, StringComparison.Ordinal);
+        int pos = root.IndexOf(Namespace.Separator, StringComparison.Ordinal);
 
         if (pos < 0)
         {
@@ -269,7 +269,7 @@ public class Translator
         {
             for (var i = 0; i < permutationVariable.EnumerationValues.Length; i++)
             {
-                var item = permutationVariable.EnumerationValues[i];
+                Identifier item = permutationVariable.EnumerationValues[i];
                 template.Add("enum_values", new Macro(item.Value, i.ToString()));
             }
         }
@@ -304,38 +304,38 @@ public class Translator
         switch (type.Kind)
         {
             case TypeKind.Struct:
-                {
-                    Template template = _hlslTemplate.GetInstanceOf("struct");
-                    template.Add("name", type.Name);
-                    foreach (TypeProperty property in type.Properties)
-                        template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name.Value));
-                    foreach (TypeFunction function in type.Functions)
-                        template.Add("functions", Translate(function.Function, ns, ast));
+            {
+                Template template = _hlslTemplate.GetInstanceOf("struct");
+                template.Add("name", type.Name);
+                foreach (TypeProperty property in type.Properties)
+                    template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name.Value));
+                foreach (TypeFunction function in type.Functions)
+                    template.Add("functions", Translate(function.Function, ns, ast));
 
-                    output.Append(template.Render());
-                    break;
-                }
+                output.Append(template.Render());
+                break;
+            }
             case TypeKind.Enum:
+            {
+                Template template = _hlslTemplate.GetInstanceOf("enum");
+                template.Add("name", type.Name);
+                foreach (TypeProperty member in type.Properties)
                 {
-                    Template template = _hlslTemplate.GetInstanceOf("enum");
-                    template.Add("name", type.Name);
-                    foreach (TypeProperty member in type.Properties)
-                    {
-                        template.Add
+                    template.Add
+                    (
+                        "properties",
+                        new Prop
                         (
-                            "properties",
-                            new Prop
-                            (
-                                Translate(member.Type, ns, ast),
-                                member.Name.Value,
-                                member.Initializer != null ? Translate(member.Initializer, ns, ast) : null
-                            )
-                        );
-                    }
-
-                    output.Append(template.Render());
-                    break;
+                            Translate(member.Type, ns, ast),
+                            member.Name.Value,
+                            member.Initializer != null ? Translate(member.Initializer, ns, ast) : null
+                        )
+                    );
                 }
+
+                output.Append(template.Render());
+                break;
+            }
             case TypeKind.Unknown:
             default:
                 output.AppendLine("// <spsl-error>");
@@ -378,7 +378,7 @@ public class Translator
 
                 foreach (IBlockChild child in shaderFragment.Children)
                 {
-                    var name = child.Name.Value;
+                    string name = child.Name.Value;
 
                     if (child is ShaderFunction function)
                     {
@@ -402,8 +402,8 @@ public class Translator
         }
 
         foreach (Stream stream in fragment.Streams)
-            foreach (StreamProperty property in stream.Properties)
-                _shaderStream.Properties.Add(property);
+        foreach (StreamProperty property in stream.Properties)
+            _shaderStream.Properties.Add(property);
 
         _currentBase = Translate(fragment.ExtendedShaderFragment, ns, ast);
 
@@ -413,13 +413,13 @@ public class Translator
         {
             output.AppendLine();
 
-            var name = permutation.Name;
+            Identifier name = permutation.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is PermutationVariable permutationVariable &&
                     permutationVariable.Name.Value.Equals(permutation.Name.Value)) != null ||
                 (conflicts is not null && conflicts.ContainsKey(name.Value) && conflicts[name.Value] > 1))
                 permutation.Name = new()
-                { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{permutation.Name.Value}" };
+                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{permutation.Name.Value}" };
 
             output.Append(Translate(permutation, ns, ast));
         }
@@ -428,7 +428,7 @@ public class Translator
         {
             output.AppendLine();
 
-            var name = variable.Name;
+            Identifier name = variable.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is GlobalVariable globalVariable && globalVariable.Name.Value.Equals(variable.Name.Value)) !=
                 null ||
@@ -442,7 +442,7 @@ public class Translator
         {
             output.AppendLine();
 
-            var name = type.Name;
+            Identifier name = type.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is Type shaderType &&
                     shaderType.Name.Value.Equals(type.Name.Value)) != null ||
@@ -456,7 +456,7 @@ public class Translator
         {
             output.AppendLine();
 
-            var name = buffer.Name;
+            Identifier name = buffer.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is StructuredBuffer shaderBuffer &&
                     shaderBuffer.Name.Value.Equals(buffer.Name.Value)) != null ||
@@ -470,7 +470,7 @@ public class Translator
         {
             output.AppendLine();
 
-            var name = buffer.Name;
+            Identifier name = buffer.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is TypedBuffer shaderBuffer &&
                     shaderBuffer.Name.Value.Equals(buffer.Name.Value)) != null ||
@@ -484,13 +484,13 @@ public class Translator
         {
             output.AppendLine();
 
-            var name = Translate(function.Function.Head, ns, ast);
+            string name = Translate(function.Function.Head, ns, ast);
             if (blockChildren?.SingleOrDefault(m =>
                     m is ShaderFunction shaderFunction &&
                     shaderFunction.Function.Head.Equals(function.Function.Head)) != null ||
                 (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
                 function.Function.Head.Name = new()
-                { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{function.Function.Head.Name}" };
+                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{function.Function.Head.Name}" };
 
             output.Append(Translate(function, ns, ast));
         }
@@ -508,7 +508,14 @@ public class Translator
         FunctionDefinitions
     }
 
-    public string Translate(Shader shader, Namespace ns, Ast ast, IEnumerable<IBlockChild>? shouldOverride = null, ShaderTranslationStage stage = ShaderTranslationStage.Full)
+    public string Translate
+    (
+        Shader shader,
+        Namespace ns,
+        Ast ast,
+        IEnumerable<IBlockChild>? shouldOverride = null,
+        ShaderTranslationStage stage = ShaderTranslationStage.Full
+    )
     {
         // 1. Process base shaders recursively
         //    - Rename overridden methods with BaseShader_MethodName
@@ -603,7 +610,7 @@ public class Translator
             UpdateScope();
             foreach (IBlockChild child in shader.Children)
             {
-                var code = child switch
+                string code = child switch
                 {
                     GlobalVariable v => Translate(v, ns, ast),
                     TypedBuffer tb => Translate(tb, ns, ast),
@@ -621,7 +628,8 @@ public class Translator
         if (stage == ShaderTranslationStage.FunctionDeclarations)
         {
             if (parent != null)
-                output.Append(Translate(parent, ns, ast, overriddenChildren, ShaderTranslationStage.FunctionDeclarations));
+                output.Append(Translate(parent, ns, ast, overriddenChildren,
+                    ShaderTranslationStage.FunctionDeclarations));
 
             _currentShader = shader;
             foreach (IBlockChild child in shader.Children)
@@ -632,11 +640,12 @@ public class Translator
                 if (blockChildren?.SingleOrDefault(m =>
                         m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
                     shaderFunction.Function.Head.Name = new()
-                    { Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}" };
+                        { Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}" };
 
-                Annotation? entry = shaderFunction.Annotations.SingleOrDefault(a => a.Identifier.Value == "entry");
+                Annotation? entry = shaderFunction.Annotations.SingleOrDefault(annotation => annotation.IsEntry);
 
-                if (entry != null || shaderFunction.Name.Value == _currentShader.Name.Value && shaderFunction.IsConstructor)
+                if (entry != null || shaderFunction.Name.Value == _currentShader.Name.Value &&
+                    shaderFunction.IsConstructor)
                 {
                     if (_currentShader.Stage == ShaderStage.Compute)
                     {
@@ -686,7 +695,8 @@ public class Translator
                             );
                         }
 
-                        if (shaderFunction.Function.Head.Signature.Parameters.Any(p => p.Name.Value == "sp_GroupIndex") ==
+                        if (shaderFunction.Function.Head.Signature.Parameters.Any(p =>
+                                p.Name.Value == "sp_GroupIndex") ==
                             false)
                         {
                             shaderFunction.Function.Head.Signature.Parameters.Add
@@ -781,8 +791,8 @@ public class Translator
 
             UpdateScope();
             foreach (Stream stream in shader.Children.OfType<Stream>())
-                foreach (StreamProperty property in stream.Properties)
-                    _shaderStream.Properties.Add(property);
+            foreach (StreamProperty property in stream.Properties)
+                _shaderStream.Properties.Add(property);
         }
 
         // Functions definition
@@ -791,7 +801,8 @@ public class Translator
             output.AppendLine();
 
             if (parent != null)
-                output.Append(Translate(parent, ns, ast, overriddenChildren, ShaderTranslationStage.FunctionDefinitions));
+                output.Append(
+                    Translate(parent, ns, ast, overriddenChildren, ShaderTranslationStage.FunctionDefinitions));
 
             UpdateScope();
             foreach (IBlockChild child in shader.Children)
@@ -800,9 +811,11 @@ public class Translator
                     if (blockChildren?.SingleOrDefault(m =>
                             m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
                         shaderFunction.Function.Head.Name = new()
-                        { Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}" };
+                        {
+                            Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}"
+                        };
 
-                var code = child switch
+                string code = child switch
                 {
                     Function function => Translate(function, ns, ast),
                     ShaderFunction sf => Translate(sf, ns, ast),
@@ -829,7 +842,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        var code = member switch
+        string code = member switch
         {
             StructuredBuffer buffer => Translate(buffer, ns, ast),
             TypedBuffer buffer => Translate(buffer, ns, ast),
@@ -919,7 +932,7 @@ public class Translator
 
         Template? template;
 
-        var isStructured = buffer.DataType switch
+        bool isStructured = buffer.DataType switch
         {
             PrimitiveDataType => false,
             UserDefinedDataType => true,
@@ -1080,7 +1093,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        Annotation? entry = function.Annotations.SingleOrDefault(a => a.Identifier.Value == "entry");
+        Annotation? entry = function.Annotations.SingleOrDefault(annotation => annotation.IsEntry);
 
         if (entry != null || function.Name == _currentShader.Name && function.IsConstructor)
         {
@@ -1137,7 +1150,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        var code = dataType switch
+        string code = dataType switch
         {
             BuiltInDataType builtInType => Translate(builtInType, ns, ast),
             PrimitiveDataType primitiveType => Translate(primitiveType, ns, ast),
@@ -1190,7 +1203,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        var code = expression switch
+        string code = expression switch
         {
             IConstantExpression constantExpression => Translate(constantExpression, ns, ast),
             ArrayAccessExpression arrayAccessExpression => Translate(arrayAccessExpression, ns, ast),
@@ -1221,7 +1234,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        var code = constantExpression switch
+        string code = constantExpression switch
         {
             IPrimitiveExpression primitiveExpression => Translate(primitiveExpression, ns, ast),
             UserDefinedConstantExpression userDefinedConstantExpression => Translate(userDefinedConstantExpression, ns,
@@ -1237,7 +1250,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        var code = primitiveExpression switch
+        string code = primitiveExpression switch
         {
             ILiteral literal => Translate(literal, ns, ast),
             _ => string.Empty
@@ -1251,7 +1264,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        var code = literal switch
+        string code = literal switch
         {
             BoolLiteral boolLiteral => Translate(boolLiteral, ns, ast),
             DoubleLiteral doubleLiteral => Translate(doubleLiteral, ns, ast),

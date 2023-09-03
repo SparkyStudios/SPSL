@@ -23,13 +23,20 @@ public class Annotation : INode
     public OrderedSet<IExpression> Arguments { get; init; } = new();
 
     /// <summary>
-    /// Checks whether the annotation is a semantic annotation.
+    /// Checks whether the annotation is a 'semantic' annotation.
     /// 
     /// Semantic annotations are annotations used on stream properties to specify the semantics
     /// of the generated property.
     /// </summary>
     public bool IsSemantic => Identifier.Value is "semantic" or "position" or "texcoord" or "normal" or "tangent" or "bitangent" or "color" or "boneweights" or "boneindices";
 
+    /// <summary>
+    /// Checks whether the annotation is an 'entry' annotation.
+    ///
+    /// Entry annotations are used to mark a shader function as the entry point of that shader.
+    /// </summary>
+    public bool IsEntry => Identifier.Value is "entry";
+    
     #endregion
 
     #region INode Implementation
