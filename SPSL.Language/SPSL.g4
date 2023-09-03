@@ -895,9 +895,9 @@ expressionStatement
   | invocationExpression                                                                                                                  # Expression
   | arrayAccessExpression                                                                                                                 # Expression
   | Expression = assignableExpression Operator = (OP_INCREMENT | OP_DECREMENT)                                                            # PostfixUnaryOperationExpression
-  | Operator = (OP_INCREMENT | OP_DECREMENT) Expression = assignableExpression                                                            # PrefixUnaryOperationExpression
-  | TOK_EXCLAMATION Expression = expressionStatement                                                                                      # NegateOperationExpression
-  | Operator = (OP_MINUS | OP_PLUS) Expression = expressionStatement                                                                      # SignedExpression
+  | <assoc = right> Operator = (OP_INCREMENT | OP_DECREMENT) Expression = assignableExpression                                            # PrefixUnaryOperationExpression
+  | <assoc = right> TOK_EXCLAMATION Expression = expressionStatement                                                                      # NegateOperationExpression
+  | <assoc = right> Operator = (OP_MINUS | OP_PLUS) Expression = expressionStatement                                                      # SignedExpression
   | Left = expressionStatement Operator = OP_LEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression
   | Left = expressionStatement Operator = OP_GEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression
   | Left = expressionStatement Operator = OP_LESSER_THAN Right = expressionStatement                                                      # BinaryOperationExpression
