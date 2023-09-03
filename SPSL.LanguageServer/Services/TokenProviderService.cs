@@ -39,7 +39,7 @@ public class TokenProviderService: IProviderService<ParserRuleContext>
         parser.AddErrorListener(new ProxyParserErrorListener(tempListeners));
 
         ParserRuleContext tree = document.Uri.Path.EndsWith(".spslm") ? parser.materialFile() : parser.shaderFile();
-        DataUpdated?.Invoke(this, new(e.Uri, tree));
+        SetData(e.Uri, tree);
     }
 
     #region IProviderService<ParserRuleContext> Members
