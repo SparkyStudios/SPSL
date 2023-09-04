@@ -1178,19 +1178,19 @@ fragment FractionalConstant
   ;
 
 fragment ExponentPart
-  : ('e' | 'E') ('+' | '-') DecimalDigit+
+  : [eE] [+-] DecimalDigit+
   ;
 
 fragment UnsingedIntegerSuffix
-  : ('u' | 'U')
+  : [uU]
   ;
 
 fragment FloatingSuffix
-  : ('f' | 'F')
+  : [fF]
   ;
 
 fragment DoubleSuffix
-  : ('d' | 'D')
+  : [dD]
   ;
 
 // --------------- Digits ---------------
@@ -1208,5 +1208,5 @@ fragment OctalDigit
   ;
 
 fragment NonDigit
-  : ('_' | [a-z] | [A-Z])
+  : [_a-zA-Z]
   ;
