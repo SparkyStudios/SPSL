@@ -13,6 +13,7 @@ public class TranslatorConfiguration
 {
     public IEnumerable<NamespacedReference>? Shaders { get; set; }
     public IEnumerable<NamespacedReference>? Namespaces { get; set; }
+    public Dictionary<string, string> Permutations { get; set; } = new();
 }
 
 public class Translator
@@ -118,7 +119,7 @@ public class Translator
     private Shader _currentShader = null!;
     private readonly Stream _shaderStream = new(new() { Value = "ShaderStream" }, Array.Empty<StreamProperty>());
 
-    private TranslatorConfiguration _configuration;
+    private readonly TranslatorConfiguration _configuration;
 
     public Stream ShaderStream => _shaderStream;
 
@@ -159,11 +160,11 @@ public class Translator
 
         using (System.IO.Stream? stream = GetType().Assembly.GetManifestResourceStream(hlslTemplate))
         using (StreamReader reader = new(stream!))
-            _hlslTemplate = new TemplateGroupString("HLSL", reader.ReadToEnd());
+            _hlslTemplate = new("HLSL", reader.ReadToEnd());
 
         using (System.IO.Stream? stream = GetType().Assembly.GetManifestResourceStream(baseTemplate))
         using (StreamReader reader = new(stream!))
-            template = new TemplateGroupString("Base", reader.ReadToEnd());
+            template = new("Base", reader.ReadToEnd());
 
         _hlslTemplate.ImportTemplates(template);
     }
@@ -260,10 +261,14 @@ public class Translator
 
         StringBuilder output = new();
 
+        string name = Translate(permutationVariable.Name, ns, ast);
+
         Template template = _hlslTemplate.GetInstanceOf("permutation_var");
         template.Add("m",
-            new Macro(Translate(permutationVariable.GetReference(), ns, ast),
-                Translate(permutationVariable.Initializer, ns, ast)));
+            new Macro(name,
+                _configuration.Permutations.TryGetValue(name, out string? value)
+                    ? value
+                    : Translate(permutationVariable.Initializer, ns, ast)));
 
         if (permutationVariable.Type == PermutationVariableType.Enum)
         {
@@ -278,6 +283,11 @@ public class Translator
 
         output.Append(template.Render());
         return output.ToString();
+    }
+
+    public string Translate(Identifier identifier, Namespace ns, Ast ast)
+    {
+        return identifier.Value;
     }
 
     public string Translate(GlobalVariable global, Namespace ns, Ast ast)
@@ -549,12 +559,6 @@ public class Translator
                 overriddenChildren.Add(function);
 
         IEnumerable<IBlockChild>? blockChildren = shouldOverride as HashSet<IBlockChild> ?? shouldOverride?.ToHashSet();
-
-        void UpdateScope()
-        {
-            _currentShader = shader;
-            _currentBase = Translate(shader.ExtendedShader, ns, ast);
-        }
 
         // Imported shader fragments
         if (stage == ShaderTranslationStage.Fragments)
@@ -836,6 +840,12 @@ public class Translator
         }
 
         return output.ToString();
+
+        void UpdateScope()
+        {
+            _currentShader = shader;
+            _currentBase = Translate(shader.ExtendedShader, ns, ast);
+        }
     }
 
     public string Translate(IShaderMember member, Namespace ns, Ast ast)
@@ -1118,7 +1128,9 @@ public class Translator
         output.AppendLine();
 
         output.AppendLine(Translate(function.Head, ns, ast));
-        output.Append(Translate(function.Body, ns, ast));
+        output.AppendLine("{");
+        output.AppendLine(Translate(function.Body, ns, ast));
+        output.AppendLine("}");
 
         return output.ToString();
     }
@@ -1734,7 +1746,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        Template template = _hlslTemplate.GetInstanceOf("statements_block");
+        Template template = _hlslTemplate.GetInstanceOf("statements_list");
         foreach (IStatement statement in body.Children)
             template.Add("stats", Translate(statement, ns, ast));
 
@@ -1772,7 +1784,23 @@ public class Translator
 
     public string Translate(PermuteStatement permuteStatement, Namespace ns, Ast ast)
     {
+        var expression = (BinaryOperationExpression)permuteStatement.Condition;
+        var permutationName = (BasicExpression)expression.Left;
+        var permutationValue = (IConstantExpression)expression.Right;
+
         StringBuilder output = new();
+
+        if (_configuration.Permutations.TryGetValue(permutationName.Identifier.Value, out string? value))
+        {
+            if (value != permutationValue.ToString())
+            {
+                return permuteStatement.Else is { Children.Count: > 0 }
+                    ? Translate(permuteStatement.Else, ns, ast)
+                    : string.Empty;
+            }
+
+            return Translate(permuteStatement.Block, ns, ast);
+        }
 
         Template template = _hlslTemplate.GetInstanceOf("permute_block");
         template.Add("condition", Translate(permuteStatement.Condition, ns, ast));

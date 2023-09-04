@@ -51,9 +51,18 @@ void RunBaseOptions(BaseOptions opts)
     }
 }
 
+void RunShadingOptions(ShadingOptions opts, out Dictionary<string, string> permutations)
+{
+    permutations = new();
+
+    foreach (PermutationValue permutation in opts.Permutations)
+        permutations[permutation.Name] = permutation.Value;
+}
+
 void RunShaderOptions(ShaderOptions opts)
 {
     RunBaseOptions(opts);
+    RunShadingOptions(opts, out var permutations);
 
     // Build AST
     Ast ast = Ast.FromShaderFile(opts.InputFile, opts.LibDirectories);
@@ -62,12 +71,13 @@ void RunShaderOptions(ShaderOptions opts)
     {
         case ShaderSourceGenerator.GLSL:
             Console.Error.WriteLine("GLSL output is not supported.");
+            Environment.Exit(1);
             break;
 
         // ---- Translate to HLSL
         case ShaderSourceGenerator.HLSL:
         {
-            Translator hlsl = new(new());
+            Translator hlsl = new(new() { Permutations = permutations });
 
             string code = hlsl.Translate(ast);
 
@@ -86,6 +96,7 @@ void RunShaderOptions(ShaderOptions opts)
 void RunMaterialOptions(MaterialOptions opts)
 {
     RunBaseOptions(opts);
+    RunShadingOptions(opts, out var permutations);
 
     // Build AST
     Ast ast = Ast.FromMaterialFile(opts.InputFile, opts.LibDirectories);
@@ -194,6 +205,7 @@ void RunMaterialOptions(MaterialOptions opts)
     {
         Shaders = materialShaders,
         Namespaces = namespaces,
+        Permutations = permutations
     };
 
     switch (opts.Generator)
@@ -258,8 +270,9 @@ void RunMaterialOptions(MaterialOptions opts)
                     {
                         if (annotation.Identifier.Value == "semantic")
                         {
-                            description.SemanticName = annotation.Arguments.ElementAtOrDefault(0)?.ToString() ?? string.Empty;
-                            
+                            description.SemanticName =
+                                annotation.Arguments.ElementAtOrDefault(0)?.ToString() ?? string.Empty;
+
                             IExpression? expression = annotation.Arguments.ElementAtOrDefault(1);
                             description.SemanticIndex =
                                 expression is not null ? Convert.ToUInt32(expression.ToString()) : 0;

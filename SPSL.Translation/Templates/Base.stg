@@ -13,10 +13,14 @@ func_head(type, name, args) ::= <%
 <type> <name>(<args:arg(); separator=", ">)
 %>
 
+statements_list(stats) ::= <<
+  <stats; separator="\n">
+>>
+
 // Generates a function body.
 statements_block(stats) ::= <<
 {
-  <stats; separator="\n">
+<statements_list(stats)>
 }
 >>
 

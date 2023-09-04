@@ -92,10 +92,10 @@ permutation_var(m, enum_values) ::= <<
 // Permute block
 permute_block(condition, block, otherwise) ::= <<
 #if <condition>
-<block>
+  <block>
 <if(otherwise)>
 #else
-<otherwise>
+  <otherwise>
 <endif>
 #endif
 >>
