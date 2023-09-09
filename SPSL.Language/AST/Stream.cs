@@ -53,10 +53,10 @@ public class Stream : IShaderMember
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

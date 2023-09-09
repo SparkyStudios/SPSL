@@ -1,33 +1,40 @@
 ﻿namespace SPSL.Language.AST;
 
+/// <summary>
+/// Represents a unknown data type in SPSL.
+///
+/// A data type is marked as Unknown when the parser was not able to recognize it.
+/// There are very edge cases where this node is present in the AST.
+/// </summary>
 public class UnknownDataType : IDataType
 {
     #region Overrides
 
-    public override string ToString()
+    /// <inheritdoc cref="Object.Equals(object?)" />
+    public override bool Equals(object? obj)
     {
-        return "unknown";
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+
+        return Equals((UnknownDataType)obj);
+    }
+
+    /// <inheritdoc cref="Object.GetHashCode()" />
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(IsArray, ArraySize);
     }
 
     #endregion
-    
+
     #region IDataType Implementation
 
     /// <inheritdoc cref="IDataType.IsArray"/>
-    public bool IsArray { get; set; } = false;
+    public bool IsArray { get; init; } = false;
 
     /// <inheritdoc cref="IDataType.ArraySize"/>
-    public uint? ArraySize { get; set; } = null;
-
-    #endregion
-
-    #region IEquatable<IDataType> Implementation
-
-    /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
-    public bool Equals(IDataType? other)
-    {
-        return other is UnknownDataType otherType && IsArray == otherType.IsArray && ArraySize == otherType.ArraySize;
-    }
+    public uint? ArraySize { get; init; } = null;
 
     #endregion
 
@@ -40,7 +47,7 @@ public class UnknownDataType : IDataType
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }
@@ -49,6 +56,38 @@ public class UnknownDataType : IDataType
     public INode? ResolveNode(string source, int offset)
     {
         return Source == source && offset >= Start && offset <= End ? this as INode : null;
+    }
+
+    #endregion
+
+    #region ISemanticallyEquatable<IDataType> Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
+    public bool SemanticallyEquals(IDataType? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return other is UnknownDataType && IsArray == other.IsArray && ArraySize == other.ArraySize;
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(IsArray, ArraySize);
+    }
+
+    #endregion
+
+    #region IEquatable<IDataType> Implementation
+
+    /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
+    public bool Equals(IDataType? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return other is UnknownDataType otherType && IsArray == otherType.IsArray && ArraySize == otherType.ArraySize;
     }
 
     #endregion

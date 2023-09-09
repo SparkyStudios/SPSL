@@ -29,15 +29,6 @@ public class UserDefinedConstantExpression : IConstantExpression
 
     #endregion
 
-    #region Overrides
-
-    public override string ToString()
-    {
-        return Identifier.ToString();
-    }
-
-    #endregion
-
     #region INode Implementation
 
     /// <inheritdoc cref="INode.Start"/>
@@ -47,7 +38,7 @@ public class UserDefinedConstantExpression : IConstantExpression
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }

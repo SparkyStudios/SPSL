@@ -45,14 +45,8 @@ public class InvocationExpression : IExpression
     /// <param name="name">The name of the method/function to call.</param>
     /// <param name="parameters">The list of parameters of this call.</param>
     public InvocationExpression(NamespacedReference name, params InvocationParameter[] parameters)
+        : this(name, (IEnumerable<InvocationParameter>)parameters)
     {
-        Name = name;
-        Parameters = new(parameters);
-
-        Name.Parent = this;
-
-        foreach (InvocationParameter parameter in Parameters)
-            parameter.Parent = this;
     }
 
     #endregion
@@ -66,10 +60,10 @@ public class InvocationExpression : IExpression
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

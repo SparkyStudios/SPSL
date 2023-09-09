@@ -61,8 +61,8 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             context.bufferComponent().Select(c => c.ToTypeProperty(_fileSource))
         )
         {
-            Storage = context.Storage == null ? BufferStorage.Undefined : context.Storage.Text.ToBufferStorage(),
-            Access = context.Access.Text.ToBufferAccess(),
+            Storage = context.Storage?.ToBufferStorage() ?? BufferStorage.Undefined,
+            Access = context.Access.ToBufferAccess(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource,
@@ -81,8 +81,8 @@ public class ShaderMemberVisitor : SPSLBaseVisitor<IShaderMember?>
             context.dataType().Accept(new DataTypeVisitor(_fileSource))
         )
         {
-            Storage = context.Storage == null ? BufferStorage.Undefined : context.Storage.Text.ToBufferStorage(),
-            Access = context.Access.Text.ToBufferAccess(),
+            Storage = context.Storage?.ToBufferStorage() ?? BufferStorage.Undefined,
+            Access = context.Access.ToBufferAccess(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource,

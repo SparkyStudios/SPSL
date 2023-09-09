@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
+using static SPSL.Language.SPSLParser;
 using Type = SPSL.Language.AST.Type;
 
 namespace SPSL.Language.Utils;
@@ -11,7 +13,7 @@ namespace SPSL.Language.Utils;
 public static class DeclarationString
 {
     /// <summary>
-    /// Gets the declaration of the given <see cref="INamespaceChild"/>.
+    /// Gets the declaration from the given <see cref="INamespaceChild"/>.
     /// </summary>
     /// <param name="child">The <see cref="INamespaceChild"/> to get the declaration from.</param>
     /// <exception cref="NotImplementedException">
@@ -32,7 +34,7 @@ public static class DeclarationString
     }
 
     /// <summary>
-    /// Gets the declaration of the given <see cref="IShaderMember"/>.
+    /// Gets the declaration from the given <see cref="IShaderMember"/>.
     /// </summary>
     /// <param name="member">The <see cref="IShaderMember"/> to get the declaration from.</param>
     /// <exception cref="NotImplementedException">
@@ -52,18 +54,89 @@ public static class DeclarationString
     }
 
     /// <summary>
+    /// Gets the declaration from the given <see cref="ILiteral"/>.
+    /// </summary>
+    /// <param name="literal">The <see cref="ILiteral"/> to get the declaration from.</param>
+    /// <exception cref="NotImplementedException">
+    /// When the given <see cref="ILiteral"/> is not yet implemented.
+    /// </exception>
+    public static string From(ILiteral literal)
+    {
+        return literal switch
+        {
+            FloatLiteral floatLiteral => From(floatLiteral),
+            IntegerLiteral intLiteral => From(intLiteral),
+            UnsignedIntegerLiteral unsignedIntegerLiteral => From(unsignedIntegerLiteral),
+            DoubleLiteral doubleLiteral => From(doubleLiteral),
+            BoolLiteral boolLiteral => From(boolLiteral),
+            StringLiteral stringLiteral => From(stringLiteral),
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    /// <summary>
+    /// Gets the declaration from the given <see cref="IDataType"/>.
+    /// </summary>
+    /// <param name="dataType"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public static string From(IDataType dataType)
+    {
+        return dataType switch
+        {
+            BuiltInDataType type => From(type),
+            PrimitiveDataType type => From(type),
+            UserDefinedDataType type => From(type),
+            UnknownDataType type => From(type),
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    public static string From(IExpression expression)
+    {
+        return expression switch
+        {
+            IConstantExpression constantExpression => From(constantExpression),
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    public static string From(IConstantExpression expression)
+    {
+        return expression switch
+        {
+            IPrimitiveExpression primitiveExpression => From(primitiveExpression),
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    public static string From(IPrimitiveExpression expression)
+    {
+        return expression switch
+        {
+            ILiteral literal => From(literal),
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    /// <summary>
     /// Gets the declaration of the given <see cref="PermutationVariable"/>.
     /// </summary>
     /// <param name="variable">The <see cref="PermutationVariable"/> to get the declaration from.</param>
     public static string From(PermutationVariable variable) =>
-        $"permutation {variable.Type.GetTypeName()} {variable.Name} = {variable.Initializer};";
+        $"permutation {variable.Type switch
+        {
+            PermutationVariableType.Bool => "bool",
+            PermutationVariableType.Enum => "enum",
+            _ => "int"
+        }} {From(variable.Name)} = {From(variable.Initializer)};";
 
     /// <summary>
     /// Gets the declaration of the given <see cref="Type"/>.
     /// </summary>
     /// <param name="type">The <see cref="Type"/> to get the declaration from.</param>
     public static string From(Type type) =>
-        $"type {type.Name.Value} as {(type.Kind == TypeKind.Struct ? "struct" : "enum")}";
+        $"type {From(type.Name)} as {(type.Kind == TypeKind.Struct ? "struct" : "enum")}";
 
     /// <summary>
     /// Gets the declaration of the given <see cref="TypeProperty"/>.
@@ -72,10 +145,10 @@ public static class DeclarationString
     public static string From(TypeProperty property)
     {
         StringBuilder sb = new();
-        sb.Append($"{property.Type} {property.Name}");
+        sb.Append($"{From(property.Type)} {From(property.Name)}");
 
         if (property.Initializer != null)
-            sb.Append($" = {property.Initializer}");
+            sb.Append($" = {From(property.Initializer)}");
 
         sb.Append(';');
 
@@ -92,16 +165,22 @@ public static class DeclarationString
     }
 
     public static string From(Function function) =>
-        $"{function.Head.ReturnType} {function.Name}({string.Join(", ", function.Head.Signature.Parameters.Select(From))})";
+        $"{From(function.Head.ReturnType)} {From(function.Name)}({string.Join(", ", function.Head.Signature.Arguments.Select(From))})";
 
     public static string From(FunctionArgument parameter)
     {
         StringBuilder sb = new();
 
         if (parameter.Flow != DataFlow.Unspecified)
-            sb.Append($"{parameter.Flow.ToString().ToLower()} ");
+            sb.Append($"{parameter.Flow switch {
+                DataFlow.In => "in",
+                DataFlow.Out => "out",
+                DataFlow.InOut => "inout",
+                DataFlow.Const => "const",
+                _ => string.Empty
+            }} ");
 
-        sb.Append($"{parameter.Type} {parameter.Name}");
+        sb.Append($"{From(parameter.Type)} {From(parameter.Name)}");
 
         return sb.ToString();
     }
@@ -112,7 +191,7 @@ public static class DeclarationString
     /// <param name="variable">The <see cref="Interface"/> to get the declaration from.</param>
     public static string From(Interface variable)
     {
-        StringBuilder sb = new($"interface {variable.Name.Value}");
+        StringBuilder sb = new($"interface {From(variable.Name)}");
 
         if (variable.ExtendedInterfaces.Count > 0)
         {
@@ -131,7 +210,7 @@ public static class DeclarationString
     /// <param name="fragment">The <see cref="ShaderFragment"/> to get the declaration from.</param>
     public static string From(ShaderFragment fragment)
     {
-        StringBuilder sb = new($"fragment {fragment.Name.Value}");
+        StringBuilder sb = new($"fragment {From(fragment.Name)}");
 
         if (fragment.ExtendedShaderFragment != NamespacedReference.Null)
             sb.Append($" extends {fragment.ExtendedShaderFragment.Name}");
@@ -159,9 +238,17 @@ public static class DeclarationString
             sb.Append("abstract ");
 
         if (shader.Stage != ShaderStage.Unspecified)
-            sb.Append($"{shader.Stage.ToString().ToLower()} ");
+            sb.Append($"{shader.Stage switch {
+                ShaderStage.Vertex => "vertex",
+                ShaderStage.Hull => "hull",
+                ShaderStage.Domain => "domain",
+                ShaderStage.Geometry => "geometry",
+                ShaderStage.Pixel => "pixel",
+                ShaderStage.Compute => "compute",
+                _ => string.Empty
+            }} ");
 
-        sb.Append($"shader {shader.Name.Value}");
+        sb.Append($"shader {From(shader.Name)}");
 
         if (shader.ExtendedShader != NamespacedReference.Null)
             sb.Append($" extends {shader.ExtendedShader.Name}");
@@ -188,7 +275,7 @@ public static class DeclarationString
         if (variable.IsStatic)
             sb.Append("static ");
 
-        sb.Append($"const {variable.Type} {variable.Name.Value} = {variable.Initializer};");
+        sb.Append($"const {From(variable.Type)} {From(variable.Name)} = {From(variable.Initializer)};");
 
         return sb.ToString();
     }
@@ -202,9 +289,18 @@ public static class DeclarationString
         StringBuilder sb = new();
 
         if (buffer.Storage != BufferStorage.Undefined)
-            sb.Append($"{buffer.Storage.ToString().ToLower()} ");
+            sb.Append($"{buffer.Storage switch {
+                BufferStorage.Coherent => "coherent",
+                _ => string.Empty
+            }} ");
 
-        sb.Append($"{buffer.Access.ToString().ToLower()} buffer {buffer.Name.Value}");
+        sb.Append($"{buffer.Access switch {
+            BufferAccess.Constant => "const",
+            BufferAccess.ReadOnly => "readonly",
+            BufferAccess.WriteOnly => "writeonly",
+            BufferAccess.ReadWrite => "readwrite",
+            _ => string.Empty
+        }} buffer {From(buffer.Name)}");
 
         return sb.ToString();
     }
@@ -218,9 +314,18 @@ public static class DeclarationString
         StringBuilder sb = new();
 
         if (buffer.Storage != BufferStorage.Undefined)
-            sb.Append($"{buffer.Storage.ToString().ToLower()} ");
+            sb.Append($"{buffer.Storage switch {
+                BufferStorage.Coherent => "coherent",
+                _ => string.Empty
+            }} ");
 
-        sb.Append($"{buffer.Access.ToString().ToLower()} buffer<{buffer.DataType}> {buffer.Name.Value};");
+        sb.Append($"{buffer.Access switch {
+            BufferAccess.Constant => "const",
+            BufferAccess.ReadOnly => "readonly",
+            BufferAccess.WriteOnly => "writeonly",
+            BufferAccess.ReadWrite => "readwrite",
+            _ => string.Empty
+        }} buffer<{From(buffer.DataType)}> {From(buffer.Name)};");
 
         return sb.ToString();
     }
@@ -235,7 +340,7 @@ public static class DeclarationString
 
         if (function.IsConstructor)
         {
-            sb.Append($"{function.Name}()");
+            sb.Append($"{From(function.Name)}()");
             return sb.ToString();
         }
 
@@ -246,4 +351,339 @@ public static class DeclarationString
 
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="FloatLiteral"/>.
+    /// </summary>
+    /// <param name="literal">The <see cref="FloatLiteral"/> to get the declaration from.</param>
+    public static string From(FloatLiteral literal)
+    {
+        StringBuilder output = new();
+
+        output.Append(literal.Value);
+
+        if (Math.Abs((int)literal.Value - literal.Value) == 0)
+            output.Append(".0");
+
+        output.Append('f');
+
+        return output.ToString();
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="IntegerLiteral"/>.
+    /// </summary>
+    /// <param name="literal">The <see cref="IntegerLiteral"/> to get the declaration from.</param>
+    public static string From(IntegerLiteral literal)
+    {
+        StringBuilder output = new();
+
+        if (literal.IsHexConstant)
+            output.Append("0x");
+
+        if (literal.IsOctalConstant)
+            output.Append('0');
+
+        output.Append
+        (
+            Convert.ToString(literal.Value, literal.IsHexConstant ? 16 : literal.IsOctalConstant ? 8 : 10).ToUpper()
+        );
+
+        return output.ToString();
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="UnsignedIntegerLiteral"/>.
+    /// </summary>
+    /// <param name="literal">The <see cref="UnsignedIntegerLiteral"/> to get the declaration from.</param>
+    public static string From(UnsignedIntegerLiteral literal)
+    {
+        return literal.Value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="DoubleLiteral"/>.
+    /// </summary>
+    /// <param name="literal">The <see cref="DoubleLiteral"/> to get the declaration from.</param>
+    public static string From(DoubleLiteral literal)
+    {
+        StringBuilder output = new();
+
+        output.Append(literal.Value);
+
+        if (Math.Abs((int)literal.Value - literal.Value) == 0)
+            output.Append(".0");
+
+        return output.ToString();
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="BoolLiteral"/>.
+    /// </summary>
+    /// <param name="literal">The <see cref="BoolLiteral"/> to get the declaration from.</param>
+    public static string From(BoolLiteral literal)
+    {
+        return literal.Value ? "true" : "false";
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="StringLiteral"/>.
+    /// </summary>
+    /// <param name="literal">The <see cref="StringLiteral"/> to get the declaration from.</param>
+    public static string From(StringLiteral literal)
+    {
+        return $"\"{literal.Value}\"";
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="BuiltInDataType"/>.
+    /// </summary>
+    /// <param name="type">The <see cref="BuiltInDataType"/> to get the declaration from.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// When the given <see cref="BuiltInDataType"/> is an unknown or invalid built-in data type.
+    /// </exception>
+    public static string From(BuiltInDataType type)
+    {
+        StringBuilder sb = new();
+
+        switch (type.Type)
+        {
+            case BuiltInDataTypeKind.Vector2b:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR2B).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector2f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR2F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector2d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR2D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector2i:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR2I).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector2ui:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR2UI).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector3b:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR3B).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector3f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR3F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector3d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR3D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector3i:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR3I).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector3ui:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR3UI).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector4b:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR4B).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector4f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR4F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector4d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR4D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector4i:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR4I).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Vector4ui:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VECTOR4UI).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix2f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX2F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix2d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX2D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix3f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX3F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix3d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX3D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix4f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX4F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix4d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX4D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix2x3f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX2X3F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix2x3d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX2X3D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix2x4f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX2X4F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix2x4d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX2X4D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix3x2f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX3X2F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix3x2d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX3X2D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix3x4f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX3X4F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix3x4d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX3X4D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix4x2f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX4X2F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix4x2d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX4X2D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix4x3f:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX4X3F).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Matrix4x3d:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_MATRIX4X3D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Color3:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_COLOR3).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Color4:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_COLOR4).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Sampler:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_SAMPLER).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Texture1D:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_TEXTURE1D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.ArrayTexture1D:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_TEXTURE1DARRAY).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Texture2D:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_TEXTURE2D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.ArrayTexture2D:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_TEXTURE2DARRAY).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Texture3D:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_TEXTURE3D).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.Cubemap:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_CUBEMAP).Trim('\''));
+                break;
+            case BuiltInDataTypeKind.ArrayCubemap:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_CUBEMAPARRAY).Trim('\''));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type.Type, "Unknown built-in data type.");
+        }
+
+        if (type.IsArray)
+        {
+            sb.Append('[');
+            if (type.ArraySize != null)
+                sb.Append(type.ArraySize);
+            sb.Append(']');
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="PrimitiveDataType"/>.
+    /// </summary>
+    /// <param name="type">The <see cref="PrimitiveDataType"/> to get the declaration from.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// When the given <see cref="PrimitiveDataType"/> is an unknown or invalid primitive data type.
+    /// </exception>
+    public static string From(PrimitiveDataType type)
+    {
+        StringBuilder sb = new();
+
+        switch (type.Type)
+        {
+            case PrimitiveDataTypeKind.Void:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_VOID).Trim('\''));
+                break;
+            case PrimitiveDataTypeKind.Boolean:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_BOOL).Trim('\''));
+                break;
+            case PrimitiveDataTypeKind.Integer:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_INT).Trim('\''));
+                break;
+            case PrimitiveDataTypeKind.UnsignedInteger:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_UINT).Trim('\''));
+                break;
+            case PrimitiveDataTypeKind.Float:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_FLOAT).Trim('\''));
+                break;
+            case PrimitiveDataTypeKind.String:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_STRING).Trim('\''));
+                break;
+            case PrimitiveDataTypeKind.Double:
+                sb.Append(DefaultVocabulary.GetLiteralName(TYPE_DOUBLE).Trim('\''));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(type), type.Type, "Unknown primitive data type.");
+        }
+
+        if (type.IsArray)
+        {
+            sb.Append('[');
+            if (type.ArraySize != null)
+                sb.Append(type.ArraySize);
+            sb.Append(']');
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="UserDefinedDataType"/>.
+    /// </summary>
+    /// <param name="type">The <see cref="UserDefinedDataType"/> to get the declaration from.</param>
+    public static string From(UserDefinedDataType type)
+    {
+        StringBuilder sb = new();
+
+        sb.Append(type.Type.Name);
+
+        if (type.IsArray)
+        {
+            sb.Append('[');
+            if (type.ArraySize != null)
+                sb.Append(type.ArraySize);
+            sb.Append(']');
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="UnknownDataType"/>.
+    /// </summary>
+    /// <param name="type">The <see cref="UnknownDataType"/> to get the declaration from.</param>
+    public static string From(UnknownDataType type)
+    {
+        return "unknown";
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="Identifier"/>.
+    /// </summary>
+    /// <param name="identifier">The <see cref="Identifier"/> to get the declaration from.</param>
+    public static string From(Identifier identifier)
+    {
+        return identifier.Value;
+    }
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="VariableDeclarationStatement"/>.
+    /// </summary>
+    /// <param name="statement">The <see cref="VariableDeclarationStatement"/> to get the declaration from.</param>
+    public static string From(VariableDeclarationStatement statement) =>
+        $"{From(statement.Type)} {From(statement.Name)}";
 }

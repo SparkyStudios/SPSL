@@ -193,8 +193,11 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
         IfStatement.IfStatementConditionBlock @if = new()
         {
-            Condition = context.Expression.Accept(expressionVisitor)!,
-            Block = (StatementBlock)context.Block.Accept(this)!
+            Condition = context.Expression.Accept(expressionVisitor),
+            Block = (StatementBlock)context.Block.Accept(this)!,
+            Start = context.Block.Start.StartIndex,
+            End = context.Block.Stop.StartIndex,
+            Source = _fileSource
         };
 
         OrderedSet<IfStatement.IfStatementConditionBlock> elif = new();
@@ -202,10 +205,13 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         {
             elif.Add
             (
-                new IfStatement.IfStatementConditionBlock
+                new()
                 {
                     Condition = ctx.Expression.Accept(expressionVisitor)!,
                     Block = (StatementBlock)ctx.Block.Accept(this)!,
+                    Start = ctx.Block.Start.StartIndex,
+                    End = ctx.Block.Stop.StartIndex,
+                    Source = _fileSource
                 }
             );
         }
@@ -228,7 +234,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
         return new WhileStatement
         (
-            condition: context.Expression.Accept(expressionVisitor)!,
+            condition: context.Expression.Accept(expressionVisitor),
             block: (StatementBlock)context.Block.Accept(this)!
         )
         {
@@ -244,9 +250,9 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
         BinaryOperationExpression condition = new
         (
-            context.Identifier.Accept(expressionVisitor)!,
-            context.Operator.Text,
-            context.Value.Accept(expressionVisitor)!
+            context.Identifier.Accept(expressionVisitor),
+            context.Operator.ToOp(),
+            context.Value.Accept(expressionVisitor)
         )
         {
             Start = context.Identifier.Start.StartIndex,

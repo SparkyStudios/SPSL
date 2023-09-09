@@ -2,13 +2,12 @@
 using Antlr4.Runtime;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
-using SPSL.Language.Utils;
 using SPSL.Language.Visitors;
 using static SPSL.Language.SPSLParser;
 
-namespace SPSL.Language;
+namespace SPSL.Language.Utils;
 
-internal static partial class SPSLParserExtensions
+public static partial class ParserExtensions
 {
     internal static string ToDocumentation(this IToken? node)
     {
@@ -32,11 +31,7 @@ internal static partial class SPSLParserExtensions
         };
     }
 
-    internal static NamespacedReference ToNamespaceReference
-    (
-        this NamespacedTypeNameContext? context,
-        string fileSource
-    )
+    internal static NamespacedReference ToNamespaceReference(this NamespacedTypeNameContext? context, string fileSource)
     {
         return context is not null
             ? new(context.IDENTIFIER().Select(id => id.Symbol.ToIdentifier(fileSource)).ToArray())
@@ -50,29 +45,17 @@ internal static partial class SPSLParserExtensions
 
     internal static Annotation ToAnnotation(this AnnotationContext context, string fileSource)
     {
-        Annotation annotation = new()
+        return new
+        (
+            context.Name.ToIdentifier(fileSource),
+            context.constantExpression()
+                .Select(e => e.Accept(new ExpressionVisitor(fileSource))!)
+        )
         {
-            Identifier = context.Name.ToIdentifier(fileSource),
-            Arguments = new(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = fileSource
         };
-
-        annotation.Identifier.Parent = annotation;
-
-        annotation.Arguments.AddRange
-        (
-            context.constantExpression()
-                .Select(e =>
-                {
-                    IExpression expression = e.Accept(new ExpressionVisitor(fileSource))!;
-                    expression.Parent = annotation;
-                    return expression;
-                })
-        );
-
-        return annotation;
     }
 
     internal static Function ToFunction(this FunctionContext context, string fileSource)
@@ -105,11 +88,7 @@ internal static partial class SPSLParserExtensions
         };
     }
 
-    internal static FunctionSignature ToFunctionSignature
-    (
-        this FunctionSignatureContext context,
-        string fileSource
-    )
+    internal static FunctionSignature ToFunctionSignature(this FunctionSignatureContext context, string fileSource)
     {
         FunctionSignature signature = new()
         {
@@ -268,6 +247,94 @@ internal static partial class SPSLParserExtensions
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = fileSource
+        };
+    }
+
+    public static BufferStorage ToBufferStorage(this IToken? storage)
+    {
+        return storage?.Type switch
+        {
+            KEYWORD_COHERENT => BufferStorage.Coherent,
+            _ => BufferStorage.Undefined
+        };
+    }
+
+    public static BufferAccess ToBufferAccess(this IToken? access)
+    {
+        return access?.Type switch
+        {
+            KEYWORD_READONLY => BufferAccess.ReadOnly,
+            KEYWORD_WRITEONLY => BufferAccess.WriteOnly,
+            KEYWORD_READWRITE => BufferAccess.ReadWrite,
+            SPSLLexer.KEYWORD_CONST => BufferAccess.Constant,
+            _ => BufferAccess.ReadOnly
+        };
+    }
+
+    public static ShaderStage ToShaderStage(this IToken? stage)
+    {
+        return stage?.Type switch
+        {
+            KEYWORD_VERTEX => ShaderStage.Vertex,
+            KEYWORD_PIXEL => ShaderStage.Pixel,
+            KEYWORD_GEOMETRY => ShaderStage.Geometry,
+            KEYWORD_HULL => ShaderStage.Hull,
+            KEYWORD_DOMAIN => ShaderStage.Domain,
+            KEYWORD_COMPUTE => ShaderStage.Compute,
+            _ => ShaderStage.Unspecified,
+        };
+    }
+
+    public static DataFlow ToDataFlow(this IToken? flow)
+    {
+        return flow?.Type switch
+        {
+            KEYWORD_IN => DataFlow.In,
+            KEYWORD_OUT => DataFlow.Out,
+            KEYWORD_INOUT => DataFlow.InOut,
+            KEYWORD_CONST => DataFlow.Const,
+            _ => DataFlow.Unspecified
+        };
+    }
+
+    public static Op ToOp(this IToken? op)
+    {
+        return op?.Type switch
+        {
+            OP_PIPE => Op.Pipe,
+            OP_AMPERSAND => Op.Ampersand,
+            OP_PLUS => Op.Plus,
+            OP_MINUS => Op.Minus,
+            OP_ASTERISK => Op.Asterisk,
+            OP_EXPONENT => Op.Exponent,
+            OP_MODULUS => Op.Modulo,
+            OP_DIV => Op.Div,
+            OP_ASSIGN => Op.Assignment,
+            OP_EQUAL => Op.Equals,
+            OP_DIFFERENT => Op.NotEquals,
+            OP_GREATER_THAN => Op.GreaterThan,
+            OP_LESSER_THAN => Op.LessThan,
+            OP_GEQ_THAN => Op.GreaterThanOrEqual,
+            OP_LEQ_THAN => Op.LessThanOrEqual,
+            OP_INCREMENT => Op.Increment,
+            OP_DECREMENT => Op.Decrement,
+            OP_PLUS_ASSIGN => Op.PlusAssignment,
+            OP_MINUS_ASSIGN => Op.MinusAssignment,
+            OP_MUL_ASSIGN => Op.AsteriskAssignment,
+            OP_DIV_ASSIGN => Op.DivideAssignment,
+            OP_MODULUS_ASSIGN => Op.ModuloAssignment,
+            OP_BITWISE_OR_ASSIGN => Op.BitwiseOrAssignment,
+            OP_BITWISE_AND_ASSIGN => Op.BitwiseAndAssignment,
+            OP_EXPONENT_ASSIGN => Op.ExponentAssignment,
+            OP_LSHIFT_ASSIGN => Op.LeftShiftAssignment,
+            OP_RSHIFT_ASSIGN => Op.RightShiftAssignment,
+            OP_OR => Op.Or,
+            OP_AND => Op.And,
+            OP_NOT => Op.Not,
+            OP_XOR => Op.Xor,
+            OP_LSHIFT => Op.LeftShift,
+            OP_RSHIFT => Op.RightShift,
+            _ => Op.Unknown
         };
     }
 

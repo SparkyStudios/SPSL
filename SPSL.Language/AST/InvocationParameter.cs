@@ -38,7 +38,7 @@ public class InvocationParameter : INode
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }

@@ -2,6 +2,9 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.AST;
 
+/// <summary>
+/// Represents an SPSL material.
+/// </summary>
 public class Material : IBlock, INamespaceChild
 {
     #region Properties
@@ -20,6 +23,10 @@ public class Material : IBlock, INamespaceChild
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Material"/> class.
+    /// </summary>
+    /// <param name="name">The name of the material.</param>
     public Material(Identifier name)
     {
         name.Parent = this;
@@ -31,21 +38,17 @@ public class Material : IBlock, INamespaceChild
 
     #region IBlock Implementation
 
+    /// <inheritdoc cref="IBlock.Children"/>
     public OrderedSet<IBlockChild> Children { get; } = new();
 
     #endregion
 
     #region INamespaceChild Implementation
 
-    /// <summary>
-    /// The parent <see cref="Language.AST.Namespace"/> of this one.
-    /// Defaults to <c>null</c> for root namespaces.
-    /// </summary>
+    /// <inheritdoc cref="INamespaceChild.ParentNamespace"/>
     public Namespace? ParentNamespace { get; set; }
 
-    /// <summary>
-    /// The namespace's name.
-    /// </summary>
+    /// <inheritdoc cref="INamespaceChild.Name"/>
     public Identifier Name { get; set; }
 
     #endregion
@@ -56,7 +59,7 @@ public class Material : IBlock, INamespaceChild
     public string Documentation { get; init; } = string.Empty;
 
     #endregion
-    
+
     #region INode Implementation
 
     /// <inheritdoc cref="INode.Start"/>
@@ -66,10 +69,10 @@ public class Material : IBlock, INamespaceChild
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

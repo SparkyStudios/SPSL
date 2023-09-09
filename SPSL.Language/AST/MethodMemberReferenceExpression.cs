@@ -1,7 +1,7 @@
 ﻿namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represents a method call through a target shader.
+/// Represents a method call through a target context.
 /// </summary>
 public class MethodMemberReferenceExpression : IExpression
 {
@@ -10,7 +10,7 @@ public class MethodMemberReferenceExpression : IExpression
     /// <summary>
     /// The targeted object in which the member is accessed.
     /// </summary>
-    public Identifier Target { get; }
+    public ContextAccessExpression Target { get; }
 
     /// <summary>
     /// The field name in the target object.
@@ -26,7 +26,7 @@ public class MethodMemberReferenceExpression : IExpression
     /// </summary>
     /// <param name="target">The target object.</param>
     /// <param name="member">The method call expression.</param>
-    public MethodMemberReferenceExpression(Identifier target, InvocationExpression member)
+    public MethodMemberReferenceExpression(ContextAccessExpression target, InvocationExpression member)
     {
         target.Parent = this;
         member.Parent = this;
@@ -46,10 +46,10 @@ public class MethodMemberReferenceExpression : IExpression
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

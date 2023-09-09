@@ -10,18 +10,7 @@ public class StringLiteral : ILiteral, IEquatable<StringLiteral>
     /// <summary>
     /// The value.
     /// </summary>
-    public string Value
-    {
-        get => (string)((ILiteral)this).Value;
-        set => ((ILiteral)this).Value = value;
-    }
-
-    #endregion
-
-    #region ILiteral Implementation
-
-    /// <inheritdoc cref="ILiteral.Value"/>
-    object ILiteral.Value { get; set; } = null!;
+    public string Value => (string)((ILiteral)this).Value;
 
     #endregion
 
@@ -33,7 +22,7 @@ public class StringLiteral : ILiteral, IEquatable<StringLiteral>
     /// <param name="value">The value literal.</param>
     public StringLiteral(string value)
     {
-        Value = value;
+        ((ILiteral)this).Value = value;
     }
 
     #endregion
@@ -44,7 +33,8 @@ public class StringLiteral : ILiteral, IEquatable<StringLiteral>
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
+        if (obj.GetType() != GetType()) return false;
+
         return Equals((StringLiteral)obj);
     }
 
@@ -53,10 +43,12 @@ public class StringLiteral : ILiteral, IEquatable<StringLiteral>
         return HashCode.Combine(Value, Start, End, Source);
     }
 
-    public override string ToString()
-    {
-        return Value;
-    }
+    #endregion
+
+    #region ILiteral Implementation
+
+    /// <inheritdoc cref="ILiteral.Value"/>
+    object ILiteral.Value { get; set; } = null!;
 
     #endregion
 
@@ -69,7 +61,7 @@ public class StringLiteral : ILiteral, IEquatable<StringLiteral>
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }
@@ -88,6 +80,7 @@ public class StringLiteral : ILiteral, IEquatable<StringLiteral>
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
+
         return Value.Equals(other.Value) && Start == other.Start && End == other.End &&
                Source == other.Source;
     }

@@ -114,7 +114,7 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
                     {
                         Kind = symbol.Type switch
                         {
-                            SymbolType.Parameter or SymbolType.Variable => CompletionItemKind.Variable,
+                            SymbolType.Parameter or SymbolType.LocalVariable => CompletionItemKind.Variable,
                             SymbolType.Function => CompletionItemKind.Function,
                             SymbolType.Buffer => CompletionItemKind.Class,
                             SymbolType.Constructor => CompletionItemKind.Constructor,
@@ -140,7 +140,7 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
                         },
                         Detail = symbol.Type switch
                         {
-                            SymbolType.Parameter or SymbolType.Variable => (symbol.Modifiers.First(modifier =>
+                            SymbolType.Parameter or SymbolType.LocalVariable => (symbol.Modifiers.First(modifier =>
                                 modifier is SymbolTypeModifier) as SymbolTypeModifier)!.Name,
                             _ => symbol.Type.ToString()
                         },

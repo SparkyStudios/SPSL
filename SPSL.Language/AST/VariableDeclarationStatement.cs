@@ -31,6 +31,12 @@ public class VariableDeclarationStatement : IStayControlFlowStatement
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="VariableDeclarationStatement"/> class.
+    /// </summary>
+    /// <param name="type">The variable's type.</param>
+    /// <param name="name">The variable's name.</param>
+    /// <param name="initializer">The initial value of the variable.</param>
     public VariableDeclarationStatement(IDataType type, Identifier name, IExpression? initializer = null)
     {
         type.Parent = this;
@@ -55,7 +61,7 @@ public class VariableDeclarationStatement : IStayControlFlowStatement
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }

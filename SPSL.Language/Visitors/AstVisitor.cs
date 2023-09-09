@@ -11,7 +11,7 @@ public class AstVisitor : SPSLBaseVisitor<Ast>
     private Namespace _currentNamespace = new(new());
     private readonly string _fileSource;
 
-    public readonly OrderedSet<string> Imports = new();
+    public readonly OrderedSet<NamespacedReference> Imports = new();
 
     protected override Ast DefaultResult => new();
 
@@ -69,7 +69,7 @@ public class AstVisitor : SPSLBaseVisitor<Ast>
 
     public override Ast VisitUseNamespaceDirective([NotNull] UseNamespaceDirectiveContext context)
     {
-        Imports.Add(context.namespacedTypeName().GetText());
+        Imports.Add(context.namespacedTypeName().ToNamespaceReference(_fileSource));
         return DefaultResult.AddNamespace(_currentNamespace);
     }
 
@@ -117,12 +117,12 @@ public class AstVisitor : SPSLBaseVisitor<Ast>
         if (context.Definition.ExtendedInterfaces != null)
         {
             foreach (var nsd in context.Definition.ExtendedInterfaces.namespacedTypeName())
-                @interface.AddExtendedInterface(nsd.ToNamespaceReference(_fileSource));
+                @interface.Extends(nsd.ToNamespaceReference(_fileSource));
         }
 
         // Register type members
         foreach (FunctionHeadContext member in context.functionHead())
-            @interface.AddFunctionHead(member.ToFunctionHead(_fileSource));
+            @interface.Implements(member.ToFunctionHead(_fileSource));
 
         _currentNamespace.AddChild(@interface);
 

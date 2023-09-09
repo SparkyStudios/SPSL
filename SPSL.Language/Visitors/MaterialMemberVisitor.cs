@@ -39,50 +39,53 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         {
             MaterialParameter materialParam;
 
-            if (param is MaterialValueParameterContext v)
+            switch (param)
             {
-                materialParam = new
-                (
-                    v.Type.Accept(new DataTypeVisitor(_fileSource)),
-                    v.Name.ToIdentifier(_fileSource),
-                    MaterialParameterType.Value
-                )
+                case MaterialValueParameterContext v:
                 {
-                    DefaultValue = v.DefaultValue?.Accept(new ExpressionVisitor(_fileSource)),
-                    Start = v.Start.StartIndex,
-                    End = v.Stop.StopIndex,
-                    Source = _fileSource
-                };
-
-                materialParam.Annotations.AddRange(v.annotation().Select(a => a.ToAnnotation(_fileSource)));
-            }
-            else if (param is MaterialPermutationParameterContext p)
-            {
-                var permutation = p.permutationVariable().ToPermutationVariable(_fileSource);
-
-                materialParam = new
-                (
-                    permutation.Type switch
+                    materialParam = new
+                    (
+                        v.Type.Accept(new DataTypeVisitor(_fileSource)),
+                        v.Name.ToIdentifier(_fileSource),
+                        MaterialParameterType.Value
+                    )
                     {
-                        PermutationVariableType.Bool => new PrimitiveDataType(PrimitiveDataTypeKind.Boolean),
-                        PermutationVariableType.Integer =>
-                            new PrimitiveDataType(PrimitiveDataTypeKind.Integer),
-                        PermutationVariableType.Enum => new UserDefinedDataType(new(permutation.Name)),
-                        _ => throw new ArgumentException("Invalid permutation variable type"),
-                    },
-                    permutation.Name,
-                    MaterialParameterType.Permutation
-                )
+                        DefaultValue = v.DefaultValue?.Accept(new ExpressionVisitor(_fileSource)),
+                        Start = v.Start.StartIndex,
+                        End = v.Stop.StopIndex,
+                        Source = _fileSource
+                    };
+
+                    materialParam.Annotations.AddRange(v.annotation().Select(a => a.ToAnnotation(_fileSource)));
+                    break;
+                }
+                case MaterialPermutationParameterContext p:
                 {
-                    DefaultValue = permutation.Initializer,
-                    Start = p.Start.StartIndex,
-                    End = p.Stop.StopIndex,
-                    Source = _fileSource
-                };
-            }
-            else
-            {
-                throw new NotImplementedException();
+                    var permutation = p.permutationVariable().ToPermutationVariable(_fileSource);
+
+                    materialParam = new
+                    (
+                        permutation.Type switch
+                        {
+                            PermutationVariableType.Bool => new PrimitiveDataType(PrimitiveDataTypeKind.Boolean),
+                            PermutationVariableType.Integer =>
+                                new PrimitiveDataType(PrimitiveDataTypeKind.Integer),
+                            PermutationVariableType.Enum => new UserDefinedDataType(new(permutation.Name)),
+                            _ => throw new ArgumentException("Invalid permutation variable type"),
+                        },
+                        permutation.Name,
+                        MaterialParameterType.Permutation
+                    )
+                    {
+                        DefaultValue = permutation.Initializer,
+                        Start = p.Start.StartIndex,
+                        End = p.Stop.StopIndex,
+                        Source = _fileSource
+                    };
+                    break;
+                }
+                default:
+                    throw new NotImplementedException();
             }
 
             materialParams.Children.Add(materialParam);
@@ -144,7 +147,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         return new MaterialShader(context.Definition.Stage.ToIdentifier(_fileSource))
         {
             ReferencedShader = context.Definition.Name.ToNamespaceReference(_fileSource),
-            Stage = context.Definition.Stage.Text.ToShaderStage(),
+            Stage = context.Definition.Stage.ToShaderStage(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource
@@ -159,7 +162,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         )
         {
             ReferencedShader = context.Definition.Name.ToNamespaceReference(_fileSource),
-            Stage = context.Definition.Stage.Text.ToShaderStage(),
+            Stage = context.Definition.Stage.ToShaderStage(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = _fileSource

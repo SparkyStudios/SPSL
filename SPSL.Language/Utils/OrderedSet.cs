@@ -1,8 +1,9 @@
 ﻿using System.Collections;
+using SPSL.Language.AST;
 
 namespace SPSL.Language.Utils;
 
-public sealed class OrderedSet<T> : ICollection<T> where T : notnull
+public sealed class OrderedSet<T> : ICollection<T>, IEquatable<OrderedSet<T>> where T : INode
 {
     private readonly IDictionary<T, LinkedListNode<T>?> _dictionary;
     private readonly LinkedList<T> _linkedList;
@@ -26,6 +27,17 @@ public sealed class OrderedSet<T> : ICollection<T> where T : notnull
 
     public bool IsReadOnly => _dictionary.IsReadOnly;
 
+    public override int GetHashCode()
+    {
+        return _linkedList.Aggregate(0, (current, item) => HashCode.Combine(current, item.GetHashCode()));
+    }
+
+    public int GetSemanticHashCode<TNode>() where TNode : T, ISemanticallyEquatable<T>
+    {
+        return _linkedList.Aggregate(0,
+            (current, item) => HashCode.Combine(current, ((TNode)item).GetSemanticHashCode()));
+    }
+
     void ICollection<T>.Add(T item)
     {
         Add(item);
@@ -33,14 +45,14 @@ public sealed class OrderedSet<T> : ICollection<T> where T : notnull
 
     public void AddRange(IEnumerable<T> items)
     {
-        foreach (var item in items)
+        foreach (T item in items)
             Add(item);
     }
 
     public bool Add(T item)
     {
         if (_dictionary.ContainsKey(item)) return false;
-        LinkedListNode<T>? node = _linkedList.AddLast(item);
+        var node = _linkedList.AddLast(item);
         _dictionary.Add(item, node);
         return true;
     }
@@ -48,7 +60,7 @@ public sealed class OrderedSet<T> : ICollection<T> where T : notnull
     public bool Prepend(T item)
     {
         if (_dictionary.ContainsKey(item)) return false;
-        LinkedListNode<T>? node = _linkedList.AddFirst(item);
+        var node = _linkedList.AddFirst(item);
         _dictionary.Add(item, node);
         return true;
     }
@@ -66,7 +78,7 @@ public sealed class OrderedSet<T> : ICollection<T> where T : notnull
 
     public bool Remove(T item)
     {
-        var found = _dictionary.TryGetValue(item, out LinkedListNode<T>? node);
+        bool found = _dictionary.TryGetValue(item, out LinkedListNode<T>? node);
         if (!found || node == null) return false;
         _dictionary.Remove(item);
         _linkedList.Remove(node);
@@ -98,13 +110,30 @@ public sealed class OrderedSet<T> : ICollection<T> where T : notnull
         get
         {
             uint v = 0;
-            foreach (var item in _linkedList)
+            foreach (T item in _linkedList)
             {
                 if (v == i) return item;
                 v++;
             }
 
-            throw new ArgumentOutOfRangeException(nameof(i));
+            throw new ArgumentOutOfRangeException(nameof(i), i, "Invalid index.");
         }
+    }
+
+    public bool Equals(OrderedSet<T>? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        for (int i = _linkedList.Count - 1; i >= 0; i--)
+            if (!_linkedList.ElementAt(i).Equals(other._linkedList.ElementAt(i)))
+                return false;
+
+        return true;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return ReferenceEquals(this, obj) || obj is OrderedSet<T> other && Equals(other);
     }
 }

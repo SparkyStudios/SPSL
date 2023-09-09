@@ -10,7 +10,7 @@ public class PropertyMemberReferenceExpression : IAssignableExpression
     /// <summary>
     /// The targeted object in which the member is accessed.
     /// </summary>
-    public Identifier Target { get; }
+    public ContextAccessExpression Target { get; }
 
     /// <summary>
     /// The field name in the target object.
@@ -26,11 +26,11 @@ public class PropertyMemberReferenceExpression : IAssignableExpression
     /// </summary>
     /// <param name="target">The target object.</param>
     /// <param name="member">The member to access.</param>
-    public PropertyMemberReferenceExpression(Identifier target, Identifier member)
+    public PropertyMemberReferenceExpression(ContextAccessExpression target, Identifier member)
     {
         target.Parent = this;
         member.Parent = this;
-        
+
         Target = target;
         Member = member;
     }
@@ -46,10 +46,10 @@ public class PropertyMemberReferenceExpression : IAssignableExpression
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

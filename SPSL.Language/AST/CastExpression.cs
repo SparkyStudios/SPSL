@@ -30,7 +30,7 @@ public class CastExpression : IExpression
     {
         type.Parent = this;
         expression.Parent = this;
-        
+
         Type = type;
         Expression = expression;
     }
@@ -46,10 +46,10 @@ public class CastExpression : IExpression
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

@@ -8,7 +8,8 @@ public enum SymbolType : byte
     Namespace,
     Permutation,
     Scope,
-    Variable,
+    LocalVariable,
+    GlobalVariable,
     Property,
     Function,
     Constructor,
@@ -22,4 +23,5 @@ public enum SymbolType : byte
     Buffer,
     Identifier,
     Constant,
+    Keyword
 }

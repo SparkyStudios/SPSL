@@ -1,9 +1,9 @@
 using System.Text;
 using Antlr4.StringTemplate;
-using SPSL.Language;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
 using SPSL.Translation.Common;
+using static SPSL.Language.SPSLLexer;
 using Stream = SPSL.Language.AST.Stream;
 using Type = SPSL.Language.AST.Type;
 
@@ -18,13 +18,45 @@ public class TranslatorConfiguration
 
 public class Translator
 {
-    private static string TranslateOp(string op)
+    private static string TranslateOp(Op op)
     {
         return op switch
         {
-            "and" => "&&",
-            "or" => "||",
-            _ => op
+            Op.Unknown => "/* <spsl-error>Unknown operator</spsl-error> */",
+            Op.Pipe => "|",
+            Op.Ampersand => "&",
+            Op.Plus => "+",
+            Op.Minus => "-",
+            Op.Star => "*",
+            Op.Exponent => "**",
+            Op.Modulo => "%",
+            Op.Div => "/",
+            Op.Assignment => "=",
+            Op.Equals => "==",
+            Op.NotEquals => "!=",
+            Op.LessThan => "<",
+            Op.GreaterThan => ">",
+            Op.LessThanOrEqual => "<=",
+            Op.GreaterThanOrEqual => ">=",
+            Op.Increment => "++",
+            Op.Decrement => "--",
+            Op.PlusAssignment => "+=",
+            Op.MinusAssignment => "-=",
+            Op.AsteriskAssignment => "*=",
+            Op.DivideAssignment => "/=",
+            Op.ModuloAssignment => "%=",
+            Op.BitwiseOrAssignment => "|=",
+            Op.BitwiseAndAssignment => "&=",
+            Op.ExponentAssignment => "^=",
+            Op.LeftShiftAssignment => "<<=",
+            Op.RightShiftAssignment => ">>=",
+            Op.Or => "||",
+            Op.And => "&&",
+            Op.Not => "!",
+            Op.Xor => "^^",
+            Op.LeftShift => "<<",
+            Op.RightShift => ">>",
+            _ => throw new ArgumentOutOfRangeException(nameof(op), op, "Unknown operator,")
         };
     }
 
@@ -124,7 +156,7 @@ public class Translator
     public Stream ShaderStream => _shaderStream;
 
     private string TranslateShaderFragment(NamespacedReference name, Namespace ns, Ast ast,
-        IDictionary<string, uint>? conflicts, IEnumerable<IBlockChild>? overriddenFunctions)
+        IDictionary<int, uint>? conflicts, IEnumerable<IBlockChild>? overriddenFunctions)
     {
         StringBuilder output = new();
 
@@ -299,7 +331,7 @@ public class Translator
         Template template = _hlslTemplate.GetInstanceOf("const_global_var");
         template.Add("isStatic", global.IsStatic);
         template.Add("type", Translate(global.Type, ns, ast));
-        template.Add("name", global.Name);
+        template.Add("name", Translate(global.Name, ns, ast));
         template.Add("initializer", Translate(global.Initializer, ns, ast));
 
         output.Append(template.Render());
@@ -316,7 +348,7 @@ public class Translator
             case TypeKind.Struct:
             {
                 Template template = _hlslTemplate.GetInstanceOf("struct");
-                template.Add("name", type.Name);
+                template.Add("name", Translate(type.Name, ns, ast));
                 foreach (TypeProperty property in type.Properties)
                     template.Add("properties", new Prop(Translate(property.Type, ns, ast), property.Name.Value));
                 foreach (TypeFunction function in type.Functions)
@@ -360,13 +392,13 @@ public class Translator
     }
 
     public string Translate(ShaderFragment fragment, Namespace ns, Ast ast,
-        IEnumerable<IBlockChild>? shouldOverride = null, IDictionary<string, uint>? conflicts = null)
+        IEnumerable<IBlockChild>? shouldOverride = null, IDictionary<int, uint>? conflicts = null)
     {
         StringBuilder output = new();
         HashSet<IBlockChild> overriddenChildren = new();
 
         foreach (IBlockChild child in fragment.Children)
-            if (child is ShaderFunction { IsOverride: true } or GlobalVariable)
+            if (child is ShaderFunction { IsOverride: true } /* or GlobalVariable*/)
                 overriddenChildren.Add(child);
 
         if (fragment.ExtendedShaderFragment != NamespacedReference.Null)
@@ -375,7 +407,7 @@ public class Translator
 
         if (fragment.ImportedShaderFragments.Count > 0)
         {
-            Dictionary<string, uint> fragmentChildren = new();
+            IDictionary<int, uint> fragmentChildren = conflicts ?? new Dictionary<int, uint>();
 
             foreach (NamespacedReference import in fragment.ImportedShaderFragments)
             {
@@ -388,17 +420,17 @@ public class Translator
 
                 foreach (IBlockChild child in shaderFragment.Children)
                 {
-                    string name = child.Name.Value;
+                    int code = child.Name.GetSemanticHashCode();
 
                     if (child is ShaderFunction function)
                     {
-                        name = Translate(function.Function.Head, ns, ast);
+                        code = function.Function.Head.GetSemanticHashCode();
                     }
 
-                    if (fragmentChildren.ContainsKey(name))
-                        fragmentChildren[name] += 1;
+                    if (fragmentChildren.ContainsKey(code))
+                        fragmentChildren[code] += 1;
                     else
-                        fragmentChildren.Add(name, 1);
+                        fragmentChildren.Add(code, 1);
                 }
             }
 
@@ -407,7 +439,7 @@ public class Translator
                 if (import == NamespacedReference.Null)
                     continue;
 
-                output.Append(TranslateShaderFragment(import, ns, ast, fragmentChildren, null));
+                output.Append(TranslateShaderFragment(import, ns, ast, fragmentChildren, overriddenChildren));
             }
         }
 
@@ -426,10 +458,13 @@ public class Translator
             Identifier name = permutation.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is PermutationVariable permutationVariable &&
-                    permutationVariable.Name.Value.Equals(permutation.Name.Value)) != null ||
-                (conflicts is not null && conflicts.ContainsKey(name.Value) && conflicts[name.Value] > 1))
+                    permutationVariable.Name.SemanticallyEquals(permutation.Name)) != null ||
+                (conflicts is not null && conflicts.TryGetValue(name.GetSemanticHashCode(), out uint value) &&
+                 value > 1))
                 permutation.Name = new()
-                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{permutation.Name.Value}" };
+                {
+                    Value = $"{Translate(fragment.GetReference(), ns, ast)}__{Translate(permutation.Name, ns, ast)}"
+                };
 
             output.Append(Translate(permutation, ns, ast));
         }
@@ -440,10 +475,12 @@ public class Translator
 
             Identifier name = variable.Name;
             if (blockChildren?.SingleOrDefault(m =>
-                    m is GlobalVariable globalVariable && globalVariable.Name.Value.Equals(variable.Name.Value)) !=
+                    m is GlobalVariable globalVariable && globalVariable.Name.SemanticallyEquals(variable.Name)) !=
                 null ||
-                (conflicts is not null && conflicts.ContainsKey(name.Value) && conflicts[name.Value] > 1))
-                variable.Name = new() { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{variable.Name}" };
+                (conflicts is not null && conflicts.TryGetValue(name.GetSemanticHashCode(), out uint value) &&
+                 value > 1))
+                variable.Name = new()
+                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}__{Translate(variable.Name, ns, ast)}" };
 
             output.Append(Translate(variable, ns, ast));
         }
@@ -455,9 +492,11 @@ public class Translator
             Identifier name = type.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is Type shaderType &&
-                    shaderType.Name.Value.Equals(type.Name.Value)) != null ||
-                (conflicts is not null && conflicts.ContainsKey(name.Value) && conflicts[name.Value] > 1))
-                type.Name = new() { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{type.Name}" };
+                    shaderType.Name.SemanticallyEquals(type.Name)) != null ||
+                (conflicts is not null && conflicts.TryGetValue(name.GetSemanticHashCode(), out uint value) &&
+                 value > 1))
+                type.Name = new()
+                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}__{Translate(type.Name, ns, ast)}" };
 
             output.Append(Translate(type, ns, ast));
         }
@@ -469,9 +508,11 @@ public class Translator
             Identifier name = buffer.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is StructuredBuffer shaderBuffer &&
-                    shaderBuffer.Name.Value.Equals(buffer.Name.Value)) != null ||
-                (conflicts is not null && conflicts.ContainsKey(name.Value) && conflicts[name.Value] > 1))
-                buffer.Name = new() { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{buffer.Name}" };
+                    shaderBuffer.Name.SemanticallyEquals(buffer.Name)) != null ||
+                (conflicts is not null && conflicts.TryGetValue(name.GetSemanticHashCode(), out uint value) &&
+                 value > 1))
+                buffer.Name = new()
+                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}__{Translate(buffer.Name, ns, ast)}" };
 
             output.Append(Translate(buffer, ns, ast));
         }
@@ -483,9 +524,11 @@ public class Translator
             Identifier name = buffer.Name;
             if (blockChildren?.SingleOrDefault(m =>
                     m is TypedBuffer shaderBuffer &&
-                    shaderBuffer.Name.Value.Equals(buffer.Name.Value)) != null ||
-                (conflicts is not null && conflicts.ContainsKey(name.Value) && conflicts[name.Value] > 1))
-                buffer.Name = new() { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{buffer.Name}" };
+                    shaderBuffer.Name.SemanticallyEquals(buffer.Name)) != null ||
+                (conflicts is not null && conflicts.TryGetValue(name.GetSemanticHashCode(), out uint value) &&
+                 value > 1))
+                buffer.Name = new()
+                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}__{Translate(buffer.Name, ns, ast)}" };
 
             output.Append(Translate(buffer, ns, ast));
         }
@@ -494,13 +537,16 @@ public class Translator
         {
             output.AppendLine();
 
-            string name = Translate(function.Function.Head, ns, ast);
+            int code = function.Function.Head.GetSemanticHashCode();
             if (blockChildren?.SingleOrDefault(m =>
                     m is ShaderFunction shaderFunction &&
-                    shaderFunction.Function.Head.Equals(function.Function.Head)) != null ||
-                (conflicts is not null && conflicts.ContainsKey(name) && conflicts[name] > 1))
+                    shaderFunction.Function.Head.SemanticallyEquals(function.Function.Head)) != null ||
+                (conflicts is not null && conflicts.TryGetValue(code, out uint value) && value > 1))
                 function.Function.Head.Name = new()
-                    { Value = $"{Translate(fragment.GetReference(), ns, ast)}_{function.Function.Head.Name}" };
+                {
+                    Value =
+                        $"{Translate(fragment.GetReference(), ns, ast)}__{Translate(function.Function.Head.Name, ns, ast)}"
+                };
 
             output.Append(Translate(function, ns, ast));
         }
@@ -569,7 +615,22 @@ public class Translator
             UpdateScope();
             if (shader.ImportedShaderFragments.Count > 0)
             {
-                Dictionary<string, uint> fragmentChildren = new();
+                Dictionary<int, uint> fragmentChildren = new();
+
+                foreach (IBlockChild child in shader.Children)
+                {
+                    int code = child.Name.GetSemanticHashCode();
+
+                    if (child is ShaderFunction function)
+                    {
+                        code = function.Function.Head.GetSemanticHashCode();
+                    }
+
+                    if (fragmentChildren.ContainsKey(code))
+                        fragmentChildren[code] += 1;
+                    else
+                        fragmentChildren.Add(code, 1);
+                }
 
                 foreach (NamespacedReference fragment in shader.ImportedShaderFragments)
                 {
@@ -581,26 +642,26 @@ public class Translator
 
                     foreach (IBlockChild child in shaderFragment.Children)
                     {
-                        string name = child.Name.Value;
+                        int code = child.Name.GetSemanticHashCode();
 
                         if (child is ShaderFunction function)
                         {
-                            name = Translate(function.Function.Head, ns, ast);
+                            code = function.Function.Head.GetSemanticHashCode();
                         }
 
-                        if (fragmentChildren.ContainsKey(name))
-                            fragmentChildren[name] += 1;
+                        if (fragmentChildren.ContainsKey(code))
+                            fragmentChildren[code] += 1;
                         else
-                            fragmentChildren.Add(name, 1);
+                            fragmentChildren.Add(code, 1);
                     }
                 }
 
-                foreach (NamespacedReference import in shader.ImportedShaderFragments)
+                foreach (NamespacedReference fragment in shader.ImportedShaderFragments)
                 {
-                    if (import == NamespacedReference.Null)
+                    if (fragment == NamespacedReference.Null)
                         continue;
 
-                    output.Append(TranslateShaderFragment(import, ns, ast, fragmentChildren, null));
+                    output.Append(TranslateShaderFragment(fragment, ns, ast, fragmentChildren, overriddenChildren));
                 }
             }
         }
@@ -642,9 +703,13 @@ public class Translator
                     continue;
 
                 if (blockChildren?.SingleOrDefault(m =>
-                        m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
+                        m is ShaderFunction sf && sf.Function.Head.SemanticallyEquals(shaderFunction.Function.Head)) !=
+                    null)
                     shaderFunction.Function.Head.Name = new()
-                        { Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}" };
+                    {
+                        Value =
+                            $"{Translate(shader.GetReference(), ns, ast)}__{Translate(shaderFunction.Function.Head.Name, ns, ast)}"
+                    };
 
                 Annotation? entry = shaderFunction.Annotations.SingleOrDefault(annotation => annotation.IsEntry);
 
@@ -655,11 +720,11 @@ public class Translator
                     {
                         // -- Ensure that we have all our compute shader keywords as parameters
 
-                        if (shaderFunction.Function.Head.Signature.Parameters.Any(p =>
+                        if (shaderFunction.Function.Head.Signature.Arguments.Any(p =>
                                 p.Name.Value == "sp_GroupThreadId") ==
                             false)
                         {
-                            shaderFunction.Function.Head.Signature.Parameters.Add
+                            shaderFunction.Function.Head.Signature.Arguments.Add
                             (
                                 new
                                 (
@@ -670,10 +735,10 @@ public class Translator
                             );
                         }
 
-                        if (shaderFunction.Function.Head.Signature.Parameters.Any(p => p.Name.Value == "sp_GroupId") ==
+                        if (shaderFunction.Function.Head.Signature.Arguments.Any(p => p.Name.Value == "sp_GroupId") ==
                             false)
                         {
-                            shaderFunction.Function.Head.Signature.Parameters.Add
+                            shaderFunction.Function.Head.Signature.Arguments.Add
                             (
                                 new
                                 (
@@ -684,11 +749,11 @@ public class Translator
                             );
                         }
 
-                        if (shaderFunction.Function.Head.Signature.Parameters.Any(
+                        if (shaderFunction.Function.Head.Signature.Arguments.Any(
                                 p => p.Name.Value == "sp_DispatchThreadId") ==
                             false)
                         {
-                            shaderFunction.Function.Head.Signature.Parameters.Add
+                            shaderFunction.Function.Head.Signature.Arguments.Add
                             (
                                 new
                                 (
@@ -699,11 +764,11 @@ public class Translator
                             );
                         }
 
-                        if (shaderFunction.Function.Head.Signature.Parameters.Any(p =>
+                        if (shaderFunction.Function.Head.Signature.Arguments.Any(p =>
                                 p.Name.Value == "sp_GroupIndex") ==
                             false)
                         {
-                            shaderFunction.Function.Head.Signature.Parameters.Add
+                            shaderFunction.Function.Head.Signature.Arguments.Add
                             (
                                 new
                                 (
@@ -736,8 +801,8 @@ public class Translator
                         );
 
                         // Vertex shader entry point always takes as arguments a single InputStream struct
-                        shaderFunction.Function.Head.Signature.Parameters.Clear();
-                        shaderFunction.Function.Head.Signature.Parameters.Add
+                        shaderFunction.Function.Head.Signature.Arguments.Clear();
+                        shaderFunction.Function.Head.Signature.Arguments.Add
                         (
                             new
                             (
@@ -769,8 +834,8 @@ public class Translator
                         );
 
                         // Pixel shader entry point always takes as arguments a single TransientStream struct
-                        shaderFunction.Function.Head.Signature.Parameters.Clear();
-                        shaderFunction.Function.Head.Signature.Parameters.Add
+                        shaderFunction.Function.Head.Signature.Arguments.Clear();
+                        shaderFunction.Function.Head.Signature.Arguments.Add
                         (
                             new
                             (
@@ -813,10 +878,12 @@ public class Translator
             {
                 if (child is ShaderFunction shaderFunction)
                     if (blockChildren?.SingleOrDefault(m =>
-                            m is ShaderFunction sf && sf.Function.Head.Equals(shaderFunction.Function.Head)) != null)
+                            m is ShaderFunction sf &&
+                            sf.Function.Head.SemanticallyEquals(shaderFunction.Function.Head)) != null)
                         shaderFunction.Function.Head.Name = new()
                         {
-                            Value = $"{Translate(shader.GetReference(), ns, ast)}_{shaderFunction.Function.Head.Name}"
+                            Value =
+                                $"{Translate(shader.GetReference(), ns, ast)}__{Translate(shaderFunction.Function.Head.Name, ns, ast)}"
                         };
 
                 string code = child switch
@@ -898,7 +965,7 @@ public class Translator
             return output.ToString();
         }
 
-        template.Add("name", buffer.Name);
+        template.Add("name", Translate(buffer.Name, ns, ast));
 
         string? binding = null;
         string? set = null;
@@ -991,7 +1058,7 @@ public class Translator
                 break;
         }
 
-        template.Add("name", buffer.Name);
+        template.Add("name", Translate(buffer.Name, ns, ast));
         template.Add("type", Translate(buffer.DataType, ns, ast));
 
         string? binding = null;
@@ -1141,8 +1208,8 @@ public class Translator
 
         Template template = _hlslTemplate.GetInstanceOf("func_head");
         template.Add("type", Translate(head.ReturnType, ns, ast));
-        template.Add("name", head.Name);
-        foreach (FunctionArgument arg in head.Signature.Parameters)
+        template.Add("name", Translate(head.Name, ns, ast));
+        foreach (FunctionArgument arg in head.Signature.Arguments)
         {
             template.Add("args", new Arg(arg.Flow switch
             {
@@ -1395,7 +1462,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append(basicExpression.Identifier);
+        output.Append(basicExpression.Identifier.Value);
 
         return output.ToString();
     }
@@ -1407,7 +1474,7 @@ public class Translator
         Template template;
 
         // Use pow function instead
-        if (binaryExpression.Operator == "^")
+        if (binaryExpression.Operator == Op.Exponent)
         {
             template = _hlslTemplate.GetInstanceOf("invocation");
             template.Add("function", "pow");
@@ -1476,24 +1543,25 @@ public class Translator
 
         Template template;
 
-        switch (methodMemberReferenceExpression.Target.Value)
+        switch (methodMemberReferenceExpression.Target.Target.Value)
         {
             // Calls to this are ignored
             case "this":
                 template = _hlslTemplate.GetInstanceOf("invocation");
-                template.Add("function", methodMemberReferenceExpression.Member.Name);
+                template.Add("function", Translate(methodMemberReferenceExpression.Member.Name, ns, ast));
                 break;
 
             // Calls to base are renamed
             case "base":
                 template = _hlslTemplate.GetInstanceOf("invocation");
-                template.Add("function", $"{_currentBase}_{methodMemberReferenceExpression.Member.Name}");
+                template.Add("function",
+                    $"{_currentBase}__{Translate(methodMemberReferenceExpression.Member.Name, ns, ast)}");
                 break;
 
             default:
                 template = _hlslTemplate.GetInstanceOf("member_invocation");
                 template.Add("owner", methodMemberReferenceExpression.Target);
-                template.Add("function", methodMemberReferenceExpression.Member.Name);
+                template.Add("function", Translate(methodMemberReferenceExpression.Member.Name, ns, ast));
                 break;
         }
 
@@ -1543,7 +1611,7 @@ public class Translator
     {
         StringBuilder output = new();
 
-        switch (propertyMemberReferenceExpression.Target.Value)
+        switch (propertyMemberReferenceExpression.Target.Target.Value)
         {
             // Calls to this are ignored
             case "this":
@@ -1552,7 +1620,7 @@ public class Translator
 
             // Calls to base are renamed
             case "base":
-                output.Append($"{_currentBase}_{propertyMemberReferenceExpression.Member}");
+                output.Append($"{_currentBase}__{propertyMemberReferenceExpression.Member}");
                 break;
 
             default:
@@ -1819,91 +1887,91 @@ public class Translator
 
         var name = $"'{reference.Name}'";
 
-        if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2B))
+        if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR2B))
             output.Append("bool2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR2F))
             output.Append("float2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR2D))
             output.Append("double2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2I))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR2I))
             output.Append("int2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR2UI))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR2UI))
             output.Append("uint2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3B))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR3B))
             output.Append("bool3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR3F))
             output.Append("float3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR3D))
             output.Append("double3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3I))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR3I))
             output.Append("int3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR3UI))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR3UI))
             output.Append("uint3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4B))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR4B))
             output.Append("bool4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR4F))
             output.Append("float4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR4D))
             output.Append("double4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4I))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR4I))
             output.Append("int4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_VECTOR4UI))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_VECTOR4UI))
             output.Append("uint4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX2F))
             output.Append("float2x2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX2D))
             output.Append("double2x2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX3F))
             output.Append("float3x3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX3D))
             output.Append("double3x3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX4F))
             output.Append("float4x4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX4D))
             output.Append("double4x4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2X3F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX2X3F))
             output.Append("float2x3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2X3D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX2X3D))
             output.Append("double2x3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2X4F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX2X4F))
             output.Append("float2x4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX2X4D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX2X4D))
             output.Append("double2x4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3X2F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX3X2F))
             output.Append("float3x2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3X2D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX3X2D))
             output.Append("double3x2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3X4F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX3X4F))
             output.Append("float3x4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX3X4D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX3X4D))
             output.Append("double3x4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4X2F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX4X2F))
             output.Append("float4x2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4X2D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX4X2D))
             output.Append("double4x2");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4X3F))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX4X3F))
             output.Append("float4x3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_MATRIX4X3D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_MATRIX4X3D))
             output.Append("double4x3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_COLOR3))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_COLOR3))
             output.Append("float3");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_COLOR4))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_COLOR4))
             output.Append("float4");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_SAMPLER))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_SAMPLER))
             output.Append("SamplerState");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_TEXTURE1D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_TEXTURE1D))
             output.Append("Texture1D");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_TEXTURE2D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_TEXTURE2D))
             output.Append("Texture2D");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_TEXTURE1DARRAY))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_TEXTURE1DARRAY))
             output.Append("Texture1DArray");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_TEXTURE2DARRAY))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_TEXTURE2DARRAY))
             output.Append("Texture2DArray");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_TEXTURE3D))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_TEXTURE3D))
             output.Append("Texture3D");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_CUBEMAP))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_CUBEMAP))
             output.Append("TextureCube");
-        else if (name == SPSLLexer.DefaultVocabulary.GetLiteralName(SPSLLexer.TYPE_CUBEMAPARRAY))
+        else if (name == DefaultVocabulary.GetLiteralName(TYPE_CUBEMAPARRAY))
             output.Append("TextureCubeArray");
         else
         {

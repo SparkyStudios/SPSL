@@ -27,11 +27,8 @@ public class StatementCollection : IStatement
     }
 
     public StatementCollection(params IStatement[] statements)
+        : this((IEnumerable<IStatement>)statements)
     {
-        Statements = new(statements);
-
-        foreach (IStatement statement in Statements)
-            statement.Parent = this;
     }
 
     #endregion
@@ -45,10 +42,10 @@ public class StatementCollection : IStatement
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

@@ -1,9 +1,9 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represents a <c>discard</c> statement.
+/// Invalid expression. An expression is marked as invalid if it has not been parsed correctly.
 /// </summary>
-public class DiscardStatement : ILeaveControlFlowStatement
+public class InvalidExpression : IExpression
 {
     #region INode Implementation
 

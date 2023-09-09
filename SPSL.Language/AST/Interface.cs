@@ -1,46 +1,62 @@
 namespace SPSL.Language.AST;
 
 /// <summary>
-/// Represent an SPSL shader interface.
+/// Represents an SPSL shader interface.
 /// </summary>
 public class Interface : INamespaceChild
 {
     #region Properties
 
+    /// <summary>
+    /// The list of interfaces that this interface extends.
+    /// </summary>
     public HashSet<NamespacedReference> ExtendedInterfaces { get; }
 
-    public HashSet<FunctionHead> FunctionHeads { get; }
+    /// <summary>
+    /// The list of methods declared in this interface.
+    /// </summary>
+    public HashSet<FunctionHead> Methods { get; }
 
     #endregion
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Interface" /> class.
+    /// </summary>
+    /// <param name="name">The name of the interface.</param>
     public Interface(Identifier name)
     {
         name.Parent = this;
 
         Name = name;
         ExtendedInterfaces = new();
-        FunctionHeads = new();
+        Methods = new();
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Interface" /> class.
+    /// </summary>
+    /// <param name="name">The name of the interface.</param>
+    /// <param name="extendedInterfaces">The list of extended interfaces.</param>
+    /// <param name="methods">The list of methods implemented by this interface.</param>
     public Interface
     (
         Identifier name,
         IEnumerable<NamespacedReference> extendedInterfaces,
-        IEnumerable<FunctionHead> functionHeads
+        IEnumerable<FunctionHead> methods
     )
     {
         Name = name;
         ExtendedInterfaces = new(extendedInterfaces);
-        FunctionHeads = new(functionHeads);
+        Methods = new(methods);
 
         Name.Parent = this;
 
         foreach (NamespacedReference extendedInterface in ExtendedInterfaces)
             extendedInterface.Parent = this;
 
-        foreach (FunctionHead functionHead in FunctionHeads)
+        foreach (FunctionHead functionHead in Methods)
             functionHead.Parent = this;
     }
 
@@ -48,16 +64,24 @@ public class Interface : INamespaceChild
 
     #region Methods
 
-    public void AddExtendedInterface(NamespacedReference v)
+    /// <summary>
+    /// Extends the interface with the given <paramref name="name"/>.
+    /// </summary>
+    /// <param name="name">The name of the interface to extend.</param>
+    public void Extends(NamespacedReference name)
     {
-        v.Parent = this;
-        ExtendedInterfaces.Add(v);
+        name.Parent = this;
+        ExtendedInterfaces.Add(name);
     }
 
-    public void AddFunctionHead(FunctionHead functionHead)
+    /// <summary>
+    /// Makes this interface implement the given <paramref name="method"/>.
+    /// </summary>
+    /// <param name="method">The method to implement.</param>
+    public void Implements(FunctionHead method)
     {
-        functionHead.Parent = this;
-        FunctionHeads.Add(functionHead);
+        method.Parent = this;
+        Methods.Add(method);
     }
 
     #endregion
@@ -93,17 +117,17 @@ public class Interface : INamespaceChild
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)
     {
         return ExtendedInterfaces.FirstOrDefault(e => e.ResolveNode(source, offset) is not null)
                    ?.ResolveNode(source, offset) ??
-               FunctionHeads.FirstOrDefault(e => e.ResolveNode(source, offset) is not null)
+               Methods.FirstOrDefault(e => e.ResolveNode(source, offset) is not null)
                    ?.ResolveNode(source, offset) ??
                (Source == source && offset >= Start && offset <= End ? this as INode : null);
     }

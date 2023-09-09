@@ -44,6 +44,7 @@ public class StructuredBuffer : IShaderMember, IAnnotated
 
     #region IAnnotated Implementation
 
+    /// <inheritdoc cref="IAnnotated.Annotations"/>
     public OrderedSet<Annotation> Annotations { get; } = new();
 
     #endregion
@@ -57,7 +58,7 @@ public class StructuredBuffer : IShaderMember, IAnnotated
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }

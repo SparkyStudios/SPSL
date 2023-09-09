@@ -31,17 +31,51 @@ public class UserDefinedDataType : IDataType
 
     #region Overrides
 
-    public override string ToString() => Type.ToString();
+    /// <inheritdoc cref="Object.Equals(object)" />
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+
+        return Equals((UnknownDataType)obj);
+    }
+
+    /// <inheritdoc cref="Object.GetHashCode()" />
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Type, IsArray, ArraySize);
+    }
 
     #endregion
 
     #region IDataType Implementation
 
     /// <inheritdoc cref="IDataType.IsArray"/>
-    public bool IsArray { get; set; }
+    public bool IsArray { get; init; }
 
     /// <inheritdoc cref="IDataType.ArraySize"/>
-    public uint? ArraySize { get; set; } = null;
+    public uint? ArraySize { get; init; } = null;
+
+    #endregion
+
+    #region ISemanticallyEquatable<IDataType> Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
+    public bool SemanticallyEquals(IDataType? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return other is UserDefinedDataType type && Type.Equals(type.Type) && IsArray == other.IsArray &&
+               ArraySize == other.ArraySize;
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(IsArray, ArraySize);
+    }
 
     #endregion
 
@@ -50,8 +84,11 @@ public class UserDefinedDataType : IDataType
     /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
     public bool Equals(IDataType? other)
     {
-        return other is UserDefinedDataType otherType && Type.Equals(otherType.Type) && IsArray == otherType.IsArray &&
-               ArraySize == otherType.ArraySize;
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return other is UserDefinedDataType type && Type.Equals(type.Type) && IsArray == other.IsArray &&
+               ArraySize == other.ArraySize;
     }
 
     #endregion
@@ -65,7 +102,7 @@ public class UserDefinedDataType : IDataType
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }

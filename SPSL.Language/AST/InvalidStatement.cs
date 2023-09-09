@@ -1,5 +1,9 @@
 ﻿namespace SPSL.Language.AST;
 
+/// <summary>
+/// Invalid statement. This is used to indicate that the statement is not valid within the current context.
+/// Or if the statement was not able to be parsed.
+/// </summary>
 public class InvalidStatement : IStatement
 {
     #region INode Implementation
@@ -11,7 +15,7 @@ public class InvalidStatement : IStatement
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }

@@ -2,6 +2,7 @@ using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
+using SPSL.Language.Utils;
 using static SPSL.Language.SPSLParser;
 using Type = SPSL.Language.AST.Type;
 

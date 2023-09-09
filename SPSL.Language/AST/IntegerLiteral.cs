@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace SPSL.Language.AST;
 
 /// <summary>
@@ -12,14 +10,16 @@ public class IntegerLiteral : ILiteral, IEquatable<IntegerLiteral>
     /// <summary>
     /// The value.
     /// </summary>
-    public int Value
-    {
-        get => (int)((ILiteral)this).Value;
-        set => ((ILiteral)this).Value = value;
-    }
+    public int Value => (int)((ILiteral)this).Value;
 
+    /// <summary>
+    /// Whether the value is an octal value.
+    /// </summary>
     public bool IsOctalConstant { get; init; }
 
+    /// <summary>
+    /// Whether the value is an hexadecimal value.
+    /// </summary>
     public bool IsHexConstant { get; init; }
 
     #endregion
@@ -32,7 +32,27 @@ public class IntegerLiteral : ILiteral, IEquatable<IntegerLiteral>
     /// <param name="value">The value literal.</param>
     public IntegerLiteral(int value)
     {
-        Value = value;
+        ((ILiteral)this).Value = value;
+    }
+
+    #endregion
+
+    #region Overrides
+
+    /// <inheritdoc cref="Object.Equals(object)" />
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+
+        return Equals((IntegerLiteral)obj);
+    }
+
+    /// <inheritdoc cref="Object.GetHashCode()" />
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Value, Start, End, Source);
     }
 
     #endregion
@@ -41,38 +61,6 @@ public class IntegerLiteral : ILiteral, IEquatable<IntegerLiteral>
 
     /// <inheritdoc cref="ILiteral.Value"/>
     object ILiteral.Value { get; set; } = null!;
-
-    #endregion
-
-    #region Overrides
-
-    public override bool Equals(object? obj)
-    {
-        if (ReferenceEquals(null, obj)) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
-        return Equals((IntegerLiteral)obj);
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Value, Start, End, Source);
-    }
-
-    public override string ToString()
-    {
-        StringBuilder output = new();
-
-        if (IsHexConstant)
-            output.Append("0x");
-
-        if (IsOctalConstant)
-            output.Append('0');
-
-        output.Append(Convert.ToString(Value, IsHexConstant ? 16 : IsOctalConstant ? 8 : 10));
-
-        return output.ToString();
-    }
 
     #endregion
 
@@ -85,10 +73,10 @@ public class IntegerLiteral : ILiteral, IEquatable<IntegerLiteral>
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)
@@ -98,12 +86,14 @@ public class IntegerLiteral : ILiteral, IEquatable<IntegerLiteral>
 
     #endregion
 
-    #region IEquatable<BoolLiteral> Implementation
+    #region IEquatable<IntegerLiteral> Implementation
 
+    /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
     public bool Equals(IntegerLiteral? other)
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
+
         return Value.Equals(other.Value) && Start == other.Start && End == other.End &&
                Source == other.Source;
     }

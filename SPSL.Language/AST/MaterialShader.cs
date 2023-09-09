@@ -29,6 +29,10 @@ public class MaterialShader : IBlock, IMaterialMember
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MaterialShader"/> class.
+    /// </summary>
+    /// <param name="name">A custom name for the shader.</param>
     public MaterialShader(Identifier name)
     {
         name.Parent = this;
@@ -40,12 +44,20 @@ public class MaterialShader : IBlock, IMaterialMember
 
     #region Methods
 
+    /// <summary>
+    /// Adds the specified <see cref="ShaderFragment"/> to the <see cref="ImportedShaderFragments"/> collection.
+    /// </summary>
+    /// <param name="name">The name of the shader fragment to add.</param>
     public void Uses(NamespacedReference name)
     {
         name.Parent = this;
         ImportedShaderFragments.Add(name);
     }
 
+    /// <summary>
+    /// Adds a collection of <see cref="ShaderFragment"/> to the <see cref="ImportedShaderFragments"/> collection.
+    /// </summary>
+    /// <param name="names">The collection of shader fragments to add.</param>
     public void Uses(IEnumerable<NamespacedReference> names)
     {
         foreach (NamespacedReference name in names)
@@ -56,15 +68,14 @@ public class MaterialShader : IBlock, IMaterialMember
 
     #region IBlock Implementation
 
+    /// <inheritdoc cref="IBlock.Children" />
     public OrderedSet<IBlockChild> Children { get; } = new();
 
     #endregion
 
     #region IBlockChild Implementation
 
-    /// <summary>
-    /// The material shader name.
-    /// </summary>
+    /// <inheritdoc cref="IBlockChild.Name" />
     public Identifier Name { get; set; }
 
     #endregion
@@ -78,10 +89,10 @@ public class MaterialShader : IBlock, IMaterialMember
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

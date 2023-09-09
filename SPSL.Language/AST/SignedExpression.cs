@@ -1,3 +1,5 @@
+using SPSL.Language.Core;
+
 namespace SPSL.Language.AST;
 
 /// <summary>
@@ -13,7 +15,7 @@ public class SignedExpression : IExpression
     /// <value>
     /// + or -.
     /// </value> 
-    public string Sign { get; }
+    public Op Sign { get; }
 
     /// <summary>
     /// The expression.
@@ -27,10 +29,12 @@ public class SignedExpression : IExpression
     /// <summary>
     /// Initializes a new instance of the <see cref="SignedExpression"/> class.
     /// </summary>
-    public SignedExpression(string sign, IExpression expression)
+    /// <param name="sign">The operation sign.</param>
+    /// <param name="expression">The expression.</param>
+    public SignedExpression(Op sign, IExpression expression)
     {
         expression.Parent = this;
-        
+
         Sign = sign;
         Expression = expression;
     }
@@ -46,7 +50,7 @@ public class SignedExpression : IExpression
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }

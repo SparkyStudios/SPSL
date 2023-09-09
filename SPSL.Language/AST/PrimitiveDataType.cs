@@ -1,4 +1,3 @@
-using System.Text;
 using SPSL.Language.Core;
 
 namespace SPSL.Language.AST;
@@ -32,45 +31,20 @@ public class PrimitiveDataType : IDataType
 
     #region Overrides
 
-    public override string ToString()
+    /// <inheritdoc cref="Object.Equals(object?)" />
+    public override bool Equals(object? obj)
     {
-        StringBuilder sb = new();
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
 
-        switch (Type)
-        {
-            case PrimitiveDataTypeKind.Void:
-                sb.Append("void");
-                break;
-            case PrimitiveDataTypeKind.Boolean:
-                sb.Append("bool");
-                break;
-            case PrimitiveDataTypeKind.Integer:
-                sb.Append("int");
-                break;
-            case PrimitiveDataTypeKind.UnsignedInteger:
-                sb.Append("uint");
-                break;
-            case PrimitiveDataTypeKind.Float:
-                sb.Append("float");
-                break;
-            case PrimitiveDataTypeKind.String:
-                sb.Append("string");
-                break;
-            case PrimitiveDataTypeKind.Double:
-                sb.Append("double");
-                break;
-            default: throw new ArgumentOutOfRangeException();
-        }
+        return Equals((PrimitiveDataType)obj);
+    }
 
-        if (IsArray)
-        {
-            sb.Append('[');
-            if (ArraySize != null)
-                sb.Append(ArraySize);
-            sb.Append(']');
-        }
-
-        return sb.ToString();
+    /// <inheritdoc cref="Object.GetHashCode()" />
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Type, Start, End, Source);
     }
 
     #endregion
@@ -94,7 +68,7 @@ public class PrimitiveDataType : IDataType
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }
@@ -107,13 +81,34 @@ public class PrimitiveDataType : IDataType
 
     #endregion
 
+    #region ISemanticallyEquatable<IDataType> Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
+    public bool SemanticallyEquals(IDataType? other)
+    {
+        return other is PrimitiveDataType otherType && Type == otherType.Type && IsArray == otherType.IsArray &&
+               ArraySize == otherType.ArraySize;
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(Type);
+    }
+
+    #endregion
+
     #region IEquatable<IDataType> Implementation
 
     /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
     public bool Equals(IDataType? other)
     {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
         return other is PrimitiveDataType otherType && Type == otherType.Type && IsArray == otherType.IsArray &&
-               ArraySize == otherType.ArraySize;
+               ArraySize == otherType.ArraySize && Source == otherType.Source && Start == otherType.Start &&
+               End == otherType.End;
     }
 
     #endregion

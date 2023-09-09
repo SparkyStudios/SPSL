@@ -39,7 +39,7 @@ public class Ast : IEnumerable<Namespace>
     (
         string p,
         IEnumerable<string> libs,
-        HashSet<string> importedNamespaces
+        HashSet<NamespacedReference> importedNamespaces
     )
     {
         Ast ast = new();
@@ -81,7 +81,7 @@ public class Ast : IEnumerable<Namespace>
                     }
                 }
 
-                importedNamespaces.Add(ns);
+                importedNamespaces.Add(new(ns));
                 ast.Merge(parsed);
             }
         }
@@ -94,7 +94,7 @@ public class Ast : IEnumerable<Namespace>
         ParseFileMode mode,
         string p,
         IEnumerable<string> libs,
-        HashSet<string> importedNamespaces
+        HashSet<NamespacedReference> importedNamespaces
     )
     {
         using var spsl = new StreamReader(p);
@@ -112,9 +112,9 @@ public class Ast : IEnumerable<Namespace>
 
         Ast ast = shaderVisitor.Visit(mode == ParseFileMode.Shader ? parser.shaderFile() : parser.materialFile());
 
-        foreach (string import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
+        foreach (NamespacedReference import in shaderVisitor.Imports.Where(i => !importedNamespaces.Contains(i)))
         {
-            ast.Merge(ParseDirectory(Path.Join(import.Split(Namespace.Separator)), paths, importedNamespaces));
+            ast.Merge(ParseDirectory(Path.Join(import.Name.Split(Namespace.Separator)), paths, importedNamespaces));
             importedNamespaces.Add(import);
         }
 
@@ -123,13 +123,13 @@ public class Ast : IEnumerable<Namespace>
 
     public static Ast FromShaderFile(string path, IEnumerable<string> libraryPaths)
     {
-        HashSet<string> importedNamespaces = new();
+        HashSet<NamespacedReference> importedNamespaces = new();
         return ParseFile(ParseFileMode.Shader, path, libraryPaths, importedNamespaces);
     }
 
     public static Ast FromMaterialFile(string path, IEnumerable<string> libraryPaths)
     {
-        HashSet<string> importedNamespaces = new();
+        HashSet<NamespacedReference> importedNamespaces = new();
         return ParseFile(ParseFileMode.Material, path, libraryPaths, importedNamespaces);
     }
 

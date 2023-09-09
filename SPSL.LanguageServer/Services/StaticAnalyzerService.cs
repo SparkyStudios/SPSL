@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using SPSL.Language.Exceptions;
 using SPSL.Language.Symbols;
 using SPSL.LanguageServer.Core;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
@@ -9,10 +10,12 @@ namespace SPSL.LanguageServer.Services;
 
 public class StaticAnalyzerService : IDiagnosticService
 {
-    private const string SourceName = "spsl";
-    private const string MismatchConstructorNameErrorCode = "0001";
-    private const string ConflictingIdentifierNameErrorCode = "0002";
-    private const string ReassignedConstVariableErrorCode = "0003";
+    public const string SourceName = "spsl";
+    public const string StaticAnalyzerErrorCode = "0000";
+    public const string MismatchConstructorNameErrorCode = "0001";
+    public const string ConflictingIdentifierNameErrorCode = "0002";
+    public const string ReassignedConstVariableErrorCode = "0003";
+    public const string UndefinedVariableUsageErrorCode = "0004";
 
     private readonly ConcurrentDictionary<DocumentUri, List<Diagnostic>> _cache = new();
 
@@ -32,6 +35,47 @@ public class StaticAnalyzerService : IDiagnosticService
         _symbolProviderService = symbolProviderService;
 
         _symbolProviderService.DataUpdated += SymbolProviderServiceOnDataUpdated;
+        _symbolProviderService.OnSemanticException += SymbolProviderServiceOnSemanticException;
+    }
+
+    private void SymbolProviderServiceOnSemanticException(object? sender,
+        ProviderDataUpdatedEventArgs<SemanticException> e)
+    {
+        Document document = _documentManagerService.GetDocument(e.Uri);
+
+        var diagnostics = _cache.GetOrAdd(e.Uri, new List<Diagnostic>());
+        diagnostics.Clear();
+
+        Range range = new()
+        {
+            Start = document.PositionAt(e.Data.Symbol.Start),
+            End = document.PositionAt(e.Data.Symbol.End + 1)
+        };
+
+        diagnostics.Add
+        (
+            new()
+            {
+                Severity = DiagnosticSeverity.Error,
+                Range = range,
+                Message = e.Data.Type switch
+                {
+                    SemanticException.SemanticExceptionType.DuplicateSymbol =>
+                        "A symbol with the same name already exists.",
+                    SemanticException.SemanticExceptionType.SymbolNotDeclared => "The provided symbol is not declared.",
+                    _ => StaticAnalyzerErrorCode
+                },
+                Source = e.Data.Symbol.Source,
+                Code = e.Data.Type switch
+                {
+                    SemanticException.SemanticExceptionType.DuplicateSymbol => ConflictingIdentifierNameErrorCode,
+                    SemanticException.SemanticExceptionType.SymbolNotDeclared => UndefinedVariableUsageErrorCode,
+                    _ => StaticAnalyzerErrorCode
+                }
+            }
+        );
+
+        SetData(e.Uri, diagnostics);
     }
 
     private void SymbolProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<SymbolTable> e)
@@ -44,7 +88,7 @@ public class StaticAnalyzerService : IDiagnosticService
         CheckShaderConstructorNames(document, e.Data, diagnostics);
         CheckConflictingVariables(document, e.Data, diagnostics);
 
-        DataUpdated?.Invoke(document, new(e.Uri, diagnostics));
+        SetData(e.Uri, diagnostics);
     }
 
     private void CheckShaderConstructorNames(Document document, SymbolTable table, ICollection<Diagnostic> diagnostics)
@@ -113,7 +157,8 @@ public class StaticAnalyzerService : IDiagnosticService
                 {
                     Severity = DiagnosticSeverity.Error,
                     Range = range,
-                    Message = symbol.Type switch {
+                    Message = symbol.Type switch
+                    {
                         SymbolType.Function => "A function with this signature already exists.",
                         _ => "Conflicting identifier."
                     },
@@ -124,8 +169,10 @@ public class StaticAnalyzerService : IDiagnosticService
                         (
                             new DiagnosticRelatedInformation
                             {
-                                Message = symbol.Type switch {
-                                    SymbolType.Function => "You cannot declare two function with the exact same signature, on only with different return values.",
+                                Message = symbol.Type switch
+                                {
+                                    SymbolType.Function =>
+                                        "You cannot declare two functions with the exact same signature, or only with different return values.",
                                     _ => "The name given to this identifier is already used."
                                 },
                                 Location = new()
@@ -168,7 +215,7 @@ public class StaticAnalyzerService : IDiagnosticService
 
     public void SetData(DocumentUri uri, Container<Diagnostic> data, bool notify = true)
     {
-        _cache.AddOrUpdate(uri, data.ToList(), (k, v) => data.ToList());
+        _cache.AddOrUpdate(uri, data.ToList(), (_, _) => data.ToList());
 
         if (!notify) return;
         DataUpdated?.Invoke(this, new(uri, data));

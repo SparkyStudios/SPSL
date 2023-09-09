@@ -44,16 +44,8 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     /// <param name="name">The type name.</param>
     /// <param name="members">The collection of type members.</param>
     public Type(TypeKind kind, Identifier name, params TypeProperty[] members)
+        : this(kind, name, (IEnumerable<TypeProperty>)members)
     {
-        name.Parent = this;
-
-        Kind = kind;
-        Name = name;
-        Properties = new(members);
-        Functions = new();
-
-        foreach (TypeProperty member in members)
-            member.Parent = this;
     }
 
     /// <summary>
@@ -103,15 +95,10 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
 
     #region INamespaceChild Implementation
 
-    /// <summary>
-    /// The parent <see cref="Language.AST.Namespace"/> of this one.
-    /// Defaults to <c>null</c> for root namespaces.
-    /// </summary>
+    /// <inheritdoc cref="INamespaceChild.ParentNamespace"/>
     public Namespace? ParentNamespace { get; set; }
 
-    /// <summary>
-    /// The type name.
-    /// </summary>
+    /// <inheritdoc cref="INamespaceChild.Name"/>
     public Identifier Name { get; set; }
 
     #endregion
@@ -132,10 +119,10 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

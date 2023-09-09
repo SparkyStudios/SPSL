@@ -10,18 +10,7 @@ public class UnsignedIntegerLiteral : ILiteral, IEquatable<UnsignedIntegerLitera
     /// <summary>
     /// The value.
     /// </summary>
-    public uint Value
-    {
-        get => (uint)((ILiteral)this).Value;
-        set => ((ILiteral)this).Value = value;
-    }
-
-    #endregion
-
-    #region ILiteral Implementation
-
-    /// <inheritdoc cref="ILiteral.Value"/>
-    object ILiteral.Value { get; set; } = null!;
+    public uint Value => (uint)((ILiteral)this).Value;
 
     #endregion
 
@@ -33,7 +22,7 @@ public class UnsignedIntegerLiteral : ILiteral, IEquatable<UnsignedIntegerLitera
     /// <param name="value">The value literal.</param>
     public UnsignedIntegerLiteral(uint value)
     {
-        Value = value;
+        ((ILiteral)this).Value = value;
     }
 
     #endregion
@@ -44,7 +33,8 @@ public class UnsignedIntegerLiteral : ILiteral, IEquatable<UnsignedIntegerLitera
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
+        if (obj.GetType() != GetType()) return false;
+
         return Equals((UnsignedIntegerLiteral)obj);
     }
 
@@ -53,10 +43,12 @@ public class UnsignedIntegerLiteral : ILiteral, IEquatable<UnsignedIntegerLitera
         return HashCode.Combine(Value, Start, End, Source);
     }
 
-    public override string ToString()
-    {
-        return Value.ToString();
-    }
+    #endregion
+
+    #region ILiteral Implementation
+
+    /// <inheritdoc cref="ILiteral.Value"/>
+    object ILiteral.Value { get; set; } = null!;
 
     #endregion
 

@@ -28,9 +28,9 @@ public class LiteralVisitor : SPSLBaseVisitor<ILiteral?>
 
     public override ILiteral VisitPrimitiveExpression(SPSLParser.PrimitiveExpressionContext context)
     {
-        var isHex = context.Literal.Text.StartsWith("0x", true, CultureInfo.InvariantCulture);
-        var isOctal = !isHex && context.Literal.Text.StartsWith("0", true, CultureInfo.InvariantCulture) &&
-                      context.Literal.Text.Length > 1;
+        bool isHex = context.Literal.Text.StartsWith("0x", true, CultureInfo.InvariantCulture);
+        bool isOctal = !isHex && context.Literal.Text.StartsWith("0", true, CultureInfo.InvariantCulture) &&
+                       context.Literal.Text.Length > 1;
 
         return context.Literal.Type switch
         {

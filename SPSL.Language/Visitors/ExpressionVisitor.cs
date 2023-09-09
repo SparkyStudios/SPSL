@@ -6,7 +6,7 @@ using static SPSL.Language.SPSLParser;
 
 namespace SPSL.Language.Visitors;
 
-public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
+public class ExpressionVisitor : SPSLBaseVisitor<IExpression>
 {
     private readonly string _fileSource;
 
@@ -15,15 +15,18 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         _fileSource = fileSource;
     }
 
-    protected override IExpression? DefaultResult => null;
+    protected override IExpression DefaultResult => new InvalidExpression
+    {
+        Source = _fileSource
+    };
 
-    protected override IExpression? AggregateResult(IExpression? aggregate, IExpression? nextResult)
+    protected override IExpression AggregateResult(IExpression aggregate, IExpression nextResult)
     {
         // No aggregation
         return nextResult;
     }
 
-    protected override bool ShouldVisitNextChild(IRuleNode node, IExpression? currentResult)
+    protected override bool ShouldVisitNextChild(IRuleNode node, IExpression currentResult)
     {
         return node is ExpressionStatementContext or BasicExpressionContext
             or ParenthesizedExpressionContext or PrimitiveExpressionContext
@@ -48,7 +51,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitParenthesizedExpression(ParenthesizedExpressionContext context)
     {
-        return new ParenthesizedExpression(context.Expression.Accept(this)!)
+        return new ParenthesizedExpression(context.Expression.Accept(this))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -86,7 +89,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new PropertyMemberReferenceExpression
         (
-            context.Target.ToIdentifier(_fileSource),
+            (ContextAccessExpression)context.Target.Accept(this),
             context.Member.Identifier.ToIdentifier(_fileSource)
         )
         {
@@ -103,8 +106,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new MethodMemberReferenceExpression
         (
-            context.Target.ToIdentifier(_fileSource),
-            (InvocationExpression)context.Member.Accept(this)!
+            (ContextAccessExpression)context.Target.Accept(this),
+            (InvocationExpression)context.Member.Accept(this)
         )
         {
             Start = context.Start.StartIndex,
@@ -120,8 +123,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new ChainedExpression
         (
-            context.Target.Accept(this)!,
-            context.chainableExpression().Select(member => member.Accept(this)!)
+            context.Target.Accept(this),
+            context.chainableExpression().Select(member => member.Accept(this))
         )
         {
             Start = context.Start.StartIndex,
@@ -137,8 +140,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new ChainedExpression
         (
-            context.Target.Accept(this)!,
-            context.assignableChainableExpression().Select(member => member.Accept(this)!)
+            context.Target.Accept(this),
+            context.assignableChainableExpression().Select(member => member.Accept(this))
         )
         {
             Start = context.Start.StartIndex,
@@ -166,7 +169,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
             {
                 parameters.Add
                 (
-                    new(expression.Accept(this)!)
+                    new(expression.Accept(this))
                     {
                         Start = expression.Start.StartIndex,
                         End = expression.Stop.StopIndex,
@@ -189,7 +192,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
         ParserRuleContext access;
 
         if ((access = context.basicExpression()) != null)
-            return new ArrayAccessExpression(access.Accept(this)!, context.Index.Accept(this)!)
+            return new ArrayAccessExpression(access.Accept(this), context.Index.Accept(this))
             {
                 Start = access.Start.StartIndex,
                 End = access.Stop.StopIndex,
@@ -197,7 +200,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
             };
 
         if ((access = context.memberReferenceExpression()) != null)
-            return new ArrayAccessExpression(access.Accept(this)!, context.Index.Accept(this)!)
+            return new ArrayAccessExpression(access.Accept(this), context.Index.Accept(this))
             {
                 Start = access.Start.StartIndex,
                 End = access.Stop.StopIndex,
@@ -205,7 +208,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
             };
 
         if ((access = context.invocationExpression()) != null)
-            return new ArrayAccessExpression(access.Accept(this)!, context.Index.Accept(this)!)
+            return new ArrayAccessExpression(access.Accept(this), context.Index.Accept(this))
             {
                 Start = access.Start.StartIndex,
                 End = access.Stop.StopIndex,
@@ -217,7 +220,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitNegateOperationExpression(NegateOperationExpressionContext context)
     {
-        return new NegateOperationExpression(context.Expression.Accept(this)!)
+        return new NegateOperationExpression(context.Expression.Accept(this))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -232,8 +235,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new UnaryOperationExpression
         (
-            (IAssignableExpression)context.Expression.Accept(this)!,
-            context.Operator.Text,
+            (IAssignableExpression)context.Expression.Accept(this),
+            context.Operator.ToOp(),
             true
         )
         {
@@ -250,8 +253,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new UnaryOperationExpression
         (
-            (IAssignableExpression)context.Expression.Accept(this)!,
-            context.Operator.Text
+            (IAssignableExpression)context.Expression.Accept(this),
+            context.Operator.ToOp()
         )
         {
             Start = context.Start.StartIndex,
@@ -262,7 +265,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
 
     public override IExpression VisitSignedExpression(SignedExpressionContext context)
     {
-        return new SignedExpression(context.Operator.Text, context.Expression.Accept(this)!)
+        return new SignedExpression(context.Operator.ToOp(), context.Expression.Accept(this))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -274,9 +277,9 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new BinaryOperationExpression
         (
-            context.Left.Accept(this)!,
-            context.Operator.Text,
-            context.Right.Accept(this)!
+            context.Left.Accept(this),
+            context.Operator.ToOp(),
+            context.Right.Accept(this)
         )
         {
             Start = context.Start.StartIndex,
@@ -289,9 +292,9 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new TernaryOperationExpression
         (
-            context.Condition.Accept(this)!,
-            context.WhenTrue.Accept(this)!,
-            context.WhenFalse.Accept(this)!
+            context.Condition.Accept(this),
+            context.WhenTrue.Accept(this),
+            context.WhenFalse.Accept(this)
         )
         {
             Start = context.Start.StartIndex,
@@ -304,9 +307,9 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new AssignmentExpression
         (
-            (IAssignableExpression)context.Left.Accept(this)!,
-            context.Operator.Text,
-            context.Right.Accept(this)!
+            (IAssignableExpression)context.Left.Accept(this),
+            context.Operator.ToOp(),
+            context.Right.Accept(this)
         )
         {
             Start = context.Start.StartIndex,
@@ -319,8 +322,8 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
     {
         return new CastExpression
         (
-            context.Type.Accept(new DataTypeVisitor(_fileSource))!,
-            context.Expression.Accept(this)!
+            context.Type.Accept(new DataTypeVisitor(_fileSource)),
+            context.Expression.Accept(this)
         )
         {
             Start = context.Start.StartIndex,
@@ -338,7 +341,7 @@ public class ExpressionVisitor : SPSLBaseVisitor<IExpression?>
             {
                 parameters.Add
                 (
-                    new(expression.Accept(this)!)
+                    new(expression.Accept(this))
                     {
                         Start = expression.Start.StartIndex,
                         End = expression.Stop.StopIndex,

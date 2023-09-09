@@ -45,15 +45,10 @@ public class PermutationVariable : INamespaceChild, IBlockChild
 
     #region INamespaceChild Implementation
 
-    /// <summary>
-    /// The parent <see cref="Namespace"/> of this one.
-    /// Defaults to <c>null</c> for root namespaces.
-    /// </summary>
+    /// <inheritdoc cref="INamespaceChild.ParentNamespace"/>
     public Namespace? ParentNamespace { get; set; }
 
-    /// <summary>
-    /// The permutation variable name.
-    /// </summary>
+    /// <inheritdoc cref="INamespaceChild.Name"/>
     public Identifier Name { get; set; }
 
     #endregion
@@ -74,7 +69,7 @@ public class PermutationVariable : INamespaceChild, IBlockChild
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }

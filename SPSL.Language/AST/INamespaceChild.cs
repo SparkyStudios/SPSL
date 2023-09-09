@@ -1,5 +1,8 @@
 ﻿namespace SPSL.Language.AST;
 
+/// <summary>
+/// Represents any node that can be a direct child of a <see cref="Namespace"/>.
+/// </summary>
 public interface INamespaceChild : IDocumented, INode
 {
     /// <summary>

@@ -19,6 +19,11 @@ public class WhileStatement : IStatement
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WhileStatement"/> class.
+    /// </summary>
+    /// <param name="condition">The condition.</param>
+    /// <param name="block">The block of code to execute when the condition is evaluated to true.</param>
     public WhileStatement(IExpression condition, StatementBlock block)
     {
         condition.Parent = this;
@@ -39,7 +44,7 @@ public class WhileStatement : IStatement
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     public INode? Parent { get; set; }
 

@@ -10,30 +10,19 @@ public class BoolLiteral : ILiteral, IEquatable<BoolLiteral>
     /// <summary>
     /// The value.
     /// </summary>
-    public bool Value
-    {
-        get => (bool)((ILiteral)this).Value;
-        set => ((ILiteral)this).Value = value;
-    }
-
-    #endregion
-
-    #region ILiteral Implementation
-
-    /// <inheritdoc cref="ILiteral.Value"/>
-    object ILiteral.Value { get; set; } = null!;
+    public bool Value => (bool)((ILiteral)this).Value;
 
     #endregion
 
     #region Constructors
 
     /// <summary>
-    /// Initialize a new instance of <see cref="BoolLiteral"/>.
+    /// Initializes a new instance of the <see cref="BoolLiteral"/> class.
     /// </summary>
-    /// <param name="value">The value literal.</param>
+    /// <param name="value">The value stored by this node.</param>
     public BoolLiteral(bool value)
     {
-        Value = value;
+        ((ILiteral)this).Value = value;
     }
 
     #endregion
@@ -44,7 +33,8 @@ public class BoolLiteral : ILiteral, IEquatable<BoolLiteral>
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
+        if (obj.GetType() != GetType()) return false;
+
         return Equals((BoolLiteral)obj);
     }
 
@@ -53,10 +43,12 @@ public class BoolLiteral : ILiteral, IEquatable<BoolLiteral>
         return HashCode.Combine(Value, Start, End, Source);
     }
 
-    public override string ToString()
-    {
-        return Value.ToString().ToLower();
-    }
+    #endregion
+
+    #region ILiteral Implementation
+
+    /// <inheritdoc cref="ILiteral.Value"/>
+    object ILiteral.Value { get; set; } = null!;
 
     #endregion
 

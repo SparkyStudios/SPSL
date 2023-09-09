@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace SPSL.Language.AST;
 
 /// <summary>
@@ -12,18 +10,7 @@ public class FloatLiteral : ILiteral, IEquatable<FloatLiteral>
     /// <summary>
     /// The value.
     /// </summary>
-    public float Value
-    {
-        get => (float)((ILiteral)this).Value;
-        set => ((ILiteral)this).Value = value;
-    }
-
-    #endregion
-
-    #region ILiteral Implementation
-
-    /// <inheritdoc cref="ILiteral.Value"/>
-    object ILiteral.Value { get; set; } = null!;
+    public float Value => (float)((ILiteral)this).Value;
 
     #endregion
 
@@ -35,39 +22,35 @@ public class FloatLiteral : ILiteral, IEquatable<FloatLiteral>
     /// <param name="value">The value literal.</param>
     public FloatLiteral(float value)
     {
-        Value = value;
+        ((ILiteral)this).Value = value;
     }
 
     #endregion
 
     #region Overrides
 
+    /// <inheritdoc cref="Object.Equals(object)"/>
     public override bool Equals(object? obj)
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
+        if (obj.GetType() != GetType()) return false;
+
         return Equals((FloatLiteral)obj);
     }
 
+    /// <inheritdoc cref="Object.GetHashCode()"/>
     public override int GetHashCode()
     {
         return HashCode.Combine(Value, Start, End, Source);
     }
 
-    public override string ToString()
-    {
-        StringBuilder output = new();
+    #endregion
 
-        output.Append(Value);
+    #region ILiteral Implementation
 
-        if (Math.Abs((int)Value - Value) == 0)
-            output.Append(".0");
-
-        output.Append('f');
-
-        return output.ToString();
-    }
+    /// <inheritdoc cref="ILiteral.Value"/>
+    object ILiteral.Value { get; set; } = null!;
 
     #endregion
 
@@ -80,7 +63,7 @@ public class FloatLiteral : ILiteral, IEquatable<FloatLiteral>
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
     public INode? Parent { get; set; }
@@ -95,10 +78,12 @@ public class FloatLiteral : ILiteral, IEquatable<FloatLiteral>
 
     #region IEquatable<BoolLiteral> Implementation
 
+    /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
     public bool Equals(FloatLiteral? other)
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
+
         return Value.Equals(other.Value) && Start == other.Start && End == other.End &&
                Source == other.Source;
     }

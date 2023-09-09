@@ -1,9 +1,18 @@
-﻿using Antlr4.Runtime.Misc;
+﻿using System.Collections;
+using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
-using SPSL.Language.AST;
+using SPSL.Language.Exceptions;
 using SPSL.Language.Symbols;
 using SPSL.Language.Symbols.Modifiers;
 using SPSL.Language.Utils;
+using static SPSL.Language.Exceptions.SemanticException;
+using static SPSL.Language.SPSLParser;
+using BoolLiteral = SPSL.Language.AST.BoolLiteral;
+using DoubleLiteral = SPSL.Language.AST.DoubleLiteral;
+using FloatLiteral = SPSL.Language.AST.FloatLiteral;
+using IntegerLiteral = SPSL.Language.AST.IntegerLiteral;
+using StringLiteral = SPSL.Language.AST.StringLiteral;
+using UnsignedIntegerLiteral = SPSL.Language.AST.UnsignedIntegerLiteral;
 
 namespace SPSL.Language.Visitors;
 
@@ -12,7 +21,11 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
     private readonly SymbolTable _globalSymbolTable;
     private readonly string _fileSource;
 
-    private readonly Stack<SymbolTable> _stack = new();
+    private readonly Stack<Hashtable> _scopes = new();
+    private readonly Stack<SymbolTable> _tables = new();
+
+    private SymbolTable CurrentTable => _tables.Peek();
+    private Hashtable CurrentScope => _scopes.Peek();
 
     protected override Symbol DefaultResult => _globalSymbolTable;
 
@@ -28,14 +41,77 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         };
     }
 
+    private void BeginScope(SymbolTable scope)
+    {
+        _tables.Push(scope);
+        _scopes.Push(new());
+    }
+
+    private void DeclareSymbol(Symbol symbol)
+    {
+        CheckSymbolNotExists(symbol);
+
+        CurrentTable.Add(symbol);
+        CurrentScope.Add(symbol.Name, false);
+    }
+
+    private void DefineSymbol(Symbol symbol)
+    {
+        CheckSymbolExists(symbol);
+
+        CurrentScope[symbol.Name] = true;
+    }
+
+    private void CheckSymbolNotExists(Symbol symbol)
+    {
+        if (CurrentTable.Contains(symbol.Name))
+            throw new SemanticException
+            (
+                $"Symbol '{symbol.Name}' already defined.",
+                SemanticExceptionType.DuplicateSymbol,
+                symbol
+            );
+    }
+
+    private void CheckSymbolExists(Symbol symbol)
+    {
+        if (CurrentTable.Resolve(symbol.Name) == null)
+            throw new SemanticException
+            (
+                $"Symbol '{symbol.Name}' is not defined",
+                SemanticExceptionType.SymbolNotDeclared,
+                symbol
+            );
+    }
+
+    private void EndScope()
+    {
+        _tables.Pop();
+        _scopes.Pop();
+    }
+
+    private void DefineSymbol(BasicExpressionContext context)
+    {
+        Symbol variable = new()
+        {
+            Name = context.Identifier.Text,
+            Source = _fileSource,
+            Start = context.Identifier.StartIndex,
+            End = context.Identifier.StopIndex,
+            Type = SymbolType.LocalVariable,
+        };
+
+        DefineSymbol(variable);
+    }
+
     protected override Symbol AggregateResult(Symbol aggregate, Symbol nextResult)
     {
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitNamespaceDefinition([NotNull] SPSLParser.NamespaceDefinitionContext context)
+    public override Symbol VisitNamespaceDefinition([NotNull] NamespaceDefinitionContext context)
     {
-        _stack.Clear();
+        _scopes.Clear();
 
         var parts = context.Name.IDENTIFIER().Select(ns => ns.Symbol).ToArray();
 
@@ -71,14 +147,14 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                 parent?.Add(ns);
                 parent = ns;
 
-                _stack.Push(parent);
+                BeginScope(parent);
             }
         }
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitPermutationVariableBool([NotNull] SPSLParser.PermutationVariableBoolContext context)
+    public override Symbol VisitPermutationVariableBool([NotNull] PermutationVariableBoolContext context)
     {
         SymbolTable permutation = new()
         {
@@ -93,24 +169,29 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         };
 
-        permutation.Add
-        (
-            new()
-            {
-                Name = context.Identifier.GetText(),
-                Source = _fileSource,
-                Start = context.Identifier.Start.StartIndex,
-                End = context.Identifier.Stop.StopIndex,
-                Type = SymbolType.Identifier,
-            }
-        );
+        BeginScope(permutation);
 
-        _stack.Peek().Add(permutation);
+        Symbol symbol = new()
+        {
+            Name = context.Identifier.GetText(),
+            Source = _fileSource,
+            Start = context.Identifier.Start.StartIndex,
+            End = context.Identifier.Stop.StopIndex,
+            Type = SymbolType.Identifier,
+        };
+
+        DeclareSymbol(symbol);
+        DefineSymbol(symbol);
+
+        EndScope();
+
+        DeclareSymbol(permutation);
+        DefineSymbol(permutation);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitPermutationVariableEnum([NotNull] SPSLParser.PermutationVariableEnumContext context)
+    public override Symbol VisitPermutationVariableEnum([NotNull] PermutationVariableEnumContext context)
     {
         SymbolTable permutation = new()
         {
@@ -129,40 +210,45 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         };
 
-        permutation.Add
-        (
-            new()
-            {
-                Name = context.Identifier.GetText(),
-                Source = _fileSource,
-                Start = context.Identifier.Start.StartIndex,
-                End = context.Identifier.Stop.StopIndex,
-                Type = SymbolType.Identifier,
-            }
-        );
+
+        BeginScope(permutation);
+
+        Symbol symbol = new()
+        {
+            Name = context.Identifier.GetText(),
+            Source = _fileSource,
+            Start = context.Identifier.Start.StartIndex,
+            End = context.Identifier.Stop.StopIndex,
+            Type = SymbolType.Identifier,
+        };
+
+        DeclareSymbol(symbol);
+        DefineSymbol(symbol);
 
         foreach (ITerminalNode node in context.IDENTIFIER())
         {
-            permutation.Add
-            (
-                new()
-                {
-                    Name = node.Symbol.Text,
-                    Source = _fileSource,
-                    Start = node.Symbol.StartIndex,
-                    End = node.Symbol.StopIndex,
-                    Type = SymbolType.Constant,
-                }
-            );
+            Symbol enumValue = new()
+            {
+                Name = node.Symbol.Text,
+                Source = _fileSource,
+                Start = node.Symbol.StartIndex,
+                End = node.Symbol.StopIndex,
+                Type = SymbolType.Constant,
+            };
+
+            DeclareSymbol(enumValue);
+            DefineSymbol(enumValue);
         }
 
-        _stack.Peek().Add(permutation);
+        EndScope();
+
+        DeclareSymbol(permutation);
+        DefineSymbol(permutation);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitPermutationVariableInteger(
-        [NotNull] SPSLParser.PermutationVariableIntegerContext context)
+    public override Symbol VisitPermutationVariableInteger([NotNull] PermutationVariableIntegerContext context)
     {
         SymbolTable permutation = new()
         {
@@ -177,24 +263,51 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         };
 
-        permutation.Add
-        (
-            new()
-            {
-                Name = context.Identifier.GetText(),
-                Source = _fileSource,
-                Start = context.Identifier.Start.StartIndex,
-                End = context.Identifier.Stop.StopIndex,
-                Type = SymbolType.Identifier,
-            }
-        );
+        BeginScope(permutation);
 
-        _stack.Peek().Add(permutation);
+        Symbol symbol = new()
+        {
+            Name = context.Identifier.GetText(),
+            Source = _fileSource,
+            Start = context.Identifier.Start.StartIndex,
+            End = context.Identifier.Stop.StopIndex,
+            Type = SymbolType.Identifier,
+        };
+
+        DeclareSymbol(symbol);
+        DefineSymbol(symbol);
+
+        EndScope();
+
+        DeclareSymbol(permutation);
+        DefineSymbol(permutation);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitStruct([NotNull] SPSLParser.StructContext context)
+    public override Symbol VisitGlobalVariable(GlobalVariableContext context)
+    {
+        Symbol variable = new()
+        {
+            Name = context.Definition.Identifier.Identifier.Text,
+            Source = _fileSource,
+            Start = context.Definition.Identifier.Identifier.StartIndex,
+            End = context.Definition.Identifier.Identifier.StopIndex,
+            Type = SymbolType.GlobalVariable,
+            Modifiers = new List<ISymbolModifier>
+            {
+                new SymbolTypeModifier(context.Type.GetText()),
+                // TODO: Add modifiers for static variables
+            }
+        };
+
+        DeclareSymbol(variable);
+        DefineSymbol(variable);
+
+        return _globalSymbolTable;
+    }
+
+    public override Symbol VisitStruct([NotNull] StructContext context)
     {
         SymbolTable structure = new()
         {
@@ -205,30 +318,31 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Struct,
         };
 
-        structure.Add
-        (
-            new()
-            {
-                Name = context.Definition.Name.Text,
-                Source = _fileSource,
-                Start = context.Definition.Name.StartIndex,
-                End = context.Definition.Name.StopIndex,
-                Type = SymbolType.Identifier
-            }
-        );
+        BeginScope(structure);
 
-        _stack.Peek().Add(structure);
+        Symbol symbol = new()
+        {
+            Name = context.Definition.Name.Text,
+            Source = _fileSource,
+            Start = context.Definition.Name.StartIndex,
+            End = context.Definition.Name.StopIndex,
+            Type = SymbolType.Identifier
+        };
 
-        _stack.Push(structure);
+        DeclareSymbol(symbol);
+        DefineSymbol(symbol);
 
         VisitChildren(context);
 
-        _stack.Pop();
+        EndScope();
+
+        DeclareSymbol(structure);
+        DefineSymbol(structure);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitStructProperty([NotNull] SPSLParser.StructPropertyContext context)
+    public override Symbol VisitStructProperty([NotNull] StructPropertyContext context)
     {
         Symbol property = new()
         {
@@ -239,12 +353,13 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Property,
         };
 
-        _stack.Peek().Add(property);
+        DeclareSymbol(property);
+        DefineSymbol(property);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitStructFunction(SPSLParser.StructFunctionContext context)
+    public override Symbol VisitStructFunction(StructFunctionContext context)
     {
         SymbolTable function = new()
         {
@@ -259,30 +374,31 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         };
 
-        function.Add
-        (
-            new()
-            {
-                Name = context.Function.Head.Name.Text,
-                Source = _fileSource,
-                Start = context.Function.Head.Name.StartIndex,
-                End = context.Function.Head.Name.StopIndex,
-                Type = SymbolType.Identifier
-            }
-        );
+        BeginScope(function);
 
-        _stack.Peek().Add(function);
+        Symbol symbol = new()
+        {
+            Name = context.Function.Head.Name.Text,
+            Source = _fileSource,
+            Start = context.Function.Head.Name.StartIndex,
+            End = context.Function.Head.Name.StopIndex,
+            Type = SymbolType.Identifier
+        };
 
-        _stack.Push(function);
+        DeclareSymbol(symbol);
+        DefineSymbol(symbol);
 
         VisitChildren(context.Function);
 
-        _stack.Pop();
+        EndScope();
+
+        DeclareSymbol(function);
+        DefineSymbol(function);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitEnum([NotNull] SPSLParser.EnumContext context)
+    public override Symbol VisitEnum([NotNull] EnumContext context)
     {
         SymbolTable enumeration = new()
         {
@@ -305,18 +421,18 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         );
 
-        _stack.Peek().Add(enumeration);
+        CurrentTable.Add(enumeration);
 
-        _stack.Push(enumeration);
+        BeginScope(enumeration);
 
         VisitChildren(context);
 
-        _stack.Pop();
+        EndScope();
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitEnumComponent([NotNull] SPSLParser.EnumComponentContext context)
+    public override Symbol VisitEnumComponent([NotNull] EnumComponentContext context)
     {
         Symbol property = new()
         {
@@ -327,12 +443,12 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Property,
         };
 
-        _stack.Peek().Add(property);
+        CurrentTable.Add(property);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitInterface([NotNull] SPSLParser.InterfaceContext context)
+    public override Symbol VisitInterface([NotNull] InterfaceContext context)
     {
         SymbolTable @interface = new()
         {
@@ -343,7 +459,7 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Type = SymbolType.Interface,
         };
 
-        foreach (SPSLParser.FunctionHeadContext function in context.functionHead())
+        foreach (FunctionHeadContext function in context.functionHead())
         {
             Symbol f = new()
             {
@@ -357,12 +473,12 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             @interface.Add(f);
         }
 
-        _stack.Peek().Add(@interface);
+        CurrentTable.Add(@interface);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitShaderFragment([NotNull] SPSLParser.ShaderFragmentContext context)
+    public override Symbol VisitShaderFragment([NotNull] ShaderFragmentContext context)
     {
         SymbolTable fragment = new()
         {
@@ -385,22 +501,22 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         );
 
-        _stack.Peek().Add(fragment);
+        CurrentTable.Add(fragment);
 
-        _stack.Push(fragment);
+        BeginScope(fragment);
 
         VisitChildren(context);
 
-        _stack.Pop();
+        EndScope();
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitShader([NotNull] SPSLParser.ShaderContext context)
+    public override Symbol VisitShader([NotNull] ShaderContext context)
     {
         SymbolTable shader = context.Definition switch
         {
-            SPSLParser.GenericShaderDefinitionContext gsd => new()
+            GenericShaderDefinitionContext gsd => new()
             {
                 Name = gsd.Name.Text,
                 Type = SymbolType.Shader,
@@ -409,11 +525,11 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                 End = context.Stop.StopIndex,
                 Modifiers = new List<ISymbolModifier>
                 {
-                    new ShaderStageModifier(gsd.Type.Text.ToShaderStage()),
+                    new ShaderStageModifier(gsd.Type.ToShaderStage()),
                     new AbstractShaderModifier(gsd.IsAbstract)
                 }
             },
-            SPSLParser.ComputeShaderDefinitionContext csd => new()
+            ComputeShaderDefinitionContext csd => new()
             {
                 Name = csd.Name.Text,
                 Type = SymbolType.Shader,
@@ -422,7 +538,7 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                 End = context.Stop.StopIndex,
                 Modifiers = new List<ISymbolModifier>
                 {
-                    new ShaderStageModifier(csd.Type.Text.ToShaderStage()),
+                    new ShaderStageModifier(csd.Type.ToShaderStage()),
                     new AbstractShaderModifier(csd.IsAbstract)
                 }
             },
@@ -449,22 +565,23 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         //     }
         // );
 
-        _stack.Peek().Add(shader);
+        CurrentTable.Add(shader);
 
-        _stack.Push(shader);
+        BeginScope(shader);
 
         VisitChildren(context);
 
-        _stack.Pop();
+        EndScope();
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitBasicShaderFunction(SPSLParser.BasicShaderFunctionContext context)
+    public override Symbol VisitBasicShaderFunction(BasicShaderFunctionContext context)
     {
         SymbolTable function = new()
         {
-            Name = $"{context.Function.Head.Name.Text}({string.Join(", ", context.Function.Head.Signature.Arguments?.argDef().Select(p => $"{p.Flow?.Text ?? "in"} {p.Type.GetText()}") ?? Array.Empty<string>())})",
+            Name =
+                $"{context.Function.Head.Name.Text}({string.Join(", ", context.Function.Head.Signature.Arguments?.argDef().Select(p => $"{p.Flow?.Text ?? "in"} {p.Type.GetText()}") ?? Array.Empty<string>())})",
             Source = _fileSource,
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
@@ -488,18 +605,18 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         );
 
-        _stack.Peek().Add(function);
+        CurrentTable.Add(function);
 
-        _stack.Push(function);
+        BeginScope(function);
 
         VisitChildren(context.Function);
 
-        _stack.Pop();
+        EndScope();
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitShaderConstructorFunction([NotNull] SPSLParser.ShaderConstructorFunctionContext context)
+    public override Symbol VisitShaderConstructorFunction([NotNull] ShaderConstructorFunctionContext context)
     {
         SymbolTable constructor = new()
         {
@@ -522,20 +639,20 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         );
 
-        _stack.Peek().Add(constructor);
+        CurrentTable.Add(constructor);
 
-        _stack.Push(constructor);
+        BeginScope(constructor);
 
         VisitChildren(context);
 
-        _stack.Pop();
+        EndScope();
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitArgDef([NotNull] SPSLParser.ArgDefContext context)
+    public override Symbol VisitArgDef([NotNull] ArgDefContext context)
     {
-        Symbol argumentSymbol = new()
+        Symbol argument = new()
         {
             Name = context.Name.Text,
             Source = _fileSource,
@@ -545,21 +662,22 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Modifiers = new List<ISymbolModifier>
             {
                 new SymbolTypeModifier(context.Type.GetText()),
-                new ParameterFlowModifier(context.Flow?.Text.ToDataFlow() ?? Core.DataFlow.Unspecified),
+                new ParameterFlowModifier(context.Flow.ToDataFlow()),
             }
         };
 
-        _stack.Peek().Add(argumentSymbol);
+        DeclareSymbol(argument);
+        DefineSymbol(argument);
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitTypedVariableDeclaration(SPSLParser.TypedVariableDeclarationContext context)
+    public override Symbol VisitTypedVariableDeclaration(TypedVariableDeclarationContext context)
     {
         ConstVariableModifier constModifier = new(context.IsConst);
         SymbolTypeModifier typeModifier = new(context.Type.GetText());
 
-        foreach (var variableIdentityContext in context.variableIdentity())
+        foreach (VariableIdentityContext variableIdentityContext in context.variableIdentity())
         {
             if (variableIdentityContext.IsAssignment)
             {
@@ -569,7 +687,7 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                     Source = _fileSource,
                     Start = variableIdentityContext.Declaration.Identifier.Identifier.StartIndex,
                     End = variableIdentityContext.Declaration.Identifier.Identifier.StopIndex,
-                    Type = SymbolType.Variable,
+                    Type = SymbolType.LocalVariable,
                     Modifiers = new List<ISymbolModifier>
                     {
                         constModifier,
@@ -577,7 +695,8 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                     }
                 };
 
-                _stack.Peek().Add(variable);
+                DeclareSymbol(variable);
+                DefineSymbol(variable);
             }
             else
             {
@@ -587,7 +706,7 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                     Source = _fileSource,
                     Start = variableIdentityContext.Identifier.Identifier.StartIndex,
                     End = variableIdentityContext.Identifier.Identifier.StopIndex,
-                    Type = SymbolType.Variable,
+                    Type = SymbolType.LocalVariable,
                     Modifiers = new List<ISymbolModifier>
                     {
                         constModifier,
@@ -595,14 +714,14 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
                     }
                 };
 
-                _stack.Peek().Add(variable);
+                DeclareSymbol(variable);
             }
         }
 
         return _globalSymbolTable;
     }
 
-    public override Symbol VisitUntypedVariableDeclaration(SPSLParser.UntypedVariableDeclarationContext context)
+    public override Symbol VisitUntypedVariableDeclaration(UntypedVariableDeclarationContext context)
     {
         Symbol variable = new()
         {
@@ -610,7 +729,7 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             Source = _fileSource,
             Start = context.Identifier.Identifier.StartIndex,
             End = context.Identifier.Identifier.StopIndex,
-            Type = SymbolType.Variable,
+            Type = SymbolType.LocalVariable,
             Modifiers = new List<ISymbolModifier>
             {
                 new ConstVariableModifier(context.IsConst),
@@ -630,8 +749,209 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
             }
         };
 
-        _stack.Peek().Add(variable);
+        DeclareSymbol(variable);
+        DefineSymbol(variable);
 
         return _globalSymbolTable;
+    }
+
+    // public override Symbol VisitAssignmentExpression(AssignmentExpressionContext context)
+    // {
+    //     context.Left.Accept(this);
+    //     context.Right.Accept(this);
+    //
+    //     return _globalSymbolTable;
+    // }
+    //
+    // public override Symbol VisitAssignableExpression(AssignableExpressionContext context)
+    // {
+    //     if (context.basicExpression() != null)
+    //         DefineSymbol(context.basicExpression());
+    //     else if (context.arrayAccessExpression() != null)
+    //         CheckSymbolExists(context.arrayAccessExpression());
+    //     else if (context.propertyMemberReferenceExpression() != null)
+    //         CheckSymbolExists(context.propertyMemberReferenceExpression());
+    //     else if (context.assignableChainedExpression() != null)
+    //         CheckSymbolExists(context.assignableChainedExpression());
+    //
+    //     return _globalSymbolTable;
+    // }
+
+    private void CheckSymbolExists(AssignableChainedExpressionContext context)
+    {
+        CheckSymbolExists(context.Target);
+        foreach (AssignableChainableExpressionContext expressionContext in context.assignableChainableExpression())
+            CheckSymbolExists(expressionContext);
+    }
+
+    private void CheckSymbolExists(AssignableChainableExpressionContext context)
+    {
+        if (context.basicExpression() != null)
+            CheckSymbolExists(context.basicExpression());
+        else if (context.arrayAccessExpression() != null)
+            CheckSymbolExists(context.arrayAccessExpression());
+    }
+
+    private void CheckSymbolExists(ArrayAccessExpressionContext context)
+    {
+        if (context.basicExpression() != null)
+            CheckSymbolExists(context.basicExpression());
+        else if (context.memberReferenceExpression() != null)
+            CheckSymbolExists(context.memberReferenceExpression());
+    }
+
+    private void CheckSymbolExists(MemberReferenceExpressionContext context)
+    {
+        if (context.propertyMemberReferenceExpression() != null)
+            CheckSymbolExists(context.propertyMemberReferenceExpression());
+        else if (context.methodMemberReferenceExpression() != null)
+            CheckSymbolExists(context.methodMemberReferenceExpression());
+    }
+
+    private void CheckSymbolExists(MethodMemberReferenceExpressionContext context)
+    {
+        if (CurrentTable.Parent is not { Type: SymbolType.Shader or SymbolType.Fragment })
+        {
+            Symbol variable = new()
+            {
+                Name = context.Target.Identifier.Text,
+                Source = _fileSource,
+                Start = context.Target.Identifier.StartIndex,
+                End = context.Target.Identifier.StopIndex,
+                Type = SymbolType.Keyword,
+            };
+
+            throw new SemanticException
+            (
+                "Cannot use 'this' or 'base' outside of a shader or shader fragment.",
+                SemanticExceptionType.ContextKeywordUsedOutOfContext,
+                variable
+            );
+        }
+
+        CheckSymbolExists(context.Member);
+    }
+
+    private void CheckSymbolExists(InvocationExpressionContext context)
+    {
+        Symbol variable = new()
+        {
+            Name = context.Name.GetText(),
+            Source = _fileSource,
+            Start = context.Name.Start.StartIndex,
+            End = context.Name.Stop.StopIndex,
+            Type = SymbolType.Identifier,
+        };
+
+        CheckSymbolExists(variable);
+
+        if (context.Parameters == null) return;
+
+        foreach (ExpressionStatementContext expression in context.Parameters.expressionStatement())
+            CheckSymbolExists(expression);
+    }
+
+    private void CheckSymbolExists(ExpressionStatementContext context)
+    {
+        switch (context)
+        {
+            case ExpressionContext expressionContext:
+                CheckSymbolExists(expressionContext);
+                break;
+        }
+    }
+
+    private void CheckSymbolExists(ExpressionContext context)
+    {
+        if (context.basicExpression() != null)
+            CheckSymbolExists(context.basicExpression());
+        else if (context.parenthesizedExpression() != null)
+            CheckSymbolExists(context.parenthesizedExpression());
+        else if (context.propertyMemberReferenceExpression() != null)
+            CheckSymbolExists(context.propertyMemberReferenceExpression());
+        else if (context.methodMemberReferenceExpression() != null)
+            CheckSymbolExists(context.methodMemberReferenceExpression());
+        else if (context.chainedExpression() != null)
+            CheckSymbolExists(context.chainedExpression());
+        else if (context.invocationExpression() != null)
+            CheckSymbolExists(context.invocationExpression());
+        else if (context.arrayAccessExpression() != null)
+            CheckSymbolExists(context.arrayAccessExpression());
+    }
+
+    private void CheckSymbolExists(ChainedExpressionContext context)
+    {
+        CheckSymbolExists(context.Target);
+        foreach (ChainableExpressionContext expressionContext in context.chainableExpression())
+            CheckSymbolExists(expressionContext);
+    }
+
+    private void CheckSymbolExists(ChainableExpressionContext context)
+    {
+        if (context.basicExpression() != null)
+            CheckSymbolExists(context.basicExpression());
+        else if (context.invocationExpression() != null)
+            CheckSymbolExists(context.invocationExpression());
+        else if (context.arrayAccessExpression() != null)
+            CheckSymbolExists(context.arrayAccessExpression());
+    }
+
+    private void CheckSymbolExists(ReferencableExpressionContext context)
+    {
+        if (context.basicExpression() != null)
+            CheckSymbolExists(context.basicExpression());
+        else if (context.parenthesizedExpression() != null)
+            CheckSymbolExists(context.parenthesizedExpression());
+        else if (context.invocationExpression() != null)
+            CheckSymbolExists(context.invocationExpression());
+        else if (context.propertyMemberReferenceExpression() != null)
+            CheckSymbolExists(context.propertyMemberReferenceExpression());
+        else if (context.methodMemberReferenceExpression() != null)
+            CheckSymbolExists(context.methodMemberReferenceExpression());
+        else if (context.arrayAccessExpression() != null)
+            CheckSymbolExists(context.arrayAccessExpression());
+    }
+
+    private void CheckSymbolExists(ParenthesizedExpressionContext context)
+    {
+        CheckSymbolExists(context.Expression);
+    }
+
+    private void CheckSymbolExists(PropertyMemberReferenceExpressionContext context)
+    {
+        if (CurrentTable.Parent is not { Type: SymbolType.Shader or SymbolType.Fragment })
+        {
+            Symbol variable = new()
+            {
+                Name = context.Target.Identifier.Text,
+                Source = _fileSource,
+                Start = context.Target.Identifier.StartIndex,
+                End = context.Target.Identifier.StopIndex,
+                Type = SymbolType.Keyword,
+            };
+
+            throw new SemanticException
+            (
+                "Cannot use 'this' or 'base' outside of a shader or shader fragment.",
+                SemanticExceptionType.ContextKeywordUsedOutOfContext,
+                variable
+            );
+        }
+
+        CheckSymbolExists(context.Member);
+    }
+
+    private void CheckSymbolExists(BasicExpressionContext context)
+    {
+        Symbol variable = new()
+        {
+            Name = context.Identifier.Text,
+            Source = _fileSource,
+            Start = context.Identifier.StartIndex,
+            End = context.Identifier.StopIndex,
+            Type = SymbolType.LocalVariable,
+        };
+
+        CheckSymbolExists(variable);
     }
 }

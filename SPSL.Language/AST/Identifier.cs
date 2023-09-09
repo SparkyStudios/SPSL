@@ -6,7 +6,7 @@ namespace SPSL.Language.AST;
 /// <example>
 /// <code>aSimpleIdentifier</code>
 /// </example>
-public class Identifier : INode, IEquatable<Identifier>
+public class Identifier : INode, ISemanticallyEquatable<Identifier>, IEquatable<Identifier>
 {
     #region Properties
 
@@ -19,19 +19,17 @@ public class Identifier : INode, IEquatable<Identifier>
 
     #region Overrides
 
-    public override string ToString()
-    {
-        return Value;
-    }
-
+    /// <inheritdoc cref="Object.Equals(object?)"/>
     public override bool Equals(object? obj)
     {
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != this.GetType()) return false;
+        if (obj.GetType() != GetType()) return false;
+
         return Equals((Identifier)obj);
     }
 
+    /// <inheritdoc cref="Object.GetHashCode()"/>
     public override int GetHashCode()
     {
         return HashCode.Combine(Value, Start, End, Source);
@@ -61,12 +59,34 @@ public class Identifier : INode, IEquatable<Identifier>
 
     #endregion
 
+    #region ISemanticallyEquatable<Identifier> Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
+    public bool SemanticallyEquals(Identifier? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        // An identifier is semantically equivalent to another identifier if they have the same value.
+        return Value == other.Value;
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(Value);
+    }
+
+    #endregion
+
     #region IEquatable<Identifier> Implementation
 
+    /// <inheritdoc cref="IEquatable{T}.Equals(T?)"/>
     public bool Equals(Identifier? other)
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
+
         return Value == other.Value && Start == other.Start && End == other.End && Source == other.Source;
     }
 

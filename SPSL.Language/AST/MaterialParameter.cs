@@ -32,11 +32,17 @@ public class MaterialParameter : IAnnotated, IBlockChild
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MaterialParameter"/> class with the specified parameters.
+    /// </summary>
+    /// <param name="valueType">The data type of the parameter's value.</param>
+    /// <param name="name">The parameter's name.</param>
+    /// <param name="type">Whether if the parameter holds a permutation or a custom value.</param>
     public MaterialParameter(IDataType valueType, Identifier name, MaterialParameterType type)
     {
         valueType.Parent = this;
         name.Parent = this;
-        
+
         ValueType = valueType;
         Name = name;
         Type = type;
@@ -47,15 +53,14 @@ public class MaterialParameter : IAnnotated, IBlockChild
 
     #region IAnnotated Implementation
 
+    /// <inheritdoc cref="IAnnotated.Annotations"/>
     public OrderedSet<Annotation> Annotations { get; } = new();
 
     #endregion
 
     #region IBlockChild Implementation
 
-    /// <summary>
-    /// The parameter name.
-    /// </summary>
+    /// <inheritdoc cref="IBlockChild.Name"/>
     public Identifier Name { get; set; }
 
     #endregion
@@ -69,10 +74,10 @@ public class MaterialParameter : IAnnotated, IBlockChild
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

@@ -165,6 +165,21 @@ KEYWORD_PERMUTE
 KEYWORD_STREAM
   : 'stream'
   ;
+KEYWORD_COHERENT
+  : 'coherent'
+  ;
+KEYWORD_VOLATILE
+  : 'volatile'
+  ;
+KEYWORD_READONLY
+  : 'readonly'
+  ;
+KEYWORD_WRITEONLY
+  : 'writeonly'
+  ;
+KEYWORD_READWRITE
+  : 'readwrite'
+  ;
 
 TYPE_VOID
   : 'void'
@@ -344,9 +359,6 @@ TOK_UNDERSCORE
 TOK_TILDE
   : '~'
   ;
-TOK_EXCLAMATION
-  : '!'
-  ;
 TOK_QUESTION
   : '?'
   ;
@@ -463,6 +475,10 @@ OP_OR
 OP_AND
   : '&&'
   | 'and'
+  ;
+OP_NOT
+  : '!'
+  | 'not'
   ;
 OP_XOR
   : '^^'
@@ -688,14 +704,17 @@ materialStateComponent
 
 // Uniform block for GLSL CBuffer for HLSL
 bufferDefinition
-  : Documentation = DOC_COMMENT? annotation* Storage = 'coherent'? Access = (
-    'readonly'
-    | 'writeonly'
-    | 'readwrite'
-    | 'constant'
+  : Documentation = DOC_COMMENT? annotation* Storage = KEYWORD_COHERENT? Access = (
+    KEYWORD_READONLY
+    | KEYWORD_WRITEONLY
+    | KEYWORD_READWRITE
+    | KEYWORD_CONST
   )? KEYWORD_BUFFER Name = IDENTIFIER TOK_OPEN_BRACE bufferComponent* TOK_CLOSE_BRACE # InPlaceStructuredBufferDefinition
-  | Documentation = DOC_COMMENT? annotation* Storage = 'coherent'? Access = ('readonly' | 'writeonly' | 'readwrite')? KEYWORD_BUFFER OP_LESSER_THAN Type = dataType OP_GREATER_THAN
-    Name = IDENTIFIER TOK_SEMICOLON # TypedBufferDefinition
+  | Documentation = DOC_COMMENT? annotation* Storage = KEYWORD_COHERENT? Access = (
+    KEYWORD_READONLY
+    | KEYWORD_WRITEONLY
+    | KEYWORD_READWRITE
+  )? KEYWORD_BUFFER OP_LESSER_THAN Type = dataType OP_GREATER_THAN Name = IDENTIFIER TOK_SEMICOLON # TypedBufferDefinition
   ;
 
 bufferComponent
@@ -798,11 +817,11 @@ assignableChainedExpression
   ;
 
 propertyMemberReferenceExpression
-  : Target = (KEYWORD_THIS | KEYWORD_BASE) TOK_DOT Member = basicExpression
+  : Target = contextAccessExpression TOK_DOT Member = basicExpression
   ;
 
 methodMemberReferenceExpression
-  : Target = (KEYWORD_THIS | KEYWORD_BASE) TOK_DOT Member = invocationExpression
+  : Target = contextAccessExpression TOK_DOT Member = invocationExpression
   ;
 
 memberReferenceExpression
@@ -896,7 +915,7 @@ expressionStatement
   | arrayAccessExpression                                                                                                                 # Expression
   | Expression = assignableExpression Operator = (OP_INCREMENT | OP_DECREMENT)                                                            # PostfixUnaryOperationExpression
   | <assoc = right> Operator = (OP_INCREMENT | OP_DECREMENT) Expression = assignableExpression                                            # PrefixUnaryOperationExpression
-  | <assoc = right> TOK_EXCLAMATION Expression = expressionStatement                                                                      # NegateOperationExpression
+  | <assoc = right> OP_NOT Expression = expressionStatement                                                                               # NegateOperationExpression
   | <assoc = right> Operator = (OP_MINUS | OP_PLUS) Expression = expressionStatement                                                      # SignedExpression
   | Left = expressionStatement Operator = OP_LEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression
   | Left = expressionStatement Operator = OP_GEQ_THAN Right = expressionStatement                                                         # BinaryOperationExpression

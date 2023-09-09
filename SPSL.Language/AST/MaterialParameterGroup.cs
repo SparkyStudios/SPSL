@@ -13,12 +13,16 @@ public class MaterialParameterGroup : IAnnotated, IBlock, IMaterialMember
     /// Whether the material parameters group is partial. Partial groups are
     /// merged together from start to the end of the inheritance hierarchy.
     /// </summary>
-    public bool IsPartial { get; set; }
+    public bool IsPartial { get; init; }
 
     #endregion
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MaterialParameterGroup"/> class.
+    /// </summary>
+    /// <param name="name">The name of the group.</param>
     public MaterialParameterGroup(Identifier name)
     {
         name.Parent = this;
@@ -26,12 +30,16 @@ public class MaterialParameterGroup : IAnnotated, IBlock, IMaterialMember
         Name = name;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MaterialParameterGroup"/> class.
+    /// </summary>
+    /// <param name="name">The name of the group.</param>
+    /// <param name="parameters">The list of parameters in the group.</param>
     public MaterialParameterGroup(Identifier name, IEnumerable<MaterialParameter> parameters)
+        : this(name)
     {
-        Name = name;
         Children.AddRange(parameters);
 
-        Name.Parent = this;
         foreach (IBlockChild parameter in Children)
             parameter.Parent = this;
     }
@@ -40,21 +48,21 @@ public class MaterialParameterGroup : IAnnotated, IBlock, IMaterialMember
 
     #region IAnnotated Implementation
 
+    /// <inheritdoc cref="IAnnotated.Annotations"/>
     public OrderedSet<Annotation> Annotations { get; } = new();
 
     #endregion
 
     #region IBlock Implementation
 
+    /// <inheritdoc cref="IBlock.Children"/>
     public OrderedSet<IBlockChild> Children { get; } = new();
 
     #endregion
 
     #region IBlockChild Implementation
 
-    /// <summary>
-    /// The parameter name.
-    /// </summary>
+    /// <inheritdoc cref="IBlockChild.Name"/>
     public Identifier Name { get; set; }
 
     #endregion
@@ -68,10 +76,10 @@ public class MaterialParameterGroup : IAnnotated, IBlock, IMaterialMember
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

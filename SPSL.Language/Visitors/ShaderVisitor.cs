@@ -22,7 +22,7 @@ public class ShaderVisitor : SPSLBaseVisitor<Shader?>
         ShaderStage sStage = context.Type switch
         {
             null => ShaderStage.Unspecified,
-            _ => context.Type.Text.ToShaderStage()
+            _ => context.Type.ToShaderStage()
         };
         var sName = context.Name.ToIdentifier(_fileSource);
 

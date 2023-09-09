@@ -72,6 +72,9 @@ public class HoverHandler : IHoverHandler
             TypeProperty property => CreateHover(document, property),
             TypeFunction function => CreateHover(document, function),
             FunctionArgument argument => CreateHover(document, argument),
+
+            VariableDeclarationStatement statement => CreateHover(document, statement),
+
             _ => new()
             {
                 Contents = new(new MarkedString($"Not yet implemented ({node})")),
@@ -126,6 +129,13 @@ public class HoverHandler : IHoverHandler
 
     private static Hover CreateHover(Document document, IShaderMember symbol)
     {
+        string prefix = symbol switch
+        {
+            GlobalVariable => "(global) ",
+            ShaderFunction s => s.IsConstructor ? "(constructor) " : "(method) ",
+            _ => string.Empty
+        };
+
         return new()
         {
             Contents = new
@@ -135,7 +145,7 @@ public class HoverHandler : IHoverHandler
                     Kind = MarkupKind.Markdown,
                     Value = $"""
                              ```spsl
-                             {DeclarationString.From(symbol)}
+                             {prefix}{DeclarationString.From(symbol)}
                              ```
                              ---
                              {symbol.Documentation}
@@ -213,7 +223,7 @@ public class HoverHandler : IHoverHandler
                     Kind = MarkupKind.Markdown,
                     Value = $"""
                              ```spsl
-                             {DeclarationString.From(symbol)}
+                             (parameter) {DeclarationString.From(symbol)}
                              ```
                              ---
                              {symbol.Documentation}
@@ -239,7 +249,7 @@ public class HoverHandler : IHoverHandler
                     Kind = MarkupKind.Markdown,
                     Value = $"""
                              ```spsl
-                             {literal}
+                             {DeclarationString.From(literal)}
                              ```
                              ---
                              Constant value
@@ -380,7 +390,7 @@ public class HoverHandler : IHoverHandler
                         Kind = MarkupKind.Markdown,
                         Value = $"""
                                  ```spsl
-                                 {dataType}
+                                 {DeclarationString.From(dataType)}
                                  ```
                                  ---
                                  {documentation}
@@ -415,5 +425,29 @@ public class HoverHandler : IHoverHandler
             default:
                 return CreateHover(document, identifier.Parent);
         }
+    }
+
+    private Hover CreateHover(Document document, VariableDeclarationStatement statement)
+    {
+        return new()
+        {
+            Contents = new
+            (
+                new MarkupContent
+                {
+                    Kind = MarkupKind.Markdown,
+                    Value = $"""
+                             ```spsl
+                             (local) {DeclarationString.From(statement)}
+                             ```
+                             """,
+                }
+            ),
+            Range = new()
+            {
+                Start = document.PositionAt(statement.Name.Start),
+                End = document.PositionAt(statement.Name.End + 1)
+            }
+        };
     }
 }

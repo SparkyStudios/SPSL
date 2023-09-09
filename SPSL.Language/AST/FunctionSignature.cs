@@ -5,60 +5,84 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represents an SPSL function signature.
 /// </summary>
-public class FunctionSignature : INode, IEquatable<FunctionSignature>
+public class FunctionSignature : INode, ISemanticallyEquatable<FunctionSignature>, IEquatable<FunctionSignature>
 {
     #region Properties
 
-    public OrderedSet<FunctionArgument> Parameters { get; }
+    /// <summary>
+    /// Gets the list of <see cref="FunctionArgument"/>s for this function signature.
+    /// </summary>
+    public OrderedSet<FunctionArgument> Arguments { get; }
 
     #endregion
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FunctionSignature"/> class.
+    /// </summary>
     public FunctionSignature()
     {
-        Parameters = new();
+        Arguments = new();
     }
 
-    public FunctionSignature(IEnumerable<FunctionArgument> parameters)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FunctionSignature"/> class with the specified parameters.
+    /// </summary>
+    /// <param name="arguments">The list of <see cref="FunctionArgument"/>s to assign to this function signature.</param>
+    public FunctionSignature(IEnumerable<FunctionArgument> arguments)
     {
-        Parameters = new(parameters);
+        Arguments = new(arguments);
 
-        foreach (FunctionArgument parameter in Parameters)
+        foreach (FunctionArgument parameter in Arguments)
             parameter.Parent = this;
     }
 
-    public FunctionSignature(params FunctionArgument[] parameters)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FunctionSignature"/> class with the specified parameters.
+    /// </summary>
+    /// <param name="arguments">The list of <see cref="FunctionArgument"/>s to assign to this function signature.</param>
+    public FunctionSignature(params FunctionArgument[] arguments)
     {
-        foreach (FunctionArgument parameter in parameters)
+        foreach (FunctionArgument parameter in arguments)
             parameter.Parent = this;
 
-        Parameters = new(parameters);
+        Arguments = new(arguments);
     }
 
     #endregion
 
     #region Methods
 
-    public void AddParameter(FunctionArgument parameter)
+    /// <summary>
+    /// Add the specified <see cref="FunctionArgument"/> to the end of the list of parameters.
+    /// </summary>
+    /// <param name="argument">The <see cref="FunctionArgument"/> to add.</param>
+    public void AddParameter(FunctionArgument argument)
     {
-        parameter.Parent = this;
-        
-        Parameters.Add(parameter);
+        argument.Parent = this;
+
+        Arguments.Add(argument);
     }
 
     #endregion
 
     #region Overrides
 
+    /// <inheritdoc cref="Object.Equals(object?)"/>
     public override bool Equals(object? obj)
     {
-        return Equals(obj as FunctionSignature);
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+
+        return Equals((FunctionSignature)obj);
     }
 
+    /// <inheritdoc cref="Object.GetHashCode()"/>
     public override int GetHashCode()
     {
-        return HashCode.Combine(Parameters, Start, End, Source);
+        return HashCode.Combine(Arguments, Start, End, Source);
     }
 
     #endregion
@@ -72,33 +96,55 @@ public class FunctionSignature : INode, IEquatable<FunctionSignature>
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)
     {
-        return Parameters.FirstOrDefault(p => p.ResolveNode(source, offset) is not null)?.ResolveNode(source, offset) ??
+        return Arguments.FirstOrDefault(p => p.ResolveNode(source, offset) is not null)?.ResolveNode(source, offset) ??
                (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
+
+    #endregion
+
+    #region ISemanticallyEquatable<FunctionSignature> Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
+    public bool SemanticallyEquals(FunctionSignature? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        if (Arguments.Count != other.Arguments.Count) return false;
+
+        // A function signature is semantically equivalent to another function signature if all its parameters are semantically equivalent.
+        for (uint i = 0, l = (uint)Arguments.Count; i < l; i++)
+            if (Arguments[i].SemanticallyEquals(other.Arguments[i]) == false)
+                return false;
+
+        return true;
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return Arguments.GetSemanticHashCode<FunctionArgument>();
     }
 
     #endregion
 
     #region IEquatable<FunctionSignature> Implementation
 
+    /// <inheritdoc cref="IEquatable{T}.Equals(T?)"/>
     public bool Equals(FunctionSignature? other)
     {
-        if (other is null) return false;
-        if (Parameters.Count != other.Parameters.Count) return false;
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        if (Arguments.Count != other.Arguments.Count) return false;
 
-        // Slow array-like indexation, but needed for ordered comparison. Maybe a better way can be found
-        for (uint i = 0, l = (uint)Parameters.Count; i < l; i++)
-            if (Parameters[i].Equals(other.Parameters[i]) is false)
-                return false;
-
-        return true;
+        return Arguments.Equals(other.Arguments);
     }
 
     #endregion

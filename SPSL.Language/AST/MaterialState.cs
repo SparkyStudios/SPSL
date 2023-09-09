@@ -19,7 +19,7 @@ public class MaterialState : IBlock, IMaterialMember
     /// Otherwise, the <see cref="Children"/> property will be empty, and the <see cref="Value"/> property will
     /// have the value assigned to the <see cref="MaterialState"/>.
     /// </value>
-    public MaterialStateType Type { get; set; }
+    public MaterialStateType Type { get; init; }
 
     /// <summary>
     /// The value of the <see cref="MaterialState"/>.
@@ -28,25 +28,33 @@ public class MaterialState : IBlock, IMaterialMember
     /// The value of the <see cref="MaterialState"/> if the <see cref="Type"/> is set to <see cref="MaterialStateType.Value"/>.
     /// Otherwise <c>null</c>.
     /// </value>
-    public string? Value { get; set; }
+    public string? Value { get; init; }
 
     #endregion
 
     #region Constructors
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MaterialState"/> class with the specified <paramref name="name"/>.
+    /// </summary>
+    /// <param name="name">The name of the material state.</param>
     public MaterialState(Identifier name)
     {
         name.Parent = this;
-        
+
         Name = name;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MaterialState"/> class.
+    /// </summary>
+    /// <param name="name">The name of the material state.</param>
+    /// <param name="components">The list of components in the state.</param>
     public MaterialState(Identifier name, IEnumerable<MaterialStateComponent> components)
+        : this(name)
     {
-        Name = name;
         Children.AddRange(components);
-        
-        Name.Parent = this;
+
         foreach (IBlockChild child in Children)
             child.Parent = this;
     }
@@ -55,15 +63,14 @@ public class MaterialState : IBlock, IMaterialMember
 
     #region IBlock Implementation
 
+    /// <inheritdoc cref="IBlock.Children"/>
     public OrderedSet<IBlockChild> Children { get; } = new();
 
     #endregion
 
     #region IBlockChild Implementation
 
-    /// <summary>
-    /// The material state name.
-    /// </summary>
+    /// <inheritdoc cref="IBlockChild.Name"/>
     public Identifier Name { get; set; }
 
     #endregion
@@ -77,10 +84,10 @@ public class MaterialState : IBlock, IMaterialMember
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

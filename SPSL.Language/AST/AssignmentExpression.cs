@@ -1,3 +1,5 @@
+using SPSL.Language.Core;
+
 namespace SPSL.Language.AST;
 
 /// <summary>
@@ -15,7 +17,7 @@ public class AssignmentExpression : IExpression
     /// <summary>
     /// The assignment operator.
     /// </summary>
-    public string Operator { get; }
+    public Op Operator { get; }
 
     /// <summary>
     /// The right operand, the value to assign.
@@ -32,7 +34,7 @@ public class AssignmentExpression : IExpression
     /// <param name="left">The left operand.</param>
     /// <param name="op">The assignment operator.</param>
     /// <param name="right">The right operand.</param>
-    public AssignmentExpression(IAssignableExpression left, string op, IExpression right)
+    public AssignmentExpression(IAssignableExpression left, Op op, IExpression right)
     {
         left.Parent = this;
         right.Parent = this;
@@ -53,10 +55,10 @@ public class AssignmentExpression : IExpression
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

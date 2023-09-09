@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Linq.Expressions;
+using System.Text;
 using CommandLine;
 using SPSL.CommandLine;
 using SPSL.Language.AST;
@@ -270,12 +271,11 @@ void RunMaterialOptions(MaterialOptions opts)
                     {
                         if (annotation.Identifier.Value == "semantic")
                         {
-                            description.SemanticName =
-                                annotation.Arguments.ElementAtOrDefault(0)?.ToString() ?? string.Empty;
-
-                            IExpression? expression = annotation.Arguments.ElementAtOrDefault(1);
-                            description.SemanticIndex =
-                                expression is not null ? Convert.ToUInt32(expression.ToString()) : 0;
+                            if (annotation.Arguments.ElementAtOrDefault(0) is UserDefinedConstantExpression semantic)
+                                description.SemanticName = semantic.Identifier.Name;
+                            
+                            if (annotation.Arguments.ElementAtOrDefault(1) is ILiteral semanticIndex)
+                                description.SemanticIndex = (uint)semanticIndex.Value;
                         }
                         else
                         {
@@ -292,9 +292,8 @@ void RunMaterialOptions(MaterialOptions opts)
                                 _ => throw new NotSupportedException("Invalid semantic for shader stream input")
                             };
 
-                            IExpression? expression = annotation.Arguments.SingleOrDefault();
-                            description.SemanticIndex =
-                                expression is not null ? Convert.ToUInt32(expression.ToString()) : 0;
+                            if (annotation.Arguments.SingleOrDefault() is ILiteral semanticIndex)
+                                description.SemanticIndex = (uint)semanticIndex.Value;
                         }
                     }
 

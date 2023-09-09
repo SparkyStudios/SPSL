@@ -1,6 +1,8 @@
 using Antlr4.Runtime.Tree;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
+using SPSL.Language.Utils;
+using static SPSL.Language.SPSLParser;
 
 namespace SPSL.Language.Visitors;
 
@@ -13,7 +15,10 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
         _fileSource = fileSource;
     }
 
-    protected override IDataType DefaultResult => new UnknownDataType();
+    protected override IDataType DefaultResult => new UnknownDataType()
+    {
+        Source = _fileSource
+    };
 
     protected override IDataType AggregateResult(IDataType aggregate, IDataType nextResult)
     {
@@ -23,140 +28,137 @@ public class DataTypeVisitor : SPSLBaseVisitor<IDataType>
 
     protected override bool ShouldVisitNextChild(IRuleNode node, IDataType currentResult)
     {
-        switch (node)
-        {
-            case SPSLParser.DataTypeContext _:
-            case SPSLParser.PrimitiveDataTypeContext _:
-            case SPSLParser.BuiltinDataTypeContext _:
-            case SPSLParser.UserDefinedDataTypeContext _:
-                return true;
-
-            // Not parsed
-            default:
-                return false;
-        }
+        return node is DataTypeContext or PrimitiveDataTypeContext or BuiltinDataTypeContext
+            or UserDefinedDataTypeContext;
     }
 
-    public override IDataType VisitLanguageDataType(SPSLParser.LanguageDataTypeContext context)
+    public override IDataType VisitLanguageDataType(LanguageDataTypeContext context)
     {
-        IDataType type = context.DataType switch
+        return context.DataType switch
         {
             DataTypeKind.Primitive => context.primitiveDataType().Accept(this),
             DataTypeKind.BuiltIn => context.builtinDataType().Accept(this),
             _ => DefaultResult,
         };
-
-        type.IsArray = context.IsArray;
-
-        if (context.ArraySize != null)
-            type.ArraySize = uint.Parse(context.ArraySize.Text.TrimEnd('u', 'U'));
-
-        return type;
     }
 
-    public override IDataType VisitCustomDataType(SPSLParser.CustomDataTypeContext context)
+    public override IDataType VisitCustomDataType(CustomDataTypeContext context)
     {
-        IDataType type = context.DataType switch
+        return context.DataType switch
         {
             DataTypeKind.UserDefined => context.userDefinedDataType().Accept(this),
             _ => DefaultResult,
         };
-
-        type.IsArray = context.IsArray;
-
-        if (context.ArraySize != null)
-            type.ArraySize = uint.Parse(context.ArraySize.Text.TrimEnd('u', 'U'));
-
-        return type;
     }
 
-    public override IDataType VisitPrimitiveDataType(SPSLParser.PrimitiveDataTypeContext context)
+    public override IDataType VisitPrimitiveDataType(PrimitiveDataTypeContext context)
     {
         PrimitiveDataTypeKind kind = context.Type.Type switch
         {
-            SPSLParser.TYPE_VOID => PrimitiveDataTypeKind.Void,
-            SPSLParser.TYPE_BOOL => PrimitiveDataTypeKind.Boolean,
-            SPSLParser.TYPE_INT => PrimitiveDataTypeKind.Integer,
-            SPSLParser.TYPE_UINT => PrimitiveDataTypeKind.UnsignedInteger,
-            SPSLParser.TYPE_FLOAT => PrimitiveDataTypeKind.Float,
-            SPSLParser.TYPE_DOUBLE => PrimitiveDataTypeKind.Double,
-            SPSLParser.TYPE_STRING => PrimitiveDataTypeKind.String,
+            TYPE_VOID => PrimitiveDataTypeKind.Void,
+            TYPE_BOOL => PrimitiveDataTypeKind.Boolean,
+            TYPE_INT => PrimitiveDataTypeKind.Integer,
+            TYPE_UINT => PrimitiveDataTypeKind.UnsignedInteger,
+            TYPE_FLOAT => PrimitiveDataTypeKind.Float,
+            TYPE_DOUBLE => PrimitiveDataTypeKind.Double,
+            TYPE_STRING => PrimitiveDataTypeKind.String,
             _ => throw new NotSupportedException("The given primitive type is not supported."),
         };
+
+        var languageType = context.Parent as LanguageDataTypeContext;
+        bool isLanguageType = languageType is not null;
 
         return new PrimitiveDataType(kind)
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            IsArray = isLanguageType && languageType!.IsArray,
+            ArraySize = isLanguageType && languageType!.ArraySize != null
+                ? uint.Parse(languageType!.ArraySize.Text.TrimEnd('u', 'U'))
+                : null
         };
     }
 
-    public override IDataType VisitBuiltinDataType(SPSLParser.BuiltinDataTypeContext context)
+    public override IDataType VisitBuiltinDataType(BuiltinDataTypeContext context)
     {
         BuiltInDataTypeKind kind = context.Type.Type switch
         {
-            SPSLParser.TYPE_VECTOR2B => BuiltInDataTypeKind.Vector2b,
-            SPSLParser.TYPE_VECTOR2F => BuiltInDataTypeKind.Vector2f,
-            SPSLParser.TYPE_VECTOR2D => BuiltInDataTypeKind.Vector2d,
-            SPSLParser.TYPE_VECTOR2I => BuiltInDataTypeKind.Vector2i,
-            SPSLParser.TYPE_VECTOR2UI => BuiltInDataTypeKind.Vector2ui,
-            SPSLParser.TYPE_VECTOR3B => BuiltInDataTypeKind.Vector3b,
-            SPSLParser.TYPE_VECTOR3F => BuiltInDataTypeKind.Vector3f,
-            SPSLParser.TYPE_VECTOR3D => BuiltInDataTypeKind.Vector3d,
-            SPSLParser.TYPE_VECTOR3I => BuiltInDataTypeKind.Vector3i,
-            SPSLParser.TYPE_VECTOR3UI => BuiltInDataTypeKind.Vector3ui,
-            SPSLParser.TYPE_VECTOR4B => BuiltInDataTypeKind.Vector4b,
-            SPSLParser.TYPE_VECTOR4F => BuiltInDataTypeKind.Vector4f,
-            SPSLParser.TYPE_VECTOR4D => BuiltInDataTypeKind.Vector4d,
-            SPSLParser.TYPE_VECTOR4I => BuiltInDataTypeKind.Vector4i,
-            SPSLParser.TYPE_VECTOR4UI => BuiltInDataTypeKind.Vector4ui,
-            SPSLParser.TYPE_MATRIX2F => BuiltInDataTypeKind.Matrix2f,
-            SPSLParser.TYPE_MATRIX2D => BuiltInDataTypeKind.Matrix2d,
-            SPSLParser.TYPE_MATRIX3F => BuiltInDataTypeKind.Matrix3f,
-            SPSLParser.TYPE_MATRIX3D => BuiltInDataTypeKind.Matrix3d,
-            SPSLParser.TYPE_MATRIX4F => BuiltInDataTypeKind.Matrix4f,
-            SPSLParser.TYPE_MATRIX4D => BuiltInDataTypeKind.Matrix4d,
-            SPSLParser.TYPE_MATRIX2X3F => BuiltInDataTypeKind.Matrix2x3f,
-            SPSLParser.TYPE_MATRIX2X3D => BuiltInDataTypeKind.Matrix2x3d,
-            SPSLParser.TYPE_MATRIX2X4F => BuiltInDataTypeKind.Matrix2x4f,
-            SPSLParser.TYPE_MATRIX2X4D => BuiltInDataTypeKind.Matrix2x4d,
-            SPSLParser.TYPE_MATRIX3X2F => BuiltInDataTypeKind.Matrix3x2f,
-            SPSLParser.TYPE_MATRIX3X2D => BuiltInDataTypeKind.Matrix3x2d,
-            SPSLParser.TYPE_MATRIX3X4F => BuiltInDataTypeKind.Matrix3x4f,
-            SPSLParser.TYPE_MATRIX3X4D => BuiltInDataTypeKind.Matrix3x4d,
-            SPSLParser.TYPE_MATRIX4X2F => BuiltInDataTypeKind.Matrix4x2f,
-            SPSLParser.TYPE_MATRIX4X2D => BuiltInDataTypeKind.Matrix4x2d,
-            SPSLParser.TYPE_MATRIX4X3F => BuiltInDataTypeKind.Matrix4x3f,
-            SPSLParser.TYPE_MATRIX4X3D => BuiltInDataTypeKind.Matrix4x3d,
-            SPSLParser.TYPE_COLOR3 => BuiltInDataTypeKind.Color3,
-            SPSLParser.TYPE_COLOR4 => BuiltInDataTypeKind.Color4,
-            SPSLParser.TYPE_SAMPLER => BuiltInDataTypeKind.Sampler,
-            SPSLParser.TYPE_TEXTURE1D => BuiltInDataTypeKind.Texture1D,
-            SPSLParser.TYPE_TEXTURE1DARRAY => BuiltInDataTypeKind.ArrayTexture1D,
-            SPSLParser.TYPE_TEXTURE2D => BuiltInDataTypeKind.Texture2D,
-            SPSLParser.TYPE_TEXTURE2DARRAY => BuiltInDataTypeKind.ArrayTexture2D,
-            SPSLParser.TYPE_TEXTURE3D => BuiltInDataTypeKind.Texture3D,
-            SPSLParser.TYPE_CUBEMAP => BuiltInDataTypeKind.Cubemap,
-            SPSLParser.TYPE_CUBEMAPARRAY => BuiltInDataTypeKind.ArrayCubemap,
+            TYPE_VECTOR2B => BuiltInDataTypeKind.Vector2b,
+            TYPE_VECTOR2F => BuiltInDataTypeKind.Vector2f,
+            TYPE_VECTOR2D => BuiltInDataTypeKind.Vector2d,
+            TYPE_VECTOR2I => BuiltInDataTypeKind.Vector2i,
+            TYPE_VECTOR2UI => BuiltInDataTypeKind.Vector2ui,
+            TYPE_VECTOR3B => BuiltInDataTypeKind.Vector3b,
+            TYPE_VECTOR3F => BuiltInDataTypeKind.Vector3f,
+            TYPE_VECTOR3D => BuiltInDataTypeKind.Vector3d,
+            TYPE_VECTOR3I => BuiltInDataTypeKind.Vector3i,
+            TYPE_VECTOR3UI => BuiltInDataTypeKind.Vector3ui,
+            TYPE_VECTOR4B => BuiltInDataTypeKind.Vector4b,
+            TYPE_VECTOR4F => BuiltInDataTypeKind.Vector4f,
+            TYPE_VECTOR4D => BuiltInDataTypeKind.Vector4d,
+            TYPE_VECTOR4I => BuiltInDataTypeKind.Vector4i,
+            TYPE_VECTOR4UI => BuiltInDataTypeKind.Vector4ui,
+            TYPE_MATRIX2F => BuiltInDataTypeKind.Matrix2f,
+            TYPE_MATRIX2D => BuiltInDataTypeKind.Matrix2d,
+            TYPE_MATRIX3F => BuiltInDataTypeKind.Matrix3f,
+            TYPE_MATRIX3D => BuiltInDataTypeKind.Matrix3d,
+            TYPE_MATRIX4F => BuiltInDataTypeKind.Matrix4f,
+            TYPE_MATRIX4D => BuiltInDataTypeKind.Matrix4d,
+            TYPE_MATRIX2X3F => BuiltInDataTypeKind.Matrix2x3f,
+            TYPE_MATRIX2X3D => BuiltInDataTypeKind.Matrix2x3d,
+            TYPE_MATRIX2X4F => BuiltInDataTypeKind.Matrix2x4f,
+            TYPE_MATRIX2X4D => BuiltInDataTypeKind.Matrix2x4d,
+            TYPE_MATRIX3X2F => BuiltInDataTypeKind.Matrix3x2f,
+            TYPE_MATRIX3X2D => BuiltInDataTypeKind.Matrix3x2d,
+            TYPE_MATRIX3X4F => BuiltInDataTypeKind.Matrix3x4f,
+            TYPE_MATRIX3X4D => BuiltInDataTypeKind.Matrix3x4d,
+            TYPE_MATRIX4X2F => BuiltInDataTypeKind.Matrix4x2f,
+            TYPE_MATRIX4X2D => BuiltInDataTypeKind.Matrix4x2d,
+            TYPE_MATRIX4X3F => BuiltInDataTypeKind.Matrix4x3f,
+            TYPE_MATRIX4X3D => BuiltInDataTypeKind.Matrix4x3d,
+            TYPE_COLOR3 => BuiltInDataTypeKind.Color3,
+            TYPE_COLOR4 => BuiltInDataTypeKind.Color4,
+            TYPE_SAMPLER => BuiltInDataTypeKind.Sampler,
+            TYPE_TEXTURE1D => BuiltInDataTypeKind.Texture1D,
+            TYPE_TEXTURE1DARRAY => BuiltInDataTypeKind.ArrayTexture1D,
+            TYPE_TEXTURE2D => BuiltInDataTypeKind.Texture2D,
+            TYPE_TEXTURE2DARRAY => BuiltInDataTypeKind.ArrayTexture2D,
+            TYPE_TEXTURE3D => BuiltInDataTypeKind.Texture3D,
+            TYPE_CUBEMAP => BuiltInDataTypeKind.Cubemap,
+            TYPE_CUBEMAPARRAY => BuiltInDataTypeKind.ArrayCubemap,
             _ => throw new NotSupportedException("The given primitive type is not supported."),
         };
+
+        var languageType = context.Parent as LanguageDataTypeContext;
+        bool isLanguageType = languageType is not null;
 
         return new BuiltInDataType(kind)
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            IsArray = isLanguageType && languageType!.IsArray,
+            ArraySize = isLanguageType && languageType!.ArraySize != null
+                ? uint.Parse(languageType!.ArraySize.Text.TrimEnd('u', 'U'))
+                : null
         };
     }
 
-    public override IDataType VisitUserDefinedDataType(SPSLParser.UserDefinedDataTypeContext context)
+    public override IDataType VisitUserDefinedDataType(UserDefinedDataTypeContext context)
     {
+        var customType = context.Parent as CustomDataTypeContext;
+        bool isCustomType = customType is not null;
+
         return new UserDefinedDataType(context.Type.ToNamespaceReference(_fileSource))
         {
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
-            Source = _fileSource
+            Source = _fileSource,
+            IsArray = isCustomType && customType!.IsArray,
+            ArraySize = isCustomType && customType!.ArraySize != null
+                ? uint.Parse(customType!.ArraySize.Text.TrimEnd('u', 'U'))
+                : null
         };
     }
 }

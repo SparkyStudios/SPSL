@@ -1,10 +1,12 @@
 using System.Collections;
+using System.Diagnostics;
 
 namespace SPSL.Language.AST;
 
 /// <summary>
 /// Represents an SPSL namespace.
 /// </summary>
+[DebuggerDisplay("{FullName,nq}")]
 public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 {
     #region Properties
@@ -125,8 +127,8 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
         // If the name is namespaced
         if (name.Contains(Separator))
         {
-            var pos = name.IndexOf(Separator, StringComparison.Ordinal);
-            var nsName = name[..pos];
+            int pos = name.IndexOf(Separator, StringComparison.Ordinal);
+            string nsName = name[..pos];
 
             foreach (Namespace ns in Namespaces.Where(ns => ns.Name.Value == nsName))
                 return ns.GetChild(name[(pos + SeparatorLength)..]);
@@ -155,13 +157,7 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 
         return found?.ResolveNode(source, offset);
     }
-
-
-    public override string ToString()
-    {
-        return FullName;
-    }
-
+    
     public IEnumerator<INamespaceChild> GetEnumerator()
     {
         return ((IEnumerable<INamespaceChild>)Children).GetEnumerator();
@@ -171,6 +167,7 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 
     #region IEnumerable<INamespaceChild> Implementation
 
+    /// <inheritdoc cref="IEnumerable{T}.GetEnumerator()"/>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return ((IEnumerable)Children).GetEnumerator();
@@ -180,15 +177,10 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 
     #region INamespaceChild Implementation
 
-    /// <summary>
-    /// The parent <see cref="Language.AST.Namespace"/> of this one.
-    /// Defaults to <c>null</c> for root namespaces.
-    /// </summary>
+    /// <inheritdoc cref="INamespaceChild.ParentNamespace"/>
     public Namespace? ParentNamespace { get; set; }
 
-    /// <summary>
-    /// The namespace name.
-    /// </summary>
+    /// <inheritdoc cref="INamespaceChild.Name"/>
     public Identifier Name { get; set; }
 
     #endregion
@@ -209,10 +201,10 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     #endregion
 }

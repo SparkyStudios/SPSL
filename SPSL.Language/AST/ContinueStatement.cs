@@ -3,7 +3,7 @@ namespace SPSL.Language.AST;
 /// <summary>
 /// Represents a <c>continue</c> statement.
 /// </summary>
-public class ContinueStatement : IStatement
+public class ContinueStatement : ILeaveControlFlowStatement
 {
     #region INode Implementation
 
@@ -14,10 +14,10 @@ public class ContinueStatement : IStatement
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)

@@ -8,5 +8,5 @@ public interface IBlockChild : INode
     /// <summary>
     /// The name of the code block child.
     /// </summary>
-    Identifier Name { get; set; }
+    Identifier Name { get; }
 }

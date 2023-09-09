@@ -60,6 +60,11 @@ static Task<InitializeResult> OnInitialize
                     TriggerCharacters = new(".")
                 },
                 HoverProvider = new(true),
+                SignatureHelpProvider = new()
+                {
+                    TriggerCharacters = new("(" ),
+                    RetriggerCharacters = new(",")
+                },
                 ColorProvider = new(true),
                 Workspace = new()
                 {
@@ -98,6 +103,7 @@ try
             .WithHandler<TextDocumentSyncHandler>()
             .WithHandler<CompletionHandler>()
             .WithHandler<HoverHandler>()
+            .WithHandler<SignatureHelpHandler>()
             .WithHandler<DocumentColorHandler>()
             .WithHandler<ColorPresentationHandler>()
             .OnInitialize(OnInitialize)

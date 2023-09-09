@@ -1,8 +1,11 @@
+using System.Diagnostics;
+
 namespace SPSL.Language.AST;
 
 /// <summary>
 /// Reference to a namespace child, using its name.
 /// </summary>
+[DebuggerDisplay("{Name,nq}")]
 public class NamespacedReference : INode, IEquatable<NamespacedReference>
 {
     #region Fields
@@ -64,6 +67,20 @@ public class NamespacedReference : INode, IEquatable<NamespacedReference>
         Names = names;
     }
 
+    /// <summary>
+    /// Initialize a new instance of <see cref="NamespacedReference"/>.
+    /// </summary>
+    /// <param name="name">The referenced name, as a string. May contains namespaces.</param>
+    public NamespacedReference(string name)
+        : this
+        (
+            name.Split(Namespace.Separator, StringSplitOptions.RemoveEmptyEntries)
+                .Select(i => new Identifier { Value = i })
+                .ToArray()
+        )
+    {
+    }
+
     #endregion
 
     #region INode Implementation
@@ -75,10 +92,10 @@ public class NamespacedReference : INode, IEquatable<NamespacedReference>
     public int End { get; init; }
 
     /// <inheritdoc cref="INode.Source"/>
-    public string Source { get; init; } = null!;
+    public string Source { get; init; } = string.Empty;
 
     /// <inheritdoc cref="INode.Parent"/>
-    public INode? Parent { get; set; } = null;
+    public INode? Parent { get; set; }
 
     /// <inheritdoc cref="INode.ResolveNode(string, int)"/>
     public INode? ResolveNode(string source, int offset)
@@ -93,7 +110,10 @@ public class NamespacedReference : INode, IEquatable<NamespacedReference>
 
     public bool Equals(NamespacedReference? other)
     {
-        return other != null && Name.Equals(other.Name);
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+
+        return Name.Equals(other.Name);
     }
 
     #endregion
@@ -105,17 +125,13 @@ public class NamespacedReference : INode, IEquatable<NamespacedReference>
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
         if (obj.GetType() != GetType()) return false;
+
         return Equals((NamespacedReference)obj);
     }
 
     public override int GetHashCode()
     {
         return Name.GetHashCode();
-    }
-
-    public override string ToString()
-    {
-        return Name;
     }
 
     #endregion
