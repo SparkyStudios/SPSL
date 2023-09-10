@@ -576,6 +576,84 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         return _globalSymbolTable;
     }
 
+    public override Symbol VisitInPlaceStructuredBufferDefinition(InPlaceStructuredBufferDefinitionContext context)
+    {
+        SymbolTable buffer = new()
+        {
+            Name = context.Name.Text,
+            Source = _fileSource,
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
+            Type = SymbolType.Buffer,
+        };
+
+        buffer.Add
+        (
+            new()
+            {
+                Name = context.Name.Text,
+                Source = _fileSource,
+                Start = context.Name.StartIndex,
+                End = context.Name.StopIndex,
+                Type = SymbolType.Identifier
+            }
+        );
+
+        DeclareSymbol(buffer);
+
+        BeginScope(buffer);
+
+        VisitChildren(context);
+
+        EndScope();
+
+        DefineSymbol(buffer);
+
+        return _globalSymbolTable;
+    }
+
+    public override Symbol VisitTypedBufferDefinition(TypedBufferDefinitionContext context)
+    {
+        Symbol buffer = new()
+        {
+            Name = context.Name.Text,
+            Source = _fileSource,
+            Start = context.Name.StartIndex,
+            End = context.Name.StopIndex,
+            Type = SymbolType.Buffer,
+            Modifiers = new List<ISymbolModifier>
+            {
+                new SymbolTypeModifier(context.Type.GetText())
+            }
+        };
+
+        DeclareSymbol(buffer);
+        DefineSymbol(buffer);
+
+        return _globalSymbolTable;
+    }
+
+    public override Symbol VisitBufferComponent(BufferComponentContext context)
+    {
+        Symbol component = new()
+        {
+            Name = context.Name.Text,
+            Source = _fileSource,
+            Start = context.Name.StartIndex,
+            End = context.Name.StopIndex,
+            Type = SymbolType.Property,
+            Modifiers = new List<ISymbolModifier>
+            {
+                new SymbolTypeModifier(context.Type.GetText())
+            }
+        };
+
+        if (context.Parent is not StreamPropertyContext)
+            DeclareSymbol(component);
+
+        return _globalSymbolTable;
+    }
+
     public override Symbol VisitBasicShaderFunction(BasicShaderFunctionContext context)
     {
         SymbolTable function = new()
@@ -642,6 +720,24 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         CurrentTable.Add(constructor);
 
         BeginScope(constructor);
+
+        Symbol inStreams = new()
+        {
+            Name = "in_streams",
+            Source = _fileSource,
+            Type = SymbolType.LocalVariable
+        };
+        DeclareSymbol(inStreams);
+        DefineSymbol(inStreams);
+
+        Symbol outStreams = new()
+        {
+            Name = "out_streams",
+            Source = _fileSource,
+            Type = SymbolType.LocalVariable
+        };
+        DeclareSymbol(outStreams);
+        DefineSymbol(outStreams);
 
         VisitChildren(context);
 
@@ -755,27 +851,27 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
         return _globalSymbolTable;
     }
 
-    // public override Symbol VisitAssignmentExpression(AssignmentExpressionContext context)
-    // {
-    //     context.Left.Accept(this);
-    //     context.Right.Accept(this);
-    //
-    //     return _globalSymbolTable;
-    // }
-    //
-    // public override Symbol VisitAssignableExpression(AssignableExpressionContext context)
-    // {
-    //     if (context.basicExpression() != null)
-    //         DefineSymbol(context.basicExpression());
-    //     else if (context.arrayAccessExpression() != null)
-    //         CheckSymbolExists(context.arrayAccessExpression());
-    //     else if (context.propertyMemberReferenceExpression() != null)
-    //         CheckSymbolExists(context.propertyMemberReferenceExpression());
-    //     else if (context.assignableChainedExpression() != null)
-    //         CheckSymbolExists(context.assignableChainedExpression());
-    //
-    //     return _globalSymbolTable;
-    // }
+    public override Symbol VisitAssignmentExpression(AssignmentExpressionContext context)
+    {
+        context.Left.Accept(this);
+        context.Right.Accept(this);
+
+        return _globalSymbolTable;
+    }
+
+    public override Symbol VisitAssignableExpression(AssignableExpressionContext context)
+    {
+        if (context.basicExpression() != null)
+            DefineSymbol(context.basicExpression());
+        // else if (context.arrayAccessExpression() != null)
+        //     CheckSymbolExists(context.arrayAccessExpression());
+        // else if (context.propertyMemberReferenceExpression() != null)
+        //     CheckSymbolExists(context.propertyMemberReferenceExpression());
+        // else if (context.assignableChainedExpression() != null)
+        //     CheckSymbolExists(context.assignableChainedExpression());
+
+        return _globalSymbolTable;
+    }
 
     private void CheckSymbolExists(AssignableChainedExpressionContext context)
     {
@@ -882,8 +978,9 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
     private void CheckSymbolExists(ChainedExpressionContext context)
     {
         CheckSymbolExists(context.Target);
-        foreach (ChainableExpressionContext expressionContext in context.chainableExpression())
-            CheckSymbolExists(expressionContext);
+        // TODO: Use types to check for this
+        // foreach (ChainableExpressionContext expressionContext in context.chainableExpression())
+        //     CheckSymbolExists(expressionContext);
     }
 
     private void CheckSymbolExists(ChainableExpressionContext context)

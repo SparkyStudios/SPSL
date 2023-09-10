@@ -7,8 +7,7 @@ using SPSL.Language.Symbols;
 using SPSL.Language.Utils;
 using SPSL.LanguageServer.Core;
 using SPSL.LanguageServer.Services;
-using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
-using Type = SPSL.Language.AST.Type;
+using Stream = SPSL.Language.AST.Stream;
 
 namespace SPSL.LanguageServer.Handlers;
 
@@ -74,6 +73,8 @@ public class HoverHandler : IHoverHandler
             FunctionArgument argument => CreateHover(document, argument),
 
             VariableDeclarationStatement statement => CreateHover(document, statement),
+            StreamProperty property => CreateHover(document, property),
+            Annotation annotation => CreateHover(document, annotation),
 
             _ => new()
             {
@@ -136,6 +137,12 @@ public class HoverHandler : IHoverHandler
             _ => string.Empty
         };
 
+        string documentation = symbol switch
+        {
+            Stream => "Shader streams block.",
+            _ => symbol.Documentation
+        };
+
         return new()
         {
             Contents = new
@@ -148,7 +155,7 @@ public class HoverHandler : IHoverHandler
                              {prefix}{DeclarationString.From(symbol)}
                              ```
                              ---
-                             {symbol.Documentation}
+                             {documentation}
                              """,
                 }
             ),
@@ -447,6 +454,65 @@ public class HoverHandler : IHoverHandler
             {
                 Start = document.PositionAt(statement.Name.Start),
                 End = document.PositionAt(statement.Name.End + 1)
+            }
+        };
+    }
+
+    private static Hover CreateHover(Document document, StreamProperty property)
+    {
+        return new()
+        {
+            Contents = new
+            (
+                new MarkupContent
+                {
+                    Kind = MarkupKind.Markdown,
+                    Value = $"""
+                             ```spsl
+                             (stream) {DeclarationString.From(property)}
+                             ```
+                             """,
+                }
+            ),
+            Range = new()
+            {
+                Start = document.PositionAt(property.Name.Start),
+                End = document.PositionAt(property.Name.End + 1)
+            }
+        };
+    }
+
+    private static Hover CreateHover(Document document, Annotation annotation)
+    {
+        string documentation = annotation switch
+        {
+            { IsEntry: true } =>
+                "Mark a shader method as the entry point. It is a programming error if more than one method is marked as the entry point, or if this annotation is used inside a shader where a constructor is declared. Adding this annotation on a shader constructor has no effect.",
+            { IsSemantic: true } =>
+                "Sets the semantic of a shader stream property. When multiple semantic annotations are used on the same property, the last one takes precedence.",
+            _ => string.Empty,
+        };
+
+        return new()
+        {
+            Contents = new
+            (
+                new MarkupContent
+                {
+                    Kind = MarkupKind.Markdown,
+                    Value = $"""
+                             ```spsl
+                             {DeclarationString.From(annotation)}
+                             ```
+                             ---
+                             {documentation}
+                             """,
+                }
+            ),
+            Range = new()
+            {
+                Start = document.PositionAt(annotation.Identifier.Start),
+                End = document.PositionAt(annotation.Identifier.End + 1)
             }
         };
     }

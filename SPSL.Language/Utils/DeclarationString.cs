@@ -3,6 +3,7 @@ using System.Text;
 using SPSL.Language.AST;
 using SPSL.Language.Core;
 using static SPSL.Language.SPSLParser;
+using Stream = SPSL.Language.AST.Stream;
 using Type = SPSL.Language.AST.Type;
 
 namespace SPSL.Language.Utils;
@@ -19,9 +20,8 @@ public static class DeclarationString
     /// <exception cref="NotImplementedException">
     /// When the given <see cref="INamespaceChild"/> is not yet implemented.
     /// </exception>
-    public static string From(INamespaceChild child)
-    {
-        return child switch
+    public static string From(INamespaceChild child) =>
+        child switch
         {
             PermutationVariable variable => From(variable),
             Type type => From(type),
@@ -31,7 +31,6 @@ public static class DeclarationString
             Material material => From(material),
             _ => throw new NotImplementedException()
         };
-    }
 
     /// <summary>
     /// Gets the declaration from the given <see cref="IShaderMember"/>.
@@ -40,18 +39,17 @@ public static class DeclarationString
     /// <exception cref="NotImplementedException">
     /// When the given <see cref="IShaderMember"/> is not yet implemented.
     /// </exception>
-    public static string From(IShaderMember member)
-    {
-        return member switch
+    public static string From(IShaderMember member) =>
+        member switch
         {
             GlobalVariable variable => From(variable),
             StructuredBuffer buffer => From(buffer),
             TypedBuffer buffer => From(buffer),
             Type type => From(type),
             ShaderFunction function => From(function),
+            Stream stream => From(stream),
             _ => throw new NotImplementedException()
         };
-    }
 
     /// <summary>
     /// Gets the declaration from the given <see cref="ILiteral"/>.
@@ -60,9 +58,8 @@ public static class DeclarationString
     /// <exception cref="NotImplementedException">
     /// When the given <see cref="ILiteral"/> is not yet implemented.
     /// </exception>
-    public static string From(ILiteral literal)
-    {
-        return literal switch
+    public static string From(ILiteral literal) =>
+        literal switch
         {
             FloatLiteral floatLiteral => From(floatLiteral),
             IntegerLiteral intLiteral => From(intLiteral),
@@ -72,7 +69,6 @@ public static class DeclarationString
             StringLiteral stringLiteral => From(stringLiteral),
             _ => throw new NotImplementedException()
         };
-    }
 
     /// <summary>
     /// Gets the declaration from the given <see cref="IDataType"/>.
@@ -80,9 +76,8 @@ public static class DeclarationString
     /// <param name="dataType"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public static string From(IDataType dataType)
-    {
-        return dataType switch
+    public static string From(IDataType dataType) =>
+        dataType switch
         {
             BuiltInDataType type => From(type),
             PrimitiveDataType type => From(type),
@@ -90,34 +85,27 @@ public static class DeclarationString
             UnknownDataType type => From(type),
             _ => throw new NotImplementedException()
         };
-    }
 
-    public static string From(IExpression expression)
-    {
-        return expression switch
+    public static string From(IExpression expression) =>
+        expression switch
         {
             IConstantExpression constantExpression => From(constantExpression),
             _ => throw new NotImplementedException()
         };
-    }
 
-    public static string From(IConstantExpression expression)
-    {
-        return expression switch
+    public static string From(IConstantExpression expression) =>
+        expression switch
         {
             IPrimitiveExpression primitiveExpression => From(primitiveExpression),
             _ => throw new NotImplementedException()
         };
-    }
 
-    public static string From(IPrimitiveExpression expression)
-    {
-        return expression switch
+    public static string From(IPrimitiveExpression expression) =>
+        expression switch
         {
             ILiteral literal => From(literal),
             _ => throw new NotImplementedException()
         };
-    }
 
     /// <summary>
     /// Gets the declaration of the given <see cref="PermutationVariable"/>.
@@ -159,10 +147,7 @@ public static class DeclarationString
     /// Gets the declaration of the given <see cref="TypeFunction"/>.
     /// </summary>
     /// <param name="variable">The <see cref="TypeFunction"/> to get the declaration from.</param>
-    public static string From(TypeFunction variable)
-    {
-        return From(variable.Function);
-    }
+    public static string From(TypeFunction variable) => From(variable.Function);
 
     public static string From(Function function) =>
         $"{From(function.Head.ReturnType)} {From(function.Name)}({string.Join(", ", function.Head.Signature.Arguments.Select(From))})";
@@ -353,6 +338,12 @@ public static class DeclarationString
     }
 
     /// <summary>
+    /// Gets the declaration of the given <see cref="Stream"/>.
+    /// </summary>
+    /// <param name="stream">The <see cref="Stream"/> to get the declaration from.</param>
+    public static string From(Stream stream) => "stream";
+
+    /// <summary>
     /// Gets the declaration of the given <see cref="FloatLiteral"/>.
     /// </summary>
     /// <param name="literal">The <see cref="FloatLiteral"/> to get the declaration from.</param>
@@ -396,10 +387,7 @@ public static class DeclarationString
     /// Gets the declaration of the given <see cref="UnsignedIntegerLiteral"/>.
     /// </summary>
     /// <param name="literal">The <see cref="UnsignedIntegerLiteral"/> to get the declaration from.</param>
-    public static string From(UnsignedIntegerLiteral literal)
-    {
-        return literal.Value.ToString(CultureInfo.InvariantCulture);
-    }
+    public static string From(UnsignedIntegerLiteral literal) => literal.Value.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Gets the declaration of the given <see cref="DoubleLiteral"/>.
@@ -421,19 +409,13 @@ public static class DeclarationString
     /// Gets the declaration of the given <see cref="BoolLiteral"/>.
     /// </summary>
     /// <param name="literal">The <see cref="BoolLiteral"/> to get the declaration from.</param>
-    public static string From(BoolLiteral literal)
-    {
-        return literal.Value ? "true" : "false";
-    }
+    public static string From(BoolLiteral literal) => literal.Value ? "true" : "false";
 
     /// <summary>
     /// Gets the declaration of the given <see cref="StringLiteral"/>.
     /// </summary>
     /// <param name="literal">The <see cref="StringLiteral"/> to get the declaration from.</param>
-    public static string From(StringLiteral literal)
-    {
-        return $"\"{literal.Value}\"";
-    }
+    public static string From(StringLiteral literal) => $"\"{literal.Value}\"";
 
     /// <summary>
     /// Gets the declaration of the given <see cref="BuiltInDataType"/>.
@@ -666,19 +648,13 @@ public static class DeclarationString
     /// Gets the declaration of the given <see cref="UnknownDataType"/>.
     /// </summary>
     /// <param name="type">The <see cref="UnknownDataType"/> to get the declaration from.</param>
-    public static string From(UnknownDataType type)
-    {
-        return "unknown";
-    }
+    public static string From(UnknownDataType type) => "unknown";
 
     /// <summary>
     /// Gets the declaration of the given <see cref="Identifier"/>.
     /// </summary>
     /// <param name="identifier">The <see cref="Identifier"/> to get the declaration from.</param>
-    public static string From(Identifier identifier)
-    {
-        return identifier.Value;
-    }
+    public static string From(Identifier identifier) => identifier.Value;
 
     /// <summary>
     /// Gets the declaration of the given <see cref="VariableDeclarationStatement"/>.
@@ -686,4 +662,25 @@ public static class DeclarationString
     /// <param name="statement">The <see cref="VariableDeclarationStatement"/> to get the declaration from.</param>
     public static string From(VariableDeclarationStatement statement) =>
         $"{From(statement.Type)} {From(statement.Name)}";
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="StreamProperty"/>.
+    /// </summary>
+    /// <param name="property">The <see cref="StreamProperty"/> to get the declaration from.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// When the given <see cref="StreamProperty"/> has an unknown or invalid stream property data flow.
+    /// </exception>
+    public static string From(StreamProperty property)
+        => $"{property.DataFlow switch {
+            StreamPropertyFlow.Input => "input",
+            StreamPropertyFlow.Output => "output",
+            StreamPropertyFlow.Transient => "transient",
+            _ => throw new ArgumentOutOfRangeException(nameof(property.DataFlow), property.DataFlow, "Invalid stream property data flow.")
+        }} {From(property.Type)} {From(property.Name)}";
+
+    /// <summary>
+    /// Gets the declaration string for the given <see cref="Annotation"/>.
+    /// </summary>
+    /// <param name="annotation">The <see cref="Annotation"/> to get the declaration from.</param>
+    public static string From(Annotation annotation) => $"@{From(annotation.Identifier)}";
 }
