@@ -11,8 +11,8 @@ public class PermutationValue
     {
         string[] parts = option.Split('=', 2);
 
-        Name = parts[0];
-        Value = parts[1];
+        Name = parts[0].Trim();
+        Value = parts[1].Trim();
     }
 
     public override string ToString()

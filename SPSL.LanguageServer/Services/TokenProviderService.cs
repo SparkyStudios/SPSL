@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Antlr4.Runtime;
 using OmniSharp.Extensions.LanguageServer.Protocol;
-using SPSL.Language;
+using SPSL.Language.Core;
 using SPSL.LanguageServer.Core;
 
 namespace SPSL.LanguageServer.Services;

@@ -1,8 +1,8 @@
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using SPSL.Language.AST;
-using SPSL.Language.Symbols;
+using SPSL.Language.Analysis.Symbols;
+using SPSL.Language.Parsing.AST;
 using SPSL.LanguageServer.Core;
 using SPSL.LanguageServer.Services;
 

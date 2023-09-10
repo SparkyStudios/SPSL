@@ -6,10 +6,10 @@ options {
 }
 
 @header {
-using SPSL.Language.AST;
-using SPSL.Language.Core;
+using SPSL.Language.Parsing.AST;
+using SPSL.Language.Parsing.Common;
 
-namespace SPSL.Language;
+namespace SPSL.Language.Core;
 }
 
 KEYWORD_NAMESPACE

@@ -2,9 +2,9 @@
 using Antlr4.Runtime;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using SPSL.Language.Exceptions;
-using SPSL.Language.Symbols;
-using SPSL.Language.Visitors;
+using SPSL.Language.Analysis.Exceptions;
+using SPSL.Language.Analysis.Symbols;
+using SPSL.Language.Analysis.Visitors;
 
 namespace SPSL.LanguageServer.Services;
 

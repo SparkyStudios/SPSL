@@ -1,9 +1,8 @@
-﻿using System.Linq.Expressions;
-using System.Text;
+﻿using System.Text;
 using CommandLine;
 using SPSL.CommandLine;
-using SPSL.Language.AST;
-using SPSL.Language.Core;
+using SPSL.Language.Parsing.AST;
+using SPSL.Language.Parsing.Common;
 using SPSL.Serialization.Reflection;
 using SPSL.Translation.HLSL;
 using Parser = CommandLine.Parser;

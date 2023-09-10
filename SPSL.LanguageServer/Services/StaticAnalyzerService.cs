@@ -1,8 +1,11 @@
 using System.Collections.Concurrent;
+using Antlr4.Runtime;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using SPSL.Language.Exceptions;
-using SPSL.Language.Symbols;
+using SPSL.Language.Analysis.Exceptions;
+using SPSL.Language.Analysis.Symbols;
+using SPSL.Language.Core;
+using SPSL.Language.Parsing.AST;
 using SPSL.LanguageServer.Core;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 

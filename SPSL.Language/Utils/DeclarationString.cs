@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Text;
-using SPSL.Language.AST;
-using SPSL.Language.Core;
-using static SPSL.Language.SPSLParser;
-using Stream = SPSL.Language.AST.Stream;
-using Type = SPSL.Language.AST.Type;
+using SPSL.Language.Parsing.AST;
+using SPSL.Language.Parsing.Common;
+using static SPSL.Language.Core.SPSLParser;
+using Stream = SPSL.Language.Parsing.AST.Stream;
+using Type = SPSL.Language.Parsing.AST.Type;
 
 namespace SPSL.Language.Utils;
 

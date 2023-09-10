@@ -1,5 +1,5 @@
 using OmniSharp.Extensions.LanguageServer.Protocol;
-using SPSL.Language.Symbols;
+using SPSL.Language.Analysis.Symbols;
 
 namespace SPSL.LanguageServer.Utils;
 

@@ -1,13 +1,13 @@
 ﻿using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using SPSL.Language.AST;
-using SPSL.Language.Core;
-using SPSL.Language.Symbols;
+using SPSL.Language.Analysis.Symbols;
+using SPSL.Language.Parsing.AST;
+using SPSL.Language.Parsing.Common;
 using SPSL.Language.Utils;
 using SPSL.LanguageServer.Core;
 using SPSL.LanguageServer.Services;
-using Stream = SPSL.Language.AST.Stream;
+using Stream = SPSL.Language.Parsing.AST.Stream;
 
 namespace SPSL.LanguageServer.Handlers;
 

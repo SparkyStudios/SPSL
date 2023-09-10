@@ -1,5 +1,5 @@
 ﻿using System.Collections;
-using SPSL.Language.AST;
+using SPSL.Language.Parsing.AST;
 
 namespace SPSL.Language.Utils;
 

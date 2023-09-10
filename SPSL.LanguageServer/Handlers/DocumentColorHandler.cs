@@ -3,10 +3,10 @@ using Antlr4.Runtime.Tree;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
-using SPSL.Language;
-using SPSL.Language.AST;
 using SPSL.Language.Core;
-using SPSL.Language.Visitors;
+using SPSL.Language.Parsing.AST;
+using SPSL.Language.Parsing.Common;
+using SPSL.Language.Parsing.Visitors;
 using SPSL.LanguageServer.Core;
 using SPSL.LanguageServer.Services;
 

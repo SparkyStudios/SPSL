@@ -1,11 +1,11 @@
 using System.Text;
 using Antlr4.StringTemplate;
-using SPSL.Language.AST;
-using SPSL.Language.Core;
+using SPSL.Language.Parsing.AST;
+using SPSL.Language.Parsing.Common;
 using SPSL.Translation.Common;
-using static SPSL.Language.SPSLLexer;
-using Stream = SPSL.Language.AST.Stream;
-using Type = SPSL.Language.AST.Type;
+using static SPSL.Language.Core.SPSLLexer;
+using Stream = SPSL.Language.Parsing.AST.Stream;
+using Type = SPSL.Language.Parsing.AST.Type;
 
 namespace SPSL.Translation.HLSL;
 
