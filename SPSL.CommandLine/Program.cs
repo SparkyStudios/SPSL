@@ -272,7 +272,7 @@ void RunMaterialOptions(MaterialOptions opts)
                         {
                             if (annotation.Arguments.ElementAtOrDefault(0) is UserDefinedConstantExpression semantic)
                                 description.SemanticName = semantic.Identifier.Name;
-                            
+
                             if (annotation.Arguments.ElementAtOrDefault(1) is ILiteral semanticIndex)
                                 description.SemanticIndex = (uint)semanticIndex.Value;
                         }
@@ -288,11 +288,15 @@ void RunMaterialOptions(MaterialOptions opts)
                                 "color" => "COLOR",
                                 "boneweights" => "BONEWEIGHTS",
                                 "boneindices" => "BONEINDICES",
-                                _ => throw new NotSupportedException("Invalid semantic for shader stream input")
+                                _ => throw new NotSupportedException("Invalid semantic for shader stream input.")
                             };
 
-                            if (annotation.Arguments.SingleOrDefault() is ILiteral semanticIndex)
-                                description.SemanticIndex = (uint)semanticIndex.Value;
+                            description.SemanticIndex = annotation.Arguments.SingleOrDefault() switch
+                            {
+                                UnsignedIntegerLiteral semanticIndex => semanticIndex.Value,
+                                IntegerLiteral semanticIndex => (uint)semanticIndex.Value,
+                                _ => 0
+                            };
                         }
                     }
 
