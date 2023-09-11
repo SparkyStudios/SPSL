@@ -44,7 +44,7 @@ public class StaticAnalyzerService : IDiagnosticService
     private void SymbolProviderServiceOnSemanticException(object? sender,
         ProviderDataUpdatedEventArgs<SemanticException> e)
     {
-        Document document = _documentManagerService.GetDocument(e.Uri);
+        Document document = _documentManagerService.GetData(e.Uri);
 
         var diagnostics = _cache.GetOrAdd(e.Uri, new List<Diagnostic>());
         diagnostics.Clear();
@@ -83,7 +83,7 @@ public class StaticAnalyzerService : IDiagnosticService
 
     private void SymbolProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<SymbolTable> e)
     {
-        Document document = _documentManagerService.GetDocument(e.Uri);
+        Document document = _documentManagerService.GetData(e.Uri);
 
         var diagnostics = _cache.GetOrAdd(e.Uri, new List<Diagnostic>());
         diagnostics.Clear();

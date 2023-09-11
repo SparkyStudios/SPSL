@@ -9,7 +9,7 @@ namespace SPSL.LanguageServer.Services;
 /// <summary>
 /// <see cref="IProviderService{ParserRuleContext}"/> implementation that provides <see cref="ParserRuleContext"/> data.
 /// </summary>
-public class TokenProviderService: IProviderService<ParserRuleContext>
+public class TokenProviderService : IProviderService<ParserRuleContext>
 {
     private readonly ConcurrentDictionary<DocumentUri, ParserRuleContext> _cache = new();
 
@@ -20,14 +20,23 @@ public class TokenProviderService: IProviderService<ParserRuleContext>
     public TokenProviderService(DocumentManagerService documentManagerService)
     {
         _documentManagerService = documentManagerService;
-        
-        _documentManagerService.DocumentContentChanged += OnDocumentContentChanged;
+
+        _documentManagerService.DataUpdated += OnDocumentContentChanged;
     }
 
-    private void OnDocumentContentChanged(object? sender, DocumentEventArgs e)
+    private void OnDocumentContentChanged(object? sender, ProviderDataUpdatedEventArgs<Document> e)
     {
-        Document document = _documentManagerService.GetDocument(e.Uri);
+        Parse(e.Data);
+    }
 
+    public ParserRuleContext Parse(DocumentUri uri)
+    {
+        Document document = _documentManagerService.GetData(uri);
+        return Parse(document);
+    }
+
+    public ParserRuleContext Parse(Document document)
+    {
         SPSLLexer lexer = new(new AntlrInputStream(document.GetText()));
         lexer.RemoveErrorListeners();
 
@@ -35,17 +44,19 @@ public class TokenProviderService: IProviderService<ParserRuleContext>
         parser.RemoveErrorListeners();
 
         List<IAntlrErrorListener<IToken>> tempListeners = new();
-        CollectParserErrorListeners?.Invoke(this, new(e.Uri) { ErrorListeners = tempListeners });
+        CollectParserErrorListeners?.Invoke(this, new(document.Uri) { ErrorListeners = tempListeners });
         parser.AddErrorListener(new ProxyParserErrorListener(tempListeners));
 
         ParserRuleContext tree = document.Uri.Path.EndsWith(".spslm") ? parser.materialFile() : parser.shaderFile();
-        SetData(e.Uri, tree);
+        SetData(document.Uri, tree);
+
+        return tree;
     }
 
     #region IProviderService<ParserRuleContext> Members
-    
+
     public event EventHandler<ProviderDataUpdatedEventArgs<ParserRuleContext>>? DataUpdated;
-    
+
     public ParserRuleContext? GetData(DocumentUri uri)
     {
         return _cache.TryGetValue(uri, out ParserRuleContext? context) ? context : null;
@@ -53,7 +64,7 @@ public class TokenProviderService: IProviderService<ParserRuleContext>
 
     public void SetData(DocumentUri uri, ParserRuleContext data, bool notify = true)
     {
-        _cache.AddOrUpdate(uri, data, (_, __) => data);
+        _cache.AddOrUpdate(uri, data, (_, _) => data);
 
         if (!notify) return;
         DataUpdated?.Invoke(this, new(uri, data));

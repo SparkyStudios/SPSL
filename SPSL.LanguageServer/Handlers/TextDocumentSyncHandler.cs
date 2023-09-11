@@ -47,7 +47,7 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
         _staticAnalyzerService = staticAnalyzerService;
         _documentDiagnosticService = documentDiagnosticService;
 
-        _documentManagerService.DocumentContentChanged += DocumentManagerServiceOnDocumentContentChanged;
+        _documentManagerService.DataUpdated += DocumentManagerServiceOnDocumentContentChanged;
 
         _syntaxAnalyzerService.DataUpdated += SyntaxAnalyzerServiceOnDataUpdated;
         _staticAnalyzerService.DataUpdated += StaticAnalyzerServiceOnDataUpdated;
@@ -60,7 +60,7 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
         if (!_documentManagerService.HasDocument(e.Uri))
             return;
 
-        Document document = _documentManagerService.GetDocument(e.Uri);
+        Document document = _documentManagerService.GetData(e.Uri);
 
         _router.TextDocument.PublishDiagnostics
         (
@@ -91,7 +91,7 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
         _documentDiagnosticService.SetDiagnostics(e.Uri, nameof(SyntaxAnalyzerService), e.Data);
     }
 
-    private void DocumentManagerServiceOnDocumentContentChanged(object? sender, DocumentEventArgs e)
+    private void DocumentManagerServiceOnDocumentContentChanged(object? sender, ProviderDataUpdatedEventArgs<Document> e)
     {
         _router.Window.LogInfo($"Document content changed: {e.Uri}");
     }
@@ -152,22 +152,22 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
 
     public Task<Unit> Handle(DidChangeTextDocumentParams request, CancellationToken cancellationToken)
     {
-        Document document = _documentManagerService.GetDocument(request.TextDocument.Uri);
+        Document document = _documentManagerService.GetData(request.TextDocument.Uri);
         document.Version = request.TextDocument.Version;
         document.Update(request.ContentChanges, request.TextDocument.Version);
 
-        _documentManagerService.UpdateDocument(request.TextDocument.Uri, document);
+        _documentManagerService.SetData(request.TextDocument.Uri, document);
 
         return Unit.Task;
     }
 
     public Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
     {
-        Document document = _documentManagerService.GetDocument(request.TextDocument.Uri);
+        Document document = _documentManagerService.GetData(request.TextDocument.Uri);
         document.Version = request.TextDocument.Version;
         document.SetText(request.TextDocument.Text);
 
-        _documentManagerService.UpdateDocument(request.TextDocument.Uri, document);
+        _documentManagerService.SetData(request.TextDocument.Uri, document);
 
         return Unit.Task;
     }
@@ -182,10 +182,10 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
 
     public Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
     {
-        Document document = _documentManagerService.GetDocument(request.TextDocument.Uri);
+        Document document = _documentManagerService.GetData(request.TextDocument.Uri);
         document.SetText(request.Text ?? "");
 
-        _documentManagerService.UpdateDocument(request.TextDocument.Uri, document);
+        _documentManagerService.SetData(request.TextDocument.Uri, document);
 
         return Unit.Task;
     }

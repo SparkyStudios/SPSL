@@ -5,38 +5,33 @@ using SPSL.LanguageServer.Core;
 
 namespace SPSL.LanguageServer.Services;
 
-public class DocumentManagerService
+public class DocumentManagerService : IProviderService<Document>
 {
     private readonly ConcurrentDictionary<DocumentUri, Document> _documents = new();
 
-    public event EventHandler<DocumentEventArgs>? DocumentContentChanged;
     public event EventHandler<DocumentEventArgs>? DocumentRemoved;
-    
-    private readonly Action<DocumentUri> _onDocumentContentChanged;
+
+    private readonly Action<ProviderDataUpdatedEventArgs<Document>> _onDocumentContentChanged;
 
     public DocumentManagerService()
     {
-        _onDocumentContentChanged = ((Action<DocumentUri>)OnDocumentContentChanged).Debounce(TimeSpan.FromMilliseconds(500));
+        _onDocumentContentChanged =
+            ((Action<ProviderDataUpdatedEventArgs<Document>>)OnDocumentContentChanged)
+            .Debounce(TimeSpan.FromMilliseconds(500));
     }
 
-    private void OnDocumentContentChanged(DocumentUri uri)
+    private void OnDocumentContentChanged(ProviderDataUpdatedEventArgs<Document> e)
     {
-        DocumentContentChanged?.Invoke(this, new(uri));
+        DataUpdated?.Invoke(this, e);
     }
 
     public bool HasDocument(DocumentUri uri) => _documents.ContainsKey(uri);
 
-    public void UpdateDocument(DocumentUri uri, Document document)
-    {
-        _documents.AddOrUpdate(uri, document, (k, v) => document);
-        _onDocumentContentChanged(document.Uri);
-    }
-
     public void UpdateDocument(DocumentUri uri, Container<TextDocumentContentChangeEvent> changes)
     {
-        Document doc = GetDocument(uri);
+        Document doc = GetData(uri);
         doc.Update(changes);
-        UpdateDocument(uri, doc);
+        SetData(uri, doc);
     }
 
     public void RemoveDocument(DocumentUri uri)
@@ -45,8 +40,25 @@ public class DocumentManagerService
         DocumentRemoved?.Invoke(this, new(uri));
     }
 
-    public Document GetDocument(DocumentUri uri)
+    #region IProviderService<Document> Implementation
+
+    /// <inheritdoc cref="IProviderService{T}.DataUpdated" />
+    public event EventHandler<ProviderDataUpdatedEventArgs<Document>>? DataUpdated;
+
+    /// <inheritdoc cref="IProviderService{T}.GetData(DocumentUri)" />
+    public Document GetData(DocumentUri uri)
     {
         return _documents.TryGetValue(uri, out Document? buffer) ? buffer : new(uri, "spsl");
     }
+
+    /// <inheritdoc cref="IProviderService{T}.SetData(DocumentUri, T, bool)" />
+    public void SetData(DocumentUri uri, Document data, bool notify = true)
+    {
+        _documents.AddOrUpdate(uri, data, (_, _) => data);
+
+        if (notify)
+            _onDocumentContentChanged(new(data.Uri, data));
+    }
+
+    #endregion
 }

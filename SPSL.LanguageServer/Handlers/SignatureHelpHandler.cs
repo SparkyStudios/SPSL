@@ -38,7 +38,7 @@ public class SignatureHelpHandler : ISignatureHelpHandler
 
     public Task<SignatureHelp?> Handle(SignatureHelpParams request, CancellationToken cancellationToken)
     {
-        Document document = _documentManagerService.GetDocument(request.TextDocument.Uri);
+        Document document = _documentManagerService.GetData(request.TextDocument.Uri);
         Ast? ast = _astProviderService.GetData(document.Uri);
         INode? iNode = ast?.ResolveNode(document.Uri.ToString(), document.OffsetAt(request.Position));
 

@@ -2,6 +2,7 @@ using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using SPSL.Language.Analysis.Common;
 using SPSL.Language.Analysis.Symbols;
 using SPSL.Language.Analysis.Symbols.Modifiers;
 using SPSL.Language.Parsing.AST;
@@ -81,7 +82,7 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
 
     public Task<CompletionList> Handle(CompletionParams request, CancellationToken cancellationToken)
     {
-        Document document = _documentManagerService.GetDocument(request.TextDocument.Uri);
+        Document document = _documentManagerService.GetData(request.TextDocument.Uri);
 
         SymbolTable? root = _symbolProviderService.GetData(request.TextDocument.Uri);
         SymbolTable? scope = root?.FindEnclosingScope

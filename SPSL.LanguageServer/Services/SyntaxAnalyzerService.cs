@@ -102,7 +102,7 @@ public class SyntaxAnalyzerService : IDiagnosticService
         if (!_documentManagerService.HasDocument(e.Uri))
             return;
 
-        Document document = _documentManagerService.GetDocument(e.Uri);
+        Document document = _documentManagerService.GetData(e.Uri);
 
         var diagnostics = _cache.GetOrAdd(e.Uri, new List<Diagnostic>());
         diagnostics.Clear();

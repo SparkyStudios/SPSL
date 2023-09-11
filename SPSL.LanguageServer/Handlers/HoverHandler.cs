@@ -46,7 +46,7 @@ public class HoverHandler : IHoverHandler
         if (ast == null)
             return Task.FromResult<Hover?>(null);
 
-        Document document = _documentManagerService.GetDocument(request.TextDocument.Uri.ToString());
+        Document document = _documentManagerService.GetData(request.TextDocument.Uri.ToString());
         INode? node = ast.ResolveNode(request.TextDocument.Uri.ToString(), document.OffsetAt(request.Position));
 
         if (node == null)

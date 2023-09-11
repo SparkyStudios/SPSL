@@ -68,7 +68,7 @@ public class DocumentColorHandler : IDocumentColorHandler
         if (context == null)
             return Task.FromResult<Container<ColorInformation>>(new());
 
-        Document document = _documentManagerService.GetDocument(request.TextDocument.Uri);
+        Document document = _documentManagerService.GetData(request.TextDocument.Uri);
 
         var listener = new ColorInstanceListener(request.TextDocument.Uri.ToString());
         ParseTreeWalker.Default.Walk(listener, context);
