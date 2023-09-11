@@ -9,6 +9,38 @@ namespace SPSL.Language.Parsing.AST;
 [DebuggerDisplay("{FullName,nq}")]
 public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 {
+    #region Nested Types
+
+    /// <summary>
+    /// Compares two nodes in the namespace and check if they are equal
+    /// or semantically equal.
+    /// </summary>
+    private class MergeComparer : IEqualityComparer<INamespaceChild>
+    {
+        public bool Equals(INamespaceChild? x, INamespaceChild? y)
+        {
+            if (ReferenceEquals(x, y)) return true;
+            if (ReferenceEquals(x, null)) return false;
+            if (ReferenceEquals(y, null)) return false;
+            if (x.GetType() != y.GetType()) return false;
+
+            if (x is ISemanticallyEquatable sx && sx.SemanticallyEquals(y))
+                return true;
+
+            if (y is ISemanticallyEquatable sy && sy.SemanticallyEquals(x))
+                return true;
+
+            return x.Name.Equals(y.Name) && x.Source == y.Source;
+        }
+
+        public int GetHashCode(INamespaceChild obj)
+        {
+            return HashCode.Combine(obj.Name, obj.Source);
+        }
+    }
+
+    #endregion
+
     #region Properties
 
     public const char SeparatorChar = ':';
@@ -94,6 +126,15 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
     /// <param name="other">The other namespace to merge into this one.</param>
     public void Merge(Namespace other)
     {
+        // If the other namespace is the same as this one, no need to merge.
+        if (other == this) return;
+
+        var comparer = new MergeComparer();
+
+        // Remove existing children
+        foreach (INamespaceChild child in other.Children)
+            Children.RemoveWhere(x => comparer.Equals(x, child));
+
         foreach (INamespaceChild child in other.Children)
         {
             child.ParentNamespace = this;
@@ -157,7 +198,7 @@ public class Namespace : INamespaceChild, IEnumerable<INamespaceChild>
 
         return found?.ResolveNode(source, offset);
     }
-    
+
     public IEnumerator<INamespaceChild> GetEnumerator()
     {
         return ((IEnumerable<INamespaceChild>)Children).GetEnumerator();
