@@ -3,7 +3,7 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.Parsing.AST;
 
-public class Shader : IBlock, INamespaceChild
+public class Shader : IBlock, INamespaceChild, ISemanticallyEquatable
 {
     #region Nested Types
 
@@ -196,6 +196,27 @@ public class Shader : IBlock, INamespaceChild
                Children.FirstOrDefault(c => c.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
                Name.ResolveNode(source, offset) ??
                (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
+
+    #endregion
+
+    #region ISemanticallyEquatable Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode)"/>
+    public bool SemanticallyEquals(INode? node)
+    {
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not Shader other) return false;
+
+        // Two shaders are semantically equal if they have the same stage and same name.
+        return Stage == other.Stage && Name.SemanticallyEquals(other.Name);
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(Stage, Name.GetSemanticHashCode());
     }
 
     #endregion

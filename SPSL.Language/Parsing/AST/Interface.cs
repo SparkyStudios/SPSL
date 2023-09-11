@@ -3,7 +3,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// Represents an SPSL shader interface.
 /// </summary>
-public class Interface : INamespaceChild
+public class Interface : INamespaceChild, ISemanticallyEquatable
 {
     #region Properties
 
@@ -130,6 +130,27 @@ public class Interface : INamespaceChild
                Methods.FirstOrDefault(e => e.ResolveNode(source, offset) is not null)
                    ?.ResolveNode(source, offset) ??
                (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
+
+    #endregion
+
+    #region ISemanticallyEquatable Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode)"/>
+    public bool SemanticallyEquals(INode? node)
+    {
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not Interface other) return false;
+
+        // Two interfaces are semantically equal if they have the same name.
+        return Name.SemanticallyEquals(other.Name);
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(Name.GetSemanticHashCode());
     }
 
     #endregion

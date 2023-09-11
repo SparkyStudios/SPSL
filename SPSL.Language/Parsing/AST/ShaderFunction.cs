@@ -2,7 +2,7 @@ using SPSL.Language.Utils;
 
 namespace SPSL.Language.Parsing.AST;
 
-public class ShaderFunction : IAnnotated, IShaderMember, IMaterialMember, ISemanticallyEquatable<ShaderFunction>,
+public class ShaderFunction : IAnnotated, IShaderMember, IMaterialMember, ISemanticallyEquatable,
     IEquatable<ShaderFunction>
 {
     #region Properties
@@ -113,19 +113,19 @@ public class ShaderFunction : IAnnotated, IShaderMember, IMaterialMember, ISeman
 
     #endregion
 
-    #region ISemanticallyEquatable<ShaderFunction> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(ShaderFunction? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
 
         // Two shader functions are semantically equal if they have their inner function are also semantically equal.
-        return IsOverride == other.IsOverride && Function.SemanticallyEquals(other.Function);
+        return node is ShaderFunction other && IsOverride == other.IsOverride && Function.SemanticallyEquals(other.Function);
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return HashCode.Combine(IsOverride, Function.GetSemanticHashCode());

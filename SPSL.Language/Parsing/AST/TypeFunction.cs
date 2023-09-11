@@ -5,7 +5,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// Represents a function inside a struct.
 /// </summary>
-public class TypeFunction : IAnnotated, IDocumented, IBlockChild, ISemanticallyEquatable<TypeFunction>,
+public class TypeFunction : IAnnotated, IDocumented, IBlockChild, ISemanticallyEquatable,
     IEquatable<TypeFunction>
 {
     #region Properties
@@ -101,19 +101,20 @@ public class TypeFunction : IAnnotated, IDocumented, IBlockChild, ISemanticallyE
 
     #endregion
 
-    #region ISemanticallyEquatable<TypeFunction> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(TypeFunction? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not TypeFunction other) return false;
 
         // Two type functions are semantically equal if they have their inner function are also semantically equal.
         return Function.SemanticallyEquals(other.Function);
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return HashCode.Combine(Function.GetSemanticHashCode());

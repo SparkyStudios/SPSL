@@ -6,7 +6,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <example>
 /// <code>aSimpleIdentifier</code>
 /// </example>
-public class Identifier : INode, ISemanticallyEquatable<Identifier>, IEquatable<Identifier>
+public class Identifier : INode, ISemanticallyEquatable, IEquatable<Identifier>
 {
     #region Properties
 
@@ -59,19 +59,20 @@ public class Identifier : INode, ISemanticallyEquatable<Identifier>, IEquatable<
 
     #endregion
 
-    #region ISemanticallyEquatable<Identifier> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(Identifier? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not Identifier other) return false;
 
         // An identifier is semantically equivalent to another identifier if they have the same value.
         return Value == other.Value;
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return HashCode.Combine(Value);

@@ -6,7 +6,7 @@ namespace SPSL.Language.Parsing.AST;
 /// Represent an SPSL shader fragment. A set of functions
 /// which can be used directly into a shader.
 /// </summary>
-public class ShaderFragment : INamespaceChild, IBlock
+public class ShaderFragment : INamespaceChild, IBlock, ISemanticallyEquatable
 {
     #region Properties
 
@@ -199,6 +199,27 @@ public class ShaderFragment : INamespaceChild, IBlock
         return Name.ResolveNode(source, offset) ??
                Children.FirstOrDefault(x => x.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
                (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
+
+    #endregion
+
+    #region ISemanticallyEquatable Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode)"/>
+    public bool SemanticallyEquals(INode? node)
+    {
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not ShaderFragment other) return false;
+
+        // Two shader fragments are semantically equal if they have the same name.
+        return Name.SemanticallyEquals(other.Name);
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(Name.GetSemanticHashCode());
     }
 
     #endregion

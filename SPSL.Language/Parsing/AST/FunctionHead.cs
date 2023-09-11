@@ -3,14 +3,14 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// Represents an SPSL function signature with its name and its return type.
 /// </summary>
-public class FunctionHead : IDocumented, INode, ISemanticallyEquatable<FunctionHead>, IEquatable<FunctionHead>
+public class FunctionHead : IDocumented, INode, ISemanticallyEquatable, IEquatable<FunctionHead>
 {
     #region Properties
 
     /// <summary>
     /// The function's return type.
     /// </summary>
-    public IDataType ReturnType { get; set;  }
+    public IDataType ReturnType { get; set; }
 
     /// <summary>
     /// The function's name.
@@ -117,13 +117,14 @@ public class FunctionHead : IDocumented, INode, ISemanticallyEquatable<FunctionH
 
     #endregion
 
-    #region ISemanticallyEquatable<FunctionHead> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(FunctionHead? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not FunctionHead other) return false;
 
         // A function head is semantically equivalent to another function head if the return type, the name, and
         // the signature are all semantically equivalent.
@@ -131,7 +132,7 @@ public class FunctionHead : IDocumented, INode, ISemanticallyEquatable<FunctionH
                Signature.SemanticallyEquals(other.Signature);
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return HashCode.Combine

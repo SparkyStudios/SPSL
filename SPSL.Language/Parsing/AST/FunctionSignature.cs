@@ -5,7 +5,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// Represents an SPSL function signature.
 /// </summary>
-public class FunctionSignature : INode, ISemanticallyEquatable<FunctionSignature>, IEquatable<FunctionSignature>
+public class FunctionSignature : INode, ISemanticallyEquatable, IEquatable<FunctionSignature>
 {
     #region Properties
 
@@ -110,13 +110,14 @@ public class FunctionSignature : INode, ISemanticallyEquatable<FunctionSignature
 
     #endregion
 
-    #region ISemanticallyEquatable<FunctionSignature> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(FunctionSignature? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not FunctionSignature other) return false;
         if (Arguments.Count != other.Arguments.Count) return false;
 
         // A function signature is semantically equivalent to another function signature if all its parameters are semantically equivalent.
@@ -127,7 +128,7 @@ public class FunctionSignature : INode, ISemanticallyEquatable<FunctionSignature
         return true;
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return Arguments.GetSemanticHashCode<FunctionArgument>();

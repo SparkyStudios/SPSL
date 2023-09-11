@@ -3,7 +3,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// Represents an SPSL function.
 /// </summary>
-public class Function : IBlockChild, ISemanticallyEquatable<Function>, IEquatable<Function>
+public class Function : IBlockChild, ISemanticallyEquatable, IEquatable<Function>
 {
     #region Properties
 
@@ -106,19 +106,20 @@ public class Function : IBlockChild, ISemanticallyEquatable<Function>, IEquatabl
 
     #endregion
 
-    #region ISemanticallyEquatable<Function> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(Function? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not Function other) return false;
 
         // A function is semantically equivalent to another function if their function head are semantically equivalent.
         return Head.SemanticallyEquals(other.Head);
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return Head.GetSemanticHashCode();

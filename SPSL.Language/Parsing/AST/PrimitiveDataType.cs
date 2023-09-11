@@ -81,16 +81,16 @@ public class PrimitiveDataType : IDataType
 
     #endregion
 
-    #region ISemanticallyEquatable<IDataType> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(IDataType? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? other)
     {
         return other is PrimitiveDataType otherType && Type == otherType.Type && IsArray == otherType.IsArray &&
                ArraySize == otherType.ArraySize;
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return HashCode.Combine(Type);

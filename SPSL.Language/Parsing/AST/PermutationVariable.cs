@@ -5,7 +5,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// An SPSL shader permutation variable.
 /// </summary>
-public class PermutationVariable : INamespaceChild, IBlockChild
+public class PermutationVariable : INamespaceChild, IBlockChild, ISemanticallyEquatable
 {
     #region Properties
 
@@ -80,6 +80,27 @@ public class PermutationVariable : INamespaceChild, IBlockChild
         return Name.ResolveNode(source, offset) ?? Initializer.ResolveNode(source, offset) ??
             EnumerationValues.FirstOrDefault(v => v.ResolveNode(source, offset) != null)
                 ?.ResolveNode(source, offset);
+    }
+
+    #endregion
+
+    #region ISemanticallyEquatable Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode)"/>
+    public bool SemanticallyEquals(INode? node)
+    {
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not PermutationVariable other) return false;
+
+        // Two permutation variables are semantically equal if they have the same type and same name.
+        return Type == other.Type && Name.SemanticallyEquals(other.Name);
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(Type, Name.GetSemanticHashCode());
     }
 
     #endregion

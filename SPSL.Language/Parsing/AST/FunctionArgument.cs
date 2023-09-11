@@ -5,7 +5,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// Represents an SPSL function argument.
 /// </summary>
-public class FunctionArgument : IDocumented, INode, ISemanticallyEquatable<FunctionArgument>,
+public class FunctionArgument : IDocumented, INode, ISemanticallyEquatable,
     IEquatable<FunctionArgument>
 {
     #region Properties
@@ -97,19 +97,20 @@ public class FunctionArgument : IDocumented, INode, ISemanticallyEquatable<Funct
 
     #endregion
 
-    #region ISemanticallyEquatable<FunctionArgument> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(FunctionArgument? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not FunctionArgument other) return false;
 
         // A function argument is semantically equivalent if it has the same flow constraint and the same type.
         return Flow == other.Flow && Type.SemanticallyEquals(other.Type);
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return HashCode.Combine((int)Flow, Type);

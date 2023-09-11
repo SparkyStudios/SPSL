@@ -32,7 +32,7 @@ public sealed class OrderedSet<T> : ICollection<T>, IEquatable<OrderedSet<T>> wh
         return _linkedList.Aggregate(0, (current, item) => HashCode.Combine(current, item.GetHashCode()));
     }
 
-    public int GetSemanticHashCode<TNode>() where TNode : T, ISemanticallyEquatable<T>
+    public int GetSemanticHashCode<TNode>() where TNode : T, ISemanticallyEquatable
     {
         return _linkedList.Aggregate(0,
             (current, item) => HashCode.Combine(current, ((TNode)item).GetSemanticHashCode()));

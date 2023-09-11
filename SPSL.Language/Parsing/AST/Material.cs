@@ -5,7 +5,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// Represents an SPSL material.
 /// </summary>
-public class Material : IBlock, INamespaceChild
+public class Material : IBlock, INamespaceChild, ISemanticallyEquatable
 {
     #region Properties
 
@@ -80,6 +80,27 @@ public class Material : IBlock, INamespaceChild
         return ExtendedMaterial.ResolveNode(source, offset) ??
                Children.FirstOrDefault(c => c.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
                (Source == source && offset >= Start && offset <= End ? this as INode : null);
+    }
+
+    #endregion
+
+    #region ISemanticallyEquatable Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode)"/>
+    public bool SemanticallyEquals(INode? node)
+    {
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not Material other) return false;
+
+        // Two materials are semantically equal if they have the same name.
+        return Name.SemanticallyEquals(other.Name);
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(Name.GetSemanticHashCode());
     }
 
     #endregion

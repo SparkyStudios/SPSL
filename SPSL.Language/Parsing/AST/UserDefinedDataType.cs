@@ -59,19 +59,19 @@ public class UserDefinedDataType : IDataType
 
     #endregion
 
-    #region ISemanticallyEquatable<IDataType> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T?)"/>
-    public bool SemanticallyEquals(IDataType? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not UserDefinedDataType other) return false;
 
-        return other is UserDefinedDataType type && Type.Equals(type.Type) && IsArray == other.IsArray &&
-               ArraySize == other.ArraySize;
+        return Type.Equals(other.Type) && IsArray == other.IsArray && ArraySize == other.ArraySize;
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return HashCode.Combine(IsArray, ArraySize);

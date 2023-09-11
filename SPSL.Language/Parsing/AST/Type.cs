@@ -6,7 +6,7 @@ namespace SPSL.Language.Parsing.AST;
 /// <summary>
 /// Represents an SPSL type.
 /// </summary>
-public class Type : INamespaceChild, IShaderMember, IMaterialMember
+public class Type : INamespaceChild, IShaderMember, IMaterialMember, ISemanticallyEquatable
 {
     #region Properties
 
@@ -130,6 +130,27 @@ public class Type : INamespaceChild, IShaderMember, IMaterialMember
         return Properties.FirstOrDefault(p => p.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
                Functions.FirstOrDefault(f => f.ResolveNode(source, offset) != null)?.ResolveNode(source, offset) ??
                ExtendedType.ResolveNode(source, offset) ?? Name.ResolveNode(source, offset);
+    }
+
+    #endregion
+
+    #region ISemanticallyEquatable Implementation
+
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode)"/>
+    public bool SemanticallyEquals(INode? node)
+    {
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not Type other) return false;
+
+        // Two types are semantically equal if they have the same kind and same name.
+        return Kind == other.Kind && Name.SemanticallyEquals(other.Name);
+    }
+
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
+    public int GetSemanticHashCode()
+    {
+        return HashCode.Combine(Kind, Name.GetSemanticHashCode());
     }
 
     #endregion

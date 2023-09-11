@@ -4,8 +4,7 @@
 /// Represents the most basic expression in SPSL.
 /// It generally reference an existing variable.
 /// </summary>
-public class BasicExpression : IAssignableExpression, ISemanticallyEquatable<BasicExpression>,
-    IEquatable<BasicExpression>
+public class BasicExpression : IAssignableExpression, ISemanticallyEquatable, IEquatable<BasicExpression>
 {
     #region Properties
 
@@ -73,18 +72,19 @@ public class BasicExpression : IAssignableExpression, ISemanticallyEquatable<Bas
 
     #endregion
 
-    #region ISemanticallyEquatable<Annotation> Implementation
+    #region ISemanticallyEquatable Implementation
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.SemanticallyEquals(T)"/>
-    public bool SemanticallyEquals(BasicExpression? other)
+    /// <inheritdoc cref="ISemanticallyEquatable.SemanticallyEquals(INode?)"/>
+    public bool SemanticallyEquals(INode? node)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, node)) return false;
+        if (ReferenceEquals(this, node)) return true;
+        if (node is not BasicExpression other) return false;
 
         return Identifier.SemanticallyEquals(other.Identifier);
     }
 
-    /// <inheritdoc cref="ISemanticallyEquatable{T}.GetSemanticHashCode()"/>
+    /// <inheritdoc cref="ISemanticallyEquatable.GetSemanticHashCode()"/>
     public int GetSemanticHashCode()
     {
         return Identifier.GetSemanticHashCode();
