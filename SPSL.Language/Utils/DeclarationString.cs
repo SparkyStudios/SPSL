@@ -250,6 +250,25 @@ public static class DeclarationString
     }
 
     /// <summary>
+    /// Gets the declaration of the given <see cref="Material"/>.
+    /// </summary>
+    /// <param name="material">The <see cref="Material"/> to get the declaration from.</param>
+    public static string From(Material material)
+    {
+        StringBuilder sb = new();
+
+        if (material.IsAbstract)
+            sb.Append("abstract ");
+
+        sb.Append($"material {From(material.Name)}");
+
+        if (material.ExtendedMaterial != NamespacedReference.Null)
+            sb.Append($" extends {material.ExtendedMaterial.Name}");
+
+        return sb.ToString().TrimEnd(',');
+    }
+
+    /// <summary>
     /// Gets the declaration of the given <see cref="GlobalVariable"/>
     /// </summary>
     /// <param name="variable">The <see cref="GlobalVariable"/> to get the declaration from.</param>
