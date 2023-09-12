@@ -2,11 +2,14 @@ using System.Collections.Concurrent;
 using Antlr4.Runtime;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using SPSL.Language.Analysis.Common;
 using SPSL.Language.Analysis.Exceptions;
 using SPSL.Language.Analysis.Symbols;
-using SPSL.Language.Core;
+using SPSL.Language.Analysis.Visitors;
 using SPSL.Language.Parsing.AST;
 using SPSL.LanguageServer.Core;
+using static SPSL.Language.Analysis.Visitors.StaticAnalyzerVisitor;
+using Diagnostic = OmniSharp.Extensions.LanguageServer.Protocol.Models.Diagnostic;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace SPSL.LanguageServer.Services;
@@ -14,31 +17,82 @@ namespace SPSL.LanguageServer.Services;
 public class StaticAnalyzerService : IDiagnosticService
 {
     public const string SourceName = "spsl";
-    public const string StaticAnalyzerErrorCode = "0000";
-    public const string MismatchConstructorNameErrorCode = "0001";
-    public const string ConflictingIdentifierNameErrorCode = "0002";
-    public const string ReassignedConstVariableErrorCode = "0003";
-    public const string UndefinedVariableUsageErrorCode = "0004";
 
     private readonly ConcurrentDictionary<DocumentUri, List<Diagnostic>> _cache = new();
 
     private readonly DocumentManagerService _documentManagerService;
     private readonly ConfigurationService _configurationService;
     private readonly SymbolProviderService _symbolProviderService;
+    private readonly TokenProviderService _tokenProviderService;
+    private readonly AstProviderService _astProviderService;
+    private readonly WorkspaceService _workspaceService;
 
     public StaticAnalyzerService
     (
         DocumentManagerService documentManagerService,
         ConfigurationService configurationService,
-        SymbolProviderService symbolProviderService
+        SymbolProviderService symbolProviderService,
+        TokenProviderService tokenProviderService,
+        AstProviderService astProviderService,
+        WorkspaceService workspaceService
     )
     {
         _documentManagerService = documentManagerService;
         _configurationService = configurationService;
         _symbolProviderService = symbolProviderService;
+        _tokenProviderService = tokenProviderService;
+        _astProviderService = astProviderService;
+        _workspaceService = workspaceService;
 
-        _symbolProviderService.DataUpdated += SymbolProviderServiceOnDataUpdated;
-        _symbolProviderService.OnSemanticException += SymbolProviderServiceOnSemanticException;
+        // _symbolProviderService.DataUpdated += SymbolProviderServiceOnDataUpdated;
+        // _symbolProviderService.OnSemanticException += SymbolProviderServiceOnSemanticException;
+
+        _documentManagerService.DataUpdated += DocumentManagerServiceOnDataUpdated;
+        _astProviderService.DataUpdated += AstProviderServiceOnDataUpdated;
+    }
+
+    private void DocumentManagerServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<Document> e)
+    {
+        Document document = e.Data;
+        StaticAnalyzerVisitor visitor = new(e.Uri.ToString(), _workspaceService.GetAst());
+
+        ParserRuleContext? tree = _tokenProviderService.GetData(e.Uri);
+        if (tree == null)
+            return;
+
+        var diagnostics = _cache.GetOrAdd(e.Uri, new List<Diagnostic>());
+        diagnostics.Clear();
+
+        diagnostics.AddRange(tree.Accept(visitor).Select(d =>
+        {
+            Range range = new()
+            {
+                Start = document.PositionAt(d.Start),
+                End = document.PositionAt(d.End + 1)
+            };
+
+            return new Diagnostic
+            {
+                Code = d.Code,
+                Severity = d.Severity switch
+                {
+                    Severity.Error => DiagnosticSeverity.Error,
+                    Severity.Warning => DiagnosticSeverity.Warning,
+                    Severity.Information => DiagnosticSeverity.Information,
+                    Severity.Hint => DiagnosticSeverity.Hint,
+                    _ => DiagnosticSeverity.Hint
+                },
+                Range = range,
+                Source = d.Source,
+                Message = d.Message
+            };
+        }));
+
+        SetData(e.Uri, diagnostics);
+    }
+
+    private void AstProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<Ast> e)
+    {
     }
 
     private void SymbolProviderServiceOnSemanticException(object? sender,

@@ -1,4 +1,5 @@
-﻿using SPSL.Language.Analysis.Symbols.Modifiers;
+﻿using SPSL.Language.Analysis.Common;
+using SPSL.Language.Analysis.Symbols.Modifiers;
 using SPSL.Language.Symbols;
 
 namespace SPSL.Language.Analysis.Symbols;

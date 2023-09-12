@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using SPSL.Language.Analysis.Common;
 
 namespace SPSL.Language.Analysis.Symbols;
 

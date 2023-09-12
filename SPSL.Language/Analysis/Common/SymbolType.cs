@@ -1,4 +1,4 @@
-﻿namespace SPSL.Language.Analysis.Symbols;
+﻿namespace SPSL.Language.Analysis.Common;
 
 public enum SymbolType : byte
 {

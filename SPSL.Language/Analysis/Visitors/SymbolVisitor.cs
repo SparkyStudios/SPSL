@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
+using SPSL.Language.Analysis.Common;
 using SPSL.Language.Analysis.Exceptions;
 using SPSL.Language.Analysis.Symbols;
 using SPSL.Language.Analysis.Symbols.Modifiers;
