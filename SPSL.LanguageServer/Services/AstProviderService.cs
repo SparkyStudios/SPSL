@@ -3,6 +3,7 @@ using Antlr4.Runtime;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using SPSL.Language.Parsing.AST;
 using SPSL.Language.Parsing.Visitors;
+using SPSL.LanguageServer.Core;
 
 namespace SPSL.LanguageServer.Services;
 
@@ -13,10 +14,12 @@ public class AstProviderService : IProviderService<Ast>
 {
     private readonly ConcurrentDictionary<DocumentUri, Ast> _cache = new();
 
+    private readonly DocumentManagerService _documentManagerService;
     private readonly TokenProviderService _tokenProviderService;
 
-    public AstProviderService(TokenProviderService tokenProviderService)
+    public AstProviderService(DocumentManagerService documentManagerService, TokenProviderService tokenProviderService)
     {
+        _documentManagerService = documentManagerService;
         _tokenProviderService = tokenProviderService;
 
         _tokenProviderService.DataUpdated += TokenProviderServiceOnDataUpdated;
@@ -24,11 +27,30 @@ public class AstProviderService : IProviderService<Ast>
 
     private void TokenProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<ParserRuleContext> e)
     {
-        AstVisitor visitor = new(e.Uri.ToString());
-        Ast ast = visitor.Visit(e.Data);
+        Document document = _documentManagerService.GetData(e.Uri);
+        Parse(document, e.Data);
+    }
 
-        _cache.AddOrUpdate(e.Uri, ast, (_, _) => ast);
-        DataUpdated?.Invoke(this, new(e.Uri, ast));
+    public Ast Parse(DocumentUri uri, bool notify = true)
+    {
+        Document document = _documentManagerService.GetData(uri);
+        return Parse(document);
+    }
+
+    public Ast Parse(Document document, bool notify = true)
+    {
+        ParserRuleContext? tree = _tokenProviderService.GetData(document.Uri);
+        return tree == null ? new() : Parse(document, tree, notify);
+    }
+
+    public Ast Parse(Document document, ParserRuleContext tree, bool notify = true)
+    {
+        AstVisitor visitor = new(document.Uri.ToString());
+        Ast ast = visitor.Visit(tree);
+
+        SetData(document.Uri, ast, notify);
+
+        return ast;
     }
 
     #region IProviderService<AST> Implementation

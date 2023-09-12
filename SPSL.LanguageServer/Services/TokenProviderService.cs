@@ -29,13 +29,13 @@ public class TokenProviderService : IProviderService<ParserRuleContext>
         Parse(e.Data);
     }
 
-    public ParserRuleContext Parse(DocumentUri uri)
+    public ParserRuleContext Parse(DocumentUri uri, bool notify = true)
     {
         Document document = _documentManagerService.GetData(uri);
-        return Parse(document);
+        return Parse(document, notify);
     }
 
-    public ParserRuleContext Parse(Document document)
+    public ParserRuleContext Parse(Document document, bool notify = true)
     {
         SPSLLexer lexer = new(new AntlrInputStream(document.GetText()));
         lexer.RemoveErrorListeners();
@@ -48,7 +48,7 @@ public class TokenProviderService : IProviderService<ParserRuleContext>
         parser.AddErrorListener(new ProxyParserErrorListener(tempListeners));
 
         ParserRuleContext tree = document.Uri.Path.EndsWith(".spslm") ? parser.materialFile() : parser.shaderFile();
-        SetData(document.Uri, tree);
+        SetData(document.Uri, tree, notify);
 
         return tree;
     }
