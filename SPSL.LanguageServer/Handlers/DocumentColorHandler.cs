@@ -38,24 +38,18 @@ public class DocumentColorHandler : IDocumentColorHandler
     private readonly TokenProviderService _tokenProviderService;
     private readonly DocumentManagerService _documentManagerService;
 
-    private readonly DocumentSelector _documentSelector = new
-    (
-        new DocumentFilter
-        {
-            Pattern = "**/*.spsl*",
-            Scheme = "file",
-            Language = "spsl"
-        }
-    );
+    private readonly DocumentSelector _documentSelector;
 
     public DocumentColorHandler
     (
         TokenProviderService tokenProviderService,
-        DocumentManagerService documentManagerService
+        DocumentManagerService documentManagerService,
+        DocumentSelector documentSelector
     )
     {
         _tokenProviderService = tokenProviderService;
         _documentManagerService = documentManagerService;
+        _documentSelector = documentSelector;
     }
 
     public Task<Container<ColorInformation>> Handle
@@ -85,7 +79,8 @@ public class DocumentColorHandler : IDocumentColorHandler
                     Red = Convert.ToDouble((instance.Parameters[0].Expression as ILiteral)?.Value),
                     Green = Convert.ToDouble((instance.Parameters[1].Expression as ILiteral)?.Value),
                     Blue = Convert.ToDouble((instance.Parameters[2].Expression as ILiteral)?.Value),
-                    Alpha = instance.Type is BuiltInDataType { Type: BuiltInDataTypeKind.Color4 }
+                    Alpha = instance is { Type: BuiltInDataType { Type: BuiltInDataTypeKind.Color4 } } and
+                        { Parameters.Count: 4 }
                         ? Convert.ToDouble((instance.Parameters[3].Expression as ILiteral)?.Value)
                         : 1.0
                 }

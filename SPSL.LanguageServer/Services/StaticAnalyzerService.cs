@@ -3,10 +3,8 @@ using Antlr4.Runtime;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using SPSL.Language.Analysis.Common;
-using SPSL.Language.Analysis.Exceptions;
 using SPSL.Language.Analysis.Symbols;
 using SPSL.Language.Analysis.Visitors;
-using SPSL.Language.Parsing.AST;
 using SPSL.LanguageServer.Core;
 using static SPSL.Language.Analysis.Visitors.StaticAnalyzerVisitor;
 using Diagnostic = OmniSharp.Extensions.LanguageServer.Protocol.Models.Diagnostic;
@@ -22,39 +20,37 @@ public class StaticAnalyzerService : IDiagnosticService
 
     private readonly DocumentManagerService _documentManagerService;
     private readonly ConfigurationService _configurationService;
-    private readonly SymbolProviderService _symbolProviderService;
     private readonly TokenProviderService _tokenProviderService;
-    private readonly AstProviderService _astProviderService;
     private readonly WorkspaceService _workspaceService;
 
     public StaticAnalyzerService
     (
         DocumentManagerService documentManagerService,
         ConfigurationService configurationService,
-        SymbolProviderService symbolProviderService,
         TokenProviderService tokenProviderService,
-        AstProviderService astProviderService,
         WorkspaceService workspaceService
     )
     {
         _documentManagerService = documentManagerService;
         _configurationService = configurationService;
-        _symbolProviderService = symbolProviderService;
         _tokenProviderService = tokenProviderService;
-        _astProviderService = astProviderService;
         _workspaceService = workspaceService;
 
-        // _symbolProviderService.DataUpdated += SymbolProviderServiceOnDataUpdated;
-        // _symbolProviderService.OnSemanticException += SymbolProviderServiceOnSemanticException;
-
         _documentManagerService.DataUpdated += DocumentManagerServiceOnDataUpdated;
-        _astProviderService.DataUpdated += AstProviderServiceOnDataUpdated;
     }
 
     private void DocumentManagerServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<Document> e)
     {
+        // Do not perform static analysis if the workspace is not initialized.
+        if (!_workspaceService.IsInitialized) return;
+
         Document document = e.Data;
-        StaticAnalyzerVisitor visitor = new(e.Uri.ToString(), _workspaceService.GetAst());
+        StaticAnalyzerVisitor visitor = new
+        (
+            e.Uri.ToString(),
+            _workspaceService.WorkspaceAst,
+            _workspaceService.WorkspaceSymbolTable
+        );
 
         ParserRuleContext? tree = _tokenProviderService.GetData(e.Uri);
         if (tree == null)
@@ -83,54 +79,10 @@ public class StaticAnalyzerService : IDiagnosticService
                     _ => DiagnosticSeverity.Hint
                 },
                 Range = range,
-                Source = d.Source,
-                Message = d.Message
+                Source = "spsl",
+                Message = d.Message,
             };
         }));
-
-        SetData(e.Uri, diagnostics);
-    }
-
-    private void AstProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<Ast> e)
-    {
-    }
-
-    private void SymbolProviderServiceOnSemanticException(object? sender,
-        ProviderDataUpdatedEventArgs<SemanticException> e)
-    {
-        Document document = _documentManagerService.GetData(e.Uri);
-
-        var diagnostics = _cache.GetOrAdd(e.Uri, new List<Diagnostic>());
-        diagnostics.Clear();
-
-        Range range = new()
-        {
-            Start = document.PositionAt(e.Data.Symbol.Start),
-            End = document.PositionAt(e.Data.Symbol.End + 1)
-        };
-
-        diagnostics.Add
-        (
-            new()
-            {
-                Severity = DiagnosticSeverity.Error,
-                Range = range,
-                Message = e.Data.Type switch
-                {
-                    SemanticException.SemanticExceptionType.DuplicateSymbol =>
-                        "A symbol with the same name already exists.",
-                    SemanticException.SemanticExceptionType.SymbolNotDeclared => "The provided symbol is not declared.",
-                    _ => StaticAnalyzerErrorCode
-                },
-                Source = e.Data.Symbol.Source,
-                Code = e.Data.Type switch
-                {
-                    SemanticException.SemanticExceptionType.DuplicateSymbol => ConflictingIdentifierNameErrorCode,
-                    SemanticException.SemanticExceptionType.SymbolNotDeclared => UndefinedVariableUsageErrorCode,
-                    _ => StaticAnalyzerErrorCode
-                }
-            }
-        );
 
         SetData(e.Uri, diagnostics);
     }

@@ -101,6 +101,8 @@ public class MaterialShader : IBlock, IMaterialMember
                ImportedShaderFragments.FirstOrDefault(x => x.ResolveNode(source, offset) != null)
                    ?.ResolveNode(source, offset) ??
                Name.ResolveNode(source, offset) ??
+               Children.FirstOrDefault(child => child.ResolveNode(source, offset) != null)
+                   ?.ResolveNode(source, offset) ??
                (Source == source && offset >= Start && offset <= End ? this as INode : null);
     }
 

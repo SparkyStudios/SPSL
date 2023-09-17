@@ -88,23 +88,65 @@ public class SymbolTable : Symbol
         return null;
     }
 
-    public SymbolTable? FindEnclosingScope(string source, int position)
+    public SymbolTable FindEnclosingScope(string source, int position)
     {
         SymbolTable currentScope = this;
 
-        while (true)
-        {
-            var enclosingScopes = currentScope.Symbols.OfType<SymbolTable>()
-                .Where(s => s.Source == source && (s.IsFileSymbol || (s.Start <= position && s.End >= position)))
-                .OrderByDescending(t => t.Start)
-                .ToArray();
+        var enclosingScopes = currentScope.Symbols.OfType<SymbolTable>()
+            .Where(s => s.IsFileSymbol || (s.Source == source && s.Start <= position && s.End >= position))
+            .OrderByDescending(t => t.Start)
+            .ToArray();
 
-            if (enclosingScopes.Any())
-                currentScope = enclosingScopes.First();
-            else
+        foreach (SymbolTable enclosingScope in enclosingScopes)
+        {
+            currentScope = enclosingScope.FindEnclosingScope(source, position);
+            if (!ReferenceEquals(currentScope, enclosingScope) && !currentScope.IsFileSymbol)
                 break;
         }
 
         return currentScope;
+    }
+
+    public SymbolTable Merge(SymbolTable right)
+    {
+        foreach (Symbol symbol in right.Symbols)
+        {
+            Symbol? existingSymbol = Lookup(symbol.Name);
+
+            // If a symbol with the same name and the same type already exists in the table, we should skip it.
+            if (existingSymbol is not null)
+            {
+                if (symbol.Type == existingSymbol.Type)
+                {
+                    // If the symbol table exists, merge its contents
+                    if (existingSymbol is SymbolTable t)
+                        t.Merge((symbol as SymbolTable)!);
+
+                    continue;
+                }
+            }
+
+            Add(symbol);
+        }
+
+        return this;
+    }
+
+    public Symbol? LookupInCurrentAndChildTables(string name)
+    {
+        Symbol? symbol = Lookup(name);
+
+        if (symbol != null)
+            return symbol;
+
+        // Check all children tables recursively 
+        foreach (SymbolTable childTable in Symbols.OfType<SymbolTable>())
+        {
+            symbol = childTable.LookupInCurrentAndChildTables(name);
+            if (symbol != null)
+                return symbol;
+        }
+
+        return null;
     }
 }

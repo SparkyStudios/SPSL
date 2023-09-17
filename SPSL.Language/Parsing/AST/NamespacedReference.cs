@@ -140,12 +140,17 @@ public class NamespacedReference : INode, IEquatable<NamespacedReference>
 
     public static bool operator ==(NamespacedReference? left, NamespacedReference? right)
     {
-        return left is not null && right is not null && left.Equals(right);
+        return left?.Equals(right) ?? right is null;
     }
 
     public static bool operator !=(NamespacedReference? left, NamespacedReference? right)
     {
         return !(left == right);
+    }
+
+    public static implicit operator string(NamespacedReference reference)
+    {
+        return reference.Name;
     }
 
     #endregion

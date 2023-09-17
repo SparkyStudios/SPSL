@@ -19,25 +19,20 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
     private readonly DocumentManagerService _documentManagerService;
     private readonly AstProviderService _astProviderService;
 
-    private readonly DocumentSelector _documentSelector = new
-    (
-        new DocumentFilter
-        {
-            Pattern = "**/*.spsl*",
-            Scheme = "file",
-            Language = "spsl"
-        }
-    );
+    private readonly DocumentSelector _documentSelector;
 
     public CompletionHandler
     (
         SymbolProviderService symbolProviderService,
         DocumentManagerService documentManagerService,
-        AstProviderService astProviderService)
+        AstProviderService astProviderService,
+        DocumentSelector documentSelector
+    )
     {
         _symbolProviderService = symbolProviderService;
         _documentManagerService = documentManagerService;
         _astProviderService = astProviderService;
+        _documentSelector = documentSelector;
     }
 
     public CompletionRegistrationOptions GetRegistrationOptions
@@ -98,7 +93,7 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
         SymbolTable? current = scope;
         while (current != null)
         {
-            items.AddRange(CollectCompletionItems(current, current == scope));
+            items.AddRange(CollectCompletionItems(current, ReferenceEquals(current, scope)));
             current = current.Parent;
         }
 
@@ -115,9 +110,9 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
                     {
                         Kind = symbol.Type switch
                         {
-                            SymbolType.Parameter or SymbolType.LocalVariable => CompletionItemKind.Variable,
+                            SymbolType.Parameter or SymbolType.LocalVariable or SymbolType.GlobalVariable or SymbolType.Permutation => CompletionItemKind.Variable,
                             SymbolType.Function => CompletionItemKind.Function,
-                            SymbolType.Buffer => CompletionItemKind.Class,
+                            SymbolType.Buffer => CompletionItemKind.Property,
                             SymbolType.Constructor => CompletionItemKind.Constructor,
                             SymbolType.Constant => CompletionItemKind.Constant,
                             SymbolType.Enum => CompletionItemKind.Enum,
@@ -125,7 +120,6 @@ public class CompletionHandler : ICompletionHandler, ICompletionResolveHandler
                             SymbolType.Interface => CompletionItemKind.Interface,
                             SymbolType.Material => CompletionItemKind.Class,
                             SymbolType.Namespace => CompletionItemKind.Module,
-                            SymbolType.Permutation => CompletionItemKind.Variable,
                             SymbolType.Property => CompletionItemKind.Property,
                             SymbolType.Shader => CompletionItemKind.Class,
                             SymbolType.Struct => CompletionItemKind.Class,

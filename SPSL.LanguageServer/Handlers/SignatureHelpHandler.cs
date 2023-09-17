@@ -14,26 +14,20 @@ public class SignatureHelpHandler : ISignatureHelpHandler
     private readonly AstProviderService _astProviderService;
     private readonly SymbolProviderService _symbolProviderService;
 
-    private readonly DocumentSelector _documentSelector = new
-    (
-        new DocumentFilter
-        {
-            Pattern = "**/*.spsl*",
-            Scheme = "file",
-            Language = "spsl"
-        }
-    );
+    private readonly DocumentSelector _documentSelector;
 
     public SignatureHelpHandler
     (
         DocumentManagerService documentManagerService,
         AstProviderService astProviderService,
-        SymbolProviderService symbolProviderService
+        SymbolProviderService symbolProviderService,
+        DocumentSelector documentSelector
     )
     {
         _documentManagerService = documentManagerService;
         _astProviderService = astProviderService;
         _symbolProviderService = symbolProviderService;
+        _documentSelector = documentSelector;
     }
 
     public Task<SignatureHelp?> Handle(SignatureHelpParams request, CancellationToken cancellationToken)
@@ -50,8 +44,8 @@ public class SignatureHelpHandler : ISignatureHelpHandler
         if (rootTable == null)
             return Task.FromResult<SignatureHelp?>(null);
 
-        SymbolTable? scope = rootTable.FindEnclosingScope(document.Uri.ToString(), document.OffsetAt(request.Position));
-        Symbol? symbol = scope?.Resolve(invocation.Name.Name); // TODO: handle symbol from another namespace
+        SymbolTable scope = rootTable.FindEnclosingScope(document.Uri.ToString(), document.OffsetAt(request.Position));
+        Symbol? symbol = scope.Resolve(invocation.Name.Name); // TODO: handle symbol from another namespace
 
         if (symbol == null)
             return Task.FromResult<SignatureHelp?>(null);

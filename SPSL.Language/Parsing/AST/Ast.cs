@@ -30,6 +30,8 @@ public class Ast : IEnumerable<Namespace>
 
     public Namespace this[string name] => _namespaces[name];
 
+    public Namespace this[NamespacedReference name] => _namespaces[name];
+
     private enum ParseFileMode
     {
         Shader,

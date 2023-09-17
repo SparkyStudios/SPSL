@@ -17,26 +17,20 @@ public class HoverHandler : IHoverHandler
     private readonly DocumentManagerService _documentManagerService;
     private readonly AstProviderService _astProviderService;
 
-    private readonly DocumentSelector _documentSelector = new
-    (
-        new DocumentFilter
-        {
-            Pattern = "**/*.spsl*",
-            Scheme = "file",
-            Language = "spsl"
-        }
-    );
+    private readonly DocumentSelector _documentSelector;
 
     public HoverHandler
     (
         SymbolProviderService symbolProviderService,
         DocumentManagerService documentManagerService,
-        AstProviderService astProviderService
+        AstProviderService astProviderService,
+        DocumentSelector documentSelector
     )
     {
         _symbolProviderService = symbolProviderService;
         _documentManagerService = documentManagerService;
         _astProviderService = astProviderService;
+        _documentSelector = documentSelector;
     }
 
     public Task<Hover?> Handle(HoverParams request, CancellationToken cancellationToken)

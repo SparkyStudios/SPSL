@@ -20,15 +20,7 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
     private readonly StaticAnalyzerService _staticAnalyzerService;
     private readonly DocumentDiagnosticService _documentDiagnosticService;
 
-    private readonly DocumentSelector _documentSelector = new
-    (
-        new DocumentFilter
-        {
-            Pattern = "**/*.spsl*",
-            Scheme = "file",
-            Language = "spsl"
-        }
-    );
+    private readonly DocumentSelector _documentSelector;
 
     public TextDocumentSyncHandler
     (
@@ -37,7 +29,8 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
         ConfigurationService configurationService,
         SyntaxAnalyzerService syntaxAnalyzerService,
         StaticAnalyzerService staticAnalyzerService,
-        DocumentDiagnosticService documentDiagnosticService
+        DocumentDiagnosticService documentDiagnosticService,
+        DocumentSelector documentSelector
     )
     {
         _router = router;
@@ -46,6 +39,7 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
         _syntaxAnalyzerService = syntaxAnalyzerService;
         _staticAnalyzerService = staticAnalyzerService;
         _documentDiagnosticService = documentDiagnosticService;
+        _documentSelector = documentSelector;
 
         _documentManagerService.DataUpdated += DocumentManagerServiceOnDocumentContentChanged;
 

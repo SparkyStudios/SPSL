@@ -867,12 +867,12 @@ public class SymbolVisitor : SPSLBaseVisitor<Symbol>
     {
         if (context.basicExpression() != null)
             DefineSymbol(context.basicExpression());
-        else if (context.arrayAccessExpression() != null)
-            CheckSymbolExists(context.arrayAccessExpression());
-        else if (context.propertyMemberReferenceExpression() != null)
-            CheckSymbolExists(context.propertyMemberReferenceExpression());
-        else if (context.assignableChainedExpression() != null)
-            CheckSymbolExists(context.assignableChainedExpression());
+        // else if (context.arrayAccessExpression() != null)
+        //     CheckSymbolExists(context.arrayAccessExpression());
+        // else if (context.propertyMemberReferenceExpression() != null)
+        //     CheckSymbolExists(context.propertyMemberReferenceExpression());
+        // else if (context.assignableChainedExpression() != null)
+        //     CheckSymbolExists(context.assignableChainedExpression());
 
         return _globalSymbolTable;
     }

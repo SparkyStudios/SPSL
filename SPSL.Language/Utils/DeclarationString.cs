@@ -149,8 +149,18 @@ public static class DeclarationString
     /// <param name="variable">The <see cref="TypeFunction"/> to get the declaration from.</param>
     public static string From(TypeFunction variable) => From(variable.Function);
 
-    public static string From(Function function) =>
-        $"{From(function.Head.ReturnType)} {From(function.Name)}({string.Join(", ", function.Head.Signature.Arguments.Select(From))})";
+    /// <summary>
+    /// Gets the declaration of the given <see cref="Function"/>.
+    /// </summary>
+    /// <param name="function">The <see cref="Function"/> to get the declaration from.</param>
+    public static string From(Function function) => From(function.Head);
+
+    /// <summary>
+    /// Gets the declaration of the given <see cref="FunctionHead"/>.
+    /// </summary>
+    /// <param name="head">The <see cref="FunctionHead"/> to get the declaration from.</param>
+    public static string From(FunctionHead head) =>
+        $"{From(head.ReturnType)} {From(head.Name)}({string.Join(", ", head.Signature.Arguments.Select(From))})";
 
     public static string From(FunctionArgument parameter)
     {

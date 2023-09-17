@@ -3,6 +3,8 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server.WorkDone;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
+using SPSL.Language.Analysis.Common;
+using SPSL.Language.Analysis.Symbols;
 using SPSL.Language.Parsing.AST;
 using SPSL.LanguageServer.Core;
 
@@ -15,38 +17,68 @@ public class WorkspaceService : IOnLanguageServerInitialized
 {
     private readonly DocumentManagerService _documentManagerService;
     private readonly AstProviderService _astProviderService;
-    private readonly TokenProviderService _tokenProviderService;
+    private readonly SymbolProviderService _symbolProviderService;
 
-    private readonly Ast _ast = new();
+    /// <summary>
+    /// Gets the <see cref="Ast"/> instance storing data for the
+    /// entire workspace.
+    /// </summary>
+    public Ast WorkspaceAst { get; } = new();
+
+    /// <summary>
+    /// Gets the <see cref="SymbolTable"/> instance storing data for the
+    /// entire workspace.
+    /// </summary>
+    public SymbolTable WorkspaceSymbolTable { get; } = new()
+    {
+        Name = "__SPSL_GLOBAL_SYMBOL_TABLE__",
+        Type = SymbolType.Scope
+    };
+
+
+    /// <summary>
+    /// Whether the <see cref="WorkspaceService"/> has been initialized.
+    ///
+    /// The <see cref="WorkspaceService"/> is initialized when he has successfully parsed
+    /// all the files of the opened workspace.
+    /// </summary>
+    public bool IsInitialized { get; private set; }
 
     public WorkspaceService
     (
         DocumentManagerService documentManagerService,
         AstProviderService astProviderService,
-        TokenProviderService tokenProviderService
+        SymbolProviderService symbolProviderService
     )
     {
         _documentManagerService = documentManagerService;
         _astProviderService = astProviderService;
-        _tokenProviderService = tokenProviderService;
+        _symbolProviderService = symbolProviderService;
 
         _astProviderService.DataUpdated += AstProviderServiceOnDataUpdated;
+        _symbolProviderService.DataUpdated += SymbolProviderServiceOnDataUpdated;
+    }
+
+    private void SymbolProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<SymbolTable> e)
+    {
+        // Merge the generated symbol table into the workspace symbol table.
+        Merge(e.Data);
     }
 
     private void AstProviderServiceOnDataUpdated(object? sender, ProviderDataUpdatedEventArgs<Ast> e)
     {
         // Merge the generated AST with the existing one.
-        MergeAst(e.Data);
+        Merge(e.Data);
     }
 
-    public void MergeAst(Ast ast)
+    public void Merge(Ast ast)
     {
-        _ast.Merge(ast);
+        WorkspaceAst.Merge(ast);
     }
 
-    public Ast GetAst()
+    public void Merge(SymbolTable symbolTable)
     {
-        return _ast;
+        WorkspaceSymbolTable.Merge(symbolTable);
     }
 
     #region IOnLanguageServerInitialized Implementation
@@ -80,17 +112,14 @@ public class WorkspaceService : IOnLanguageServerInitialized
 
             using IWorkDoneObserver work = await languageServer.WorkDoneManager.Create
             (
-                new() { Title = "Parsing Workspace", Message = "Initializing...", Cancellable = false, Percentage = 0 },
-                _ =>
+                new() { Title = "Loading Workspace", Message = "Initializing...", Cancellable = false, Percentage = 0 },
+                e => new()
                 {
-                    languageServer.Window.LogMessage(new() { Message = "An error occurred", Type = MessageType.Info });
-
-                    return new() { Message = "An error occured" };
+                    Message = e.Message
                 }, () =>
                 {
-                    languageServer.Window.LogMessage(new() { Message = "Work complete", Type = MessageType.Info });
-
-                    return new() { Message = "Work completed" };
+                    IsInitialized = true;
+                    return new() { Message = "Workspace successfully loaded" };
                 },
                 workCancellationToken
             );
@@ -111,11 +140,14 @@ public class WorkspaceService : IOnLanguageServerInitialized
 
                     try
                     {
-                        languageServer.Window.LogMessage(new()
-                            { Message = Path.GetFileName(file), Type = MessageType.Info });
-
-                        work.OnNext(new WorkDoneProgressReport
-                            { Message = Path.GetFileName(file), Percentage = processed * 100 / files.Length });
+                        work.OnNext
+                        (
+                            new WorkDoneProgressReport
+                            {
+                                Message = Path.GetFileName(file),
+                                Percentage = processed * 100 / files.Length
+                            }
+                        );
 
                         {
                             using var spsl = new StreamReader(file);

@@ -40,6 +40,7 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
             case SwitchStatementContext:
             case WhileStatementContext:
             case DoWhileStatementContext:
+            case PermuteStatementContext:
 
             case BreakStatementContext:
             case ReturnStatementContext:

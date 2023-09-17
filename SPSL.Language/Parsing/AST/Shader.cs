@@ -73,6 +73,11 @@ public class Shader : IBlock, INamespaceChild, ISemanticallyEquatable
     /// </summary>
     public ComputeShaderParams ComputeParams { get; }
 
+    /// <summary>
+    /// Gets the list of methods in this shader.
+    ///</summary>
+    public IEnumerable<ShaderFunction> Methods => Children.OfType<ShaderFunction>();
+
     #endregion
 
     #region Constructors
