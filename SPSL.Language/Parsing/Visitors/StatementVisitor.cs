@@ -29,21 +29,22 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
     {
         switch (node)
         {
-            case StatementContext _:
-            case StayControlFlowStatementContext _:
-            case LeaveControlFlowStatementContext _:
+            case StatementContext:
+            case StayControlFlowStatementContext:
+            case LeaveControlFlowStatementContext:
 
-            case VariableDeclarationContext _:
-            case ExpressionStatementContext _:
-            case StatementBlockContext _:
-            case IfStatementContext _:
-            case SwitchStatementContext _:
-            case WhileStatementContext _:
+            case VariableDeclarationContext:
+            case ExpressionStatementContext:
+            case StatementBlockContext:
+            case IfStatementContext:
+            case SwitchStatementContext:
+            case WhileStatementContext:
+            case DoWhileStatementContext:
 
-            case BreakStatementContext _:
-            case ReturnStatementContext _:
-            case ContinueStatementContext _:
-            case DiscardStatementContext _:
+            case BreakStatementContext:
+            case ReturnStatementContext:
+            case ContinueStatementContext:
+            case DiscardStatementContext:
                 return true;
 
             // Not parsed
@@ -87,6 +88,9 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
 
         if (context.WhileStatement != null)
             return context.WhileStatement.Accept(this)!;
+
+        if (context.DoWhileStatement != null)
+            return context.DoWhileStatement.Accept(this)!;
 
         if (context.PermuteStatement != null)
             return context.PermuteStatement.Accept(this)!;
@@ -238,6 +242,23 @@ public class StatementVisitor : SPSLBaseVisitor<IStatement?>
         (
             condition: context.Expression.Accept(expressionVisitor),
             block: (StatementBlock)context.Block.Accept(this)!
+        )
+        {
+            Start = context.Start.StartIndex,
+            End = context.Stop.StartIndex,
+            Source = _fileSource
+        };
+    }
+
+    public override IStatement VisitDoWhileStatement(DoWhileStatementContext context)
+    {
+        ExpressionVisitor expressionVisitor = new(_fileSource);
+
+        return new WhileStatement
+        (
+            condition: context.Expression.Accept(expressionVisitor),
+            block: (StatementBlock)context.Block.Accept(this)!,
+            isDoWhile: true
         )
         {
             Start = context.Start.StartIndex,

@@ -15,6 +15,11 @@ public class WhileStatement : IStatement
     /// </summary>
     public StatementBlock Block { get; }
 
+    /// <summary>
+    /// Specifies whether the while statement is a do-while loop.
+    /// </summary>
+    public bool IsDoWhile { get; }
+
     #endregion
 
     #region Constructors
@@ -24,13 +29,15 @@ public class WhileStatement : IStatement
     /// </summary>
     /// <param name="condition">The condition.</param>
     /// <param name="block">The block of code to execute when the condition is evaluated to true.</param>
-    public WhileStatement(IExpression condition, StatementBlock block)
+    /// <param name="isDoWhile">Whether the while statement is a do-while loop.</param>
+    public WhileStatement(IExpression condition, StatementBlock block, bool isDoWhile = false)
     {
         condition.Parent = this;
         block.Parent = this;
 
         Condition = condition;
         Block = block;
+        IsDoWhile = isDoWhile;
     }
 
     #endregion

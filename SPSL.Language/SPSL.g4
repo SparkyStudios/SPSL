@@ -505,7 +505,7 @@ namespaceDefinition
   ;
 
 namespacedTypeName
-  : IDENTIFIER (TOK_NAMESPACE_SEPARATOR IDENTIFIER)*
+  : Name += IDENTIFIER (TOK_NAMESPACE_SEPARATOR Name += IDENTIFIER)*
   ;
 
 fileLevelDefinition
@@ -526,8 +526,8 @@ permutationVariableBool
   ;
 
 permutationVariableEnum
-  : Documentation = DOC_COMMENT? KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE IDENTIFIER (
-    TOK_COMMA IDENTIFIER
+  : Documentation = DOC_COMMENT? KEYWORD_PERMUTATION KEYWORD_ENUM Identifier = basicExpression TOK_OPEN_BRACE EnumValues += IDENTIFIER (
+    TOK_COMMA EnumValues += IDENTIFIER
   )* TOK_CLOSE_BRACE OP_ASSIGN Value = basicExpression TOK_SEMICOLON
   ;
 
@@ -771,13 +771,16 @@ functionSignature
   ;
 
 argList
-  : argDef (TOK_COMMA argDef)*
+  : Arguments += argDef (TOK_COMMA Arguments += argDef)*
   ;
 
 argDef
-  : Documentation = DOC_COMMENT? Flow = (KEYWORD_IN | KEYWORD_OUT | KEYWORD_INOUT | KEYWORD_CONST)? Type = dataType Name = IDENTIFIER (
-    OP_ASSIGN DefaultValue = constantExpression
-  )?
+  : Documentation = DOC_COMMENT? Annotations += annotation* Flow = (
+    KEYWORD_IN
+    | KEYWORD_OUT
+    | KEYWORD_INOUT
+    | KEYWORD_CONST
+  )? Type = dataType Name = IDENTIFIER (OP_ASSIGN DefaultValue = constantExpression)?
   ;
 
 functionBody
@@ -861,7 +864,10 @@ switchStatement
   ;
 
 caseStatement
-  : KEYWORD_CASE Expression = constantExpression TOK_COLON TOK_OPEN_BRACE? Statements = stayControlFlowStatement* leaveControlFlowStatement TOK_CLOSE_BRACE?
+  locals[bool IsBraceOpen = false, bool IsBraceClose = false]
+  : KEYWORD_CASE Expression = constantExpression TOK_COLON (TOK_OPEN_BRACE {$IsBraceOpen = true;})? Statements = stayControlFlowStatement* leaveControlFlowStatement (
+    TOK_CLOSE_BRACE                                                        {$IsBraceClose = true;}
+  )?                                                                       {$IsBraceOpen == $IsBraceClose}?
   ;
 
 whileStatement
@@ -874,7 +880,7 @@ forStatement
   ;
 
 doWhileStatement
-  : KEYWORD_DO Block = statementBlock KEYWORD_WHILE Expression = parenthesizedExpression
+  : KEYWORD_DO Block = statementBlock KEYWORD_WHILE Expression = parenthesizedExpression TOK_SEMICOLON
   ;
 
 parenthesizedExpression

@@ -36,7 +36,7 @@ public static partial class ParserExtensions
     internal static NamespacedReference ToNamespaceReference(this NamespacedTypeNameContext? context, string fileSource)
     {
         return context is not null
-            ? new(context.IDENTIFIER().Select(id => id.Symbol.ToIdentifier(fileSource)).ToArray())
+            ? new(context._Name.Select(id => id.ToIdentifier(fileSource)).ToArray())
             {
                 Start = context.Start.StartIndex,
                 End = context.Stop.StopIndex,
@@ -101,7 +101,7 @@ public static partial class ParserExtensions
 
         if (context.Arguments == null) return signature;
 
-        foreach (ArgDefContext arg in context.Arguments.argDef())
+        foreach (ArgDefContext arg in context.Arguments._Arguments)
         {
             signature.AddParameter
             (
@@ -122,7 +122,8 @@ public static partial class ParserExtensions
                     Start = arg.Start.StartIndex,
                     End = arg.Stop.StopIndex,
                     Source = fileSource,
-                    Documentation = arg.Documentation.ToDocumentation()
+                    Documentation = arg.Documentation.ToDocumentation(),
+                    Annotations = new(arg._Annotations.Select(a => a.ToAnnotation(fileSource)))
                 }
             );
         }
@@ -205,7 +206,7 @@ public static partial class ParserExtensions
             context.Value.Accept(new ExpressionVisitor(fileSource))!
         )
         {
-            EnumerationValues = context.IDENTIFIER().Select(id => id.Symbol.ToIdentifier(fileSource)).ToArray(),
+            EnumerationValues = context._EnumValues.Select(id => id.ToIdentifier(fileSource)).ToArray(),
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = fileSource,

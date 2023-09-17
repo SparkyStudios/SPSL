@@ -1787,10 +1787,21 @@ public class Translator
     {
         StringBuilder output = new();
 
-        output.Append("while (");
-        output.Append(Translate(whileStatement.Condition, ns, ast));
-        output.AppendLine(")");
-        output.Append(Translate(whileStatement.Block, ns, ast));
+        if (whileStatement.IsDoWhile)
+        {
+            output.Append("do {");
+            output.Append(Translate(whileStatement.Block, ns, ast));
+            output.Append("} while(");
+            output.Append(Translate(whileStatement.Condition, ns, ast));
+            output.Append(");");
+        }
+        else
+        {
+            output.Append("while (");
+            output.Append(Translate(whileStatement.Condition, ns, ast));
+            output.AppendLine(")");
+            output.Append(Translate(whileStatement.Block, ns, ast));
+        }
 
         return output.ToString();
     }

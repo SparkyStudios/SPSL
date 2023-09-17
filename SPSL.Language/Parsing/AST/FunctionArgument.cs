@@ -1,11 +1,12 @@
 using SPSL.Language.Parsing.Common;
+using SPSL.Language.Utils;
 
 namespace SPSL.Language.Parsing.AST;
 
 /// <summary>
 /// Represents an SPSL function argument.
 /// </summary>
-public class FunctionArgument : IDocumented, INode, ISemanticallyEquatable,
+public class FunctionArgument : IDocumented, IAnnotated, INode, ISemanticallyEquatable,
     IEquatable<FunctionArgument>
 {
     #region Properties
@@ -71,6 +72,13 @@ public class FunctionArgument : IDocumented, INode, ISemanticallyEquatable,
 
     /// <inheritdoc cref="IDocumented.Documentation"/>
     public string Documentation { get; init; } = string.Empty;
+
+    #endregion
+
+    #region IAnnotated Implementation
+
+    /// <inheritdoc cref="IAnnotated.Annotations"/>
+    public OrderedSet<Annotation> Annotations { get; init; } = new();
 
     #endregion
 
