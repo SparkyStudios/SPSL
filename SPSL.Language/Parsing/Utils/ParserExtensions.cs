@@ -235,6 +235,7 @@ public static partial class ParserExtensions
             Start = context.Start.StartIndex,
             End = context.Stop.StopIndex,
             Source = fileSource,
+            Annotations = new(context._Annotations.Select(a => a.ToAnnotation(fileSource))),
             Documentation = context.Documentation.ToDocumentation()
         };
     }

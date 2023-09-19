@@ -1,11 +1,12 @@
 using SPSL.Language.Parsing.Common;
+using SPSL.Language.Utils;
 
 namespace SPSL.Language.Parsing.AST;
 
 /// <summary>
 /// An SPSL shader permutation variable.
 /// </summary>
-public class PermutationVariable : INamespaceChild, IBlockChild, ISemanticallyEquatable
+public class PermutationVariable : INamespaceChild, IAnnotated, IBlockChild, ISemanticallyEquatable
 {
     #region Properties
 
@@ -50,6 +51,13 @@ public class PermutationVariable : INamespaceChild, IBlockChild, ISemanticallyEq
 
     /// <inheritdoc cref="INamespaceChild.Name"/>
     public Identifier Name { get; set; }
+
+    #endregion
+
+    #region IAnnotated Implementation
+
+    /// <inheritdoc cref="IAnnotated.Annotations"/>
+    public OrderedSet<Annotation> Annotations { get; init; } = new();
 
     #endregion
 

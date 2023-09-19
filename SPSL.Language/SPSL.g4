@@ -532,7 +532,7 @@ permutationVariableEnum
   ;
 
 permutationVariableInteger
-  : Documentation = DOC_COMMENT? KEYWORD_PERMUTATION TYPE_INT Identifier = basicExpression OP_ASSIGN Value = IntegerLiteral TOK_SEMICOLON
+  : Documentation = DOC_COMMENT? Annotations += annotation* KEYWORD_PERMUTATION TYPE_INT Identifier = basicExpression OP_ASSIGN Value = IntegerLiteral TOK_SEMICOLON
   ;
 
 permutationVariable
