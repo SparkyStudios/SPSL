@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 namespace SPSL.Serialization.Reflection;
 
 [DataContract]
-public struct InputAttributeDescription
+public struct InputElementDescription
 {
     [DataMember(Order = 0)]
     public string SemanticName { get; set; }
@@ -12,5 +12,5 @@ public struct InputAttributeDescription
     public uint SemanticIndex { get; set; }
 
     [DataMember(Order = 2)]
-    public InputAttributeFormat Format { get; set; }
+    public InputElementFormat Format { get; set; }
 }

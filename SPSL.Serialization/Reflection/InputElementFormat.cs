@@ -1,6 +1,6 @@
 namespace SPSL.Serialization.Reflection;
 
-public enum InputAttributeFormat : byte
+public enum InputElementFormat : byte
 {
     ///<summary>
     /// One 32-bit floating point value.

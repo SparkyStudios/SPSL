@@ -7,7 +7,7 @@ namespace SPSL.Serialization.Reflection;
 /// Binding to a sampler.
 /// </summary>
 [DataContract]
-[DebuggerDisplay("SamplerState {Key}")]
+[DebuggerDisplay("SamplerState {KeyName}")]
 public class MaterialSamplerStateBinding
 {
     /// <summary>

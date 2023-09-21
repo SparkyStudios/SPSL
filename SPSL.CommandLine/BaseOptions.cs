@@ -7,7 +7,7 @@ public abstract class BaseOptions
     [Option('v', "verbose", HelpText = "Set output to verbose messages.", Required = false)]
     public bool Verbose { get; set; } = false;
     
-    [Option('i', "input", HelpText = "Specifies the input file path. For shaders, specifies the path to a .spsls file. For node graphs, specifies the path to a .spslg file.", Required = false)]
+    [Option('i', "input", HelpText = "Specifies the input file path. For shaders, specifies the path to a .spsls file. For node graphs, specifies the path to a .spslg file. For materials, specifies the path to a .spslm file.", Required = false)]
     public string InputFile { get; set; } = string.Empty;
 
     [Option('o', "output", HelpText = "Specifies the output directory path.", Required = false)]

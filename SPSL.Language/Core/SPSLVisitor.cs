@@ -98,6 +98,18 @@ public interface ISPSLVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitPermutationVariable([NotNull] SPSLParser.PermutationVariableContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialVariant"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialVariant([NotNull] SPSLParser.MaterialVariantContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="SPSLParser.materialVariantValue"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMaterialVariantValue([NotNull] SPSLParser.MaterialVariantValueContext context);
+	/// <summary>
 	/// Visit a parse tree produced by the <c>Struct</c>
 	/// labeled alternative in <see cref="SPSLParser.type"/>.
 	/// </summary>

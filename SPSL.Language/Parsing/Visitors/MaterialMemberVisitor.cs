@@ -24,7 +24,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
             or TypeContext or StructContext or EnumContext
             or MaterialStateContext or MaterialStateBlockContext
             or MaterialStateValueContext
-            or MaterialShaderUsageContext;
+            or MaterialShaderUsageContext or MaterialVariantContext;
 
     public override IMaterialMember VisitMaterialParams([NotNull] MaterialParamsContext context)
     {
@@ -133,17 +133,17 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         };
     }
 
-    public override IMaterialMember? VisitStruct(StructContext context)
+    public override IMaterialMember? VisitStruct([NotNull] StructContext context)
     {
         return context.Accept(new TypeVisitor(_fileSource));
     }
 
-    public override IMaterialMember? VisitEnum(EnumContext context)
+    public override IMaterialMember? VisitEnum([NotNull] EnumContext context)
     {
         return context.Accept(new TypeVisitor(_fileSource));
     }
 
-    public override IMaterialMember VisitSimpleMaterialShaderUsage(SimpleMaterialShaderUsageContext context)
+    public override IMaterialMember VisitSimpleMaterialShaderUsage([NotNull] SimpleMaterialShaderUsageContext context)
     {
         return new MaterialShader(context.Definition.Stage.ToIdentifier(_fileSource))
         {
@@ -155,7 +155,8 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         };
     }
 
-    public override IMaterialMember VisitCustomizedMaterialShaderUsage(CustomizedMaterialShaderUsageContext context)
+    public override IMaterialMember VisitCustomizedMaterialShaderUsage(
+        [NotNull] CustomizedMaterialShaderUsageContext context)
     {
         MaterialShader shader = new
         (
@@ -180,5 +181,28 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
         );
 
         return shader;
+    }
+
+    public override IMaterialMember VisitMaterialVariant([NotNull] MaterialVariantContext context)
+    {
+        return new MaterialVariant(context.Name.ToIdentifier(_fileSource))
+        {
+            PermutationValues = new
+            (
+                context._Values.Select
+                (
+                    v =>
+                        new BinaryOperationExpression
+                        (
+                            new BasicExpression(v.Name.ToIdentifier(_fileSource)),
+                            Op.Assignment,
+                            v.Value.Accept(new ExpressionVisitor(_fileSource))
+                        )
+                )
+            ),
+            Start = context.Start.StartIndex,
+            End = context.Stop.StopIndex,
+            Source = _fileSource
+        };
     }
 }

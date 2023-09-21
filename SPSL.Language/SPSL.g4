@@ -159,6 +159,9 @@ KEYWORD_CONST
 KEYWORD_PERMUTATION
   : 'permutation'
   ;
+KEYWORD_VARIANT
+  : 'variant'
+  ;
 KEYWORD_PERMUTE
   : 'permute'
   ;
@@ -541,6 +544,14 @@ permutationVariable
   | permutationVariableInteger
   ;
 
+materialVariant
+  : Documentation = DOC_COMMENT? KEYWORD_VARIANT Name = IDENTIFIER TOK_OPEN_BRACE Values += materialVariantValue* TOK_CLOSE_BRACE
+  ;
+
+materialVariantValue
+  : Name = IDENTIFIER OP_ASSIGN Value = constantExpression TOK_SEMICOLON
+  ;
+
 type
   : Documentation = DOC_COMMENT? Definition = structDefinition TOK_OPEN_BRACE structComponent* TOK_CLOSE_BRACE # Struct
   | Documentation = DOC_COMMENT? Definition = enumDefinition TOK_OPEN_BRACE enumComponent* TOK_CLOSE_BRACE     # Enum
@@ -651,6 +662,7 @@ materialMember
   | type
   | shaderFunction
   | materialShaderUsage
+  | materialVariant
   ;
 
 materialShaderUsageDefinition

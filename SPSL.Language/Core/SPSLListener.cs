@@ -137,6 +137,26 @@ public interface ISPSLListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitPermutationVariable([NotNull] SPSLParser.PermutationVariableContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.materialVariant"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterMaterialVariant([NotNull] SPSLParser.MaterialVariantContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.materialVariant"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitMaterialVariant([NotNull] SPSLParser.MaterialVariantContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.materialVariantValue"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterMaterialVariantValue([NotNull] SPSLParser.MaterialVariantValueContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.materialVariantValue"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitMaterialVariantValue([NotNull] SPSLParser.MaterialVariantValueContext context);
+	/// <summary>
 	/// Enter a parse tree produced by the <c>Struct</c>
 	/// labeled alternative in <see cref="SPSLParser.type"/>.
 	/// </summary>

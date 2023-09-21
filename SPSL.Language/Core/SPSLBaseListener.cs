@@ -162,6 +162,30 @@ public partial class SPSLBaseListener : ISPSLListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitPermutationVariable([NotNull] SPSLParser.PermutationVariableContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.materialVariant"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMaterialVariant([NotNull] SPSLParser.MaterialVariantContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.materialVariant"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMaterialVariant([NotNull] SPSLParser.MaterialVariantContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="SPSLParser.materialVariantValue"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMaterialVariantValue([NotNull] SPSLParser.MaterialVariantValueContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="SPSLParser.materialVariantValue"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMaterialVariantValue([NotNull] SPSLParser.MaterialVariantValueContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by the <c>Struct</c>
 	/// labeled alternative in <see cref="SPSLParser.type"/>.
 	/// <para>The default implementation does nothing.</para>

@@ -97,6 +97,7 @@ public static class DeclarationString
         expression switch
         {
             IPrimitiveExpression primitiveExpression => From(primitiveExpression),
+            UserDefinedConstantExpression custom => From(custom),
             _ => throw new NotImplementedException()
         };
 
@@ -106,6 +107,8 @@ public static class DeclarationString
             ILiteral literal => From(literal),
             _ => throw new NotImplementedException()
         };
+
+    public static string From(UserDefinedConstantExpression expression) => From(expression.Identifier);
 
     /// <summary>
     /// Gets the declaration of the given <see cref="PermutationVariable"/>.
@@ -712,4 +715,10 @@ public static class DeclarationString
     /// </summary>
     /// <param name="annotation">The <see cref="Annotation"/> to get the declaration from.</param>
     public static string From(Annotation annotation) => $"@{From(annotation.Identifier)}";
+
+    /// <summary>
+    /// Gets the declaration string for the given <see cref="NamespacedReference"/>.
+    /// </summary>
+    /// <param name="reference">The <see cref="NamespacedReference"/> to get the declaration from.</param>
+    public static string From(NamespacedReference reference) => reference.Name;
 }

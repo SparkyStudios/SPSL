@@ -3,6 +3,7 @@ using CommandLine;
 using SPSL.CommandLine;
 using SPSL.Language.Parsing.AST;
 using SPSL.Language.Parsing.Common;
+using SPSL.Language.Utils;
 using SPSL.Serialization.Reflection;
 using SPSL.Translation.HLSL;
 using Parser = CommandLine.Parser;
@@ -77,7 +78,14 @@ void RunShaderOptions(ShaderOptions opts)
         // ---- Translate to HLSL
         case ShaderSourceGenerator.HLSL:
         {
-            Translator hlsl = new(new() { Permutations = permutations });
+            Translator hlsl = new
+            (
+                new()
+                {
+                    Shaders = opts.Shaders.Select(name => new NamespacedReference(name)),
+                    Permutations = permutations
+                }
+            );
 
             string code = hlsl.Translate(ast);
 
@@ -117,7 +125,7 @@ void RunMaterialOptions(MaterialOptions opts)
         return;
     }
 
-    MaterialReflection materialReflection = new(material.Name.Value);
+    Dictionary<ShaderStage, string> materialEntryPoints = new();
 
     var usedMaterialParameters = false;
     List<NamespacedReference> materialShaders = new();
@@ -170,7 +178,15 @@ void RunMaterialOptions(MaterialOptions opts)
         if (entryPoint is null)
         {
             // Tries in the parent shader
-            Namespace shaderNS = ast[materialShader.ReferencedShader.NamespaceName];
+            Namespace? shaderNS = ast.GetNamespace(materialShader.ReferencedShader.NamespaceName);
+            if (shaderNS is null)
+            {
+                Console.Error.WriteLine(
+                    $"Unable to find the imported namespace {materialShader.ReferencedShader}. Please make sure to add the path to the library with this namespace using the '-l' option.");
+                Environment.Exit(1);
+                return;
+            }
+
             var refShader = shaderNS.GetChild(materialShader.ReferencedShader.NameWithoutNamespace) as Shader;
 
             if (refShader is null)
@@ -191,7 +207,7 @@ void RunMaterialOptions(MaterialOptions opts)
             }
         }
 
-        materialReflection.EntryPoints[s.Stage] = entryPoint.Name.Value;
+        materialEntryPoints.Add(s.Stage, entryPoint.Name.Value);
 
         ns.AddChild(s);
         materialShaders.Add(s.GetReference());
@@ -201,65 +217,106 @@ void RunMaterialOptions(MaterialOptions opts)
     namespaces.AddRange(material.Children.OfType<MaterialShader>()
         .Select(shader => new NamespacedReference(shader.ReferencedShader.Names)));
 
-    TranslatorConfiguration config = new()
-    {
-        Shaders = materialShaders,
-        Namespaces = namespaces,
-        Permutations = permutations
-    };
 
-    switch (opts.Generator)
+    if (permutations.Any())
     {
-        case ShaderSourceGenerator.GLSL:
-            Console.Error.WriteLine("GLSL output is not supported.");
-            Environment.Exit(1);
-            return;
-
-        // ---- Translate to HLSL
-        case ShaderSourceGenerator.HLSL:
+        CompileMaterialVariant("default", permutations);
+    }
+    else
+    {
+        var variants = material.Children.OfType<MaterialVariant>().ToArray();
+        if (variants.Any())
         {
-            Translator hlsl = new(config);
-
-            string code = hlsl.Translate(ast);
-            using var stream = new StreamWriter(Path.Join(opts.OutputDirectory,
-                $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.hlsl"));
-            stream.Write(code);
-
-            foreach (StreamProperty property in hlsl.ShaderStream.Inputs)
+            foreach (MaterialVariant variant in variants)
             {
-                if (property.Type is BuiltInDataType { Type: BuiltInDataTypeKind.Sampler })
+                var variantPermutations = new Dictionary<string, string>
+                (
+                    variant.PermutationValues.Select(value =>
+                        new KeyValuePair<string, string>
+                        (
+                            ((BasicExpression)((BinaryOperationExpression)value).Left).Identifier.Value,
+                            DeclarationString.From((IConstantExpression)((BinaryOperationExpression)value).Right)
+                        )
+                    )
+                );
+
+                CompileMaterialVariant(variant.Name.Value, variantPermutations);
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine
+            (
+                "Your material has no variants, and the compilation of all possible variants is not yet supported. " +
+                "Please add a variant to your material or specify the permutation values through the --permutations option."
+            );
+            Environment.Exit(1);
+        }
+    }
+
+    return;
+
+    void CompileMaterialVariant(string variantName, Dictionary<string, string> variantPermutations)
+    {
+        MaterialReflection materialReflection = new(material.Name.Value);
+
+        foreach (var entryPoint in materialEntryPoints)
+            materialReflection.EntryPoints.Add(entryPoint.Key, entryPoint.Value);
+
+        TranslatorConfiguration config = new()
+        {
+            Shaders = materialShaders,
+            Namespaces = namespaces,
+            Permutations = variantPermutations
+        };
+
+        switch (opts.Generator)
+        {
+            case ShaderSourceGenerator.GLSL:
+                Console.Error.WriteLine("GLSL output is not supported.");
+                Environment.Exit(1);
+                return;
+
+            // ---- Translate to HLSL
+            case ShaderSourceGenerator.HLSL:
+            {
+                Translator hlsl = new(config);
+
+                string code = hlsl.Translate(ast);
+                using var stream = new StreamWriter(Path.Join(opts.OutputDirectory,
+                    $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.{variantName}.hlsl"));
+                stream.Write(code);
+
+                foreach (StreamProperty property in hlsl.ShaderStream.Inputs)
                 {
-                }
-                else
-                {
-                    InputAttributeDescription description = new()
+                    InputElementDescription description = new()
                     {
                         Format = property.Type switch
                         {
                             PrimitiveDataType type => type.Type switch
                             {
-                                PrimitiveDataTypeKind.Boolean => InputAttributeFormat.UInt1,
-                                PrimitiveDataTypeKind.Integer => InputAttributeFormat.Int1,
-                                PrimitiveDataTypeKind.UnsignedInteger => InputAttributeFormat.UInt1,
-                                PrimitiveDataTypeKind.Float => InputAttributeFormat.Float1,
+                                PrimitiveDataTypeKind.Boolean => InputElementFormat.UInt1,
+                                PrimitiveDataTypeKind.Integer => InputElementFormat.Int1,
+                                PrimitiveDataTypeKind.UnsignedInteger => InputElementFormat.UInt1,
+                                PrimitiveDataTypeKind.Float => InputElementFormat.Float1,
                                 _ => throw new NotSupportedException("Invalid type for shader stream input")
                             },
                             BuiltInDataType type => type.Type switch
                             {
-                                BuiltInDataTypeKind.Vector2b => InputAttributeFormat.UInt2,
-                                BuiltInDataTypeKind.Vector3b => InputAttributeFormat.UInt3,
-                                BuiltInDataTypeKind.Vector4b => InputAttributeFormat.UInt4,
-                                BuiltInDataTypeKind.Vector2f => InputAttributeFormat.Float2,
-                                BuiltInDataTypeKind.Vector3f => InputAttributeFormat.Float3,
-                                BuiltInDataTypeKind.Vector4f => InputAttributeFormat.Float4,
-                                BuiltInDataTypeKind.Vector2i => InputAttributeFormat.Int2,
-                                BuiltInDataTypeKind.Vector3i => InputAttributeFormat.Int3,
-                                BuiltInDataTypeKind.Vector4i => InputAttributeFormat.Int4,
-                                BuiltInDataTypeKind.Vector2ui => InputAttributeFormat.UInt2,
-                                BuiltInDataTypeKind.Vector3ui => InputAttributeFormat.UInt3,
-                                BuiltInDataTypeKind.Vector4ui => InputAttributeFormat.UInt4,
-                                BuiltInDataTypeKind.Color3 => InputAttributeFormat.Float3,
-                                BuiltInDataTypeKind.Color4 => InputAttributeFormat.Float4,
+                                BuiltInDataTypeKind.Vector2b => InputElementFormat.UInt2,
+                                BuiltInDataTypeKind.Vector3b => InputElementFormat.UInt3,
+                                BuiltInDataTypeKind.Vector4b => InputElementFormat.UInt4,
+                                BuiltInDataTypeKind.Vector2f => InputElementFormat.Float2,
+                                BuiltInDataTypeKind.Vector3f => InputElementFormat.Float3,
+                                BuiltInDataTypeKind.Vector4f => InputElementFormat.Float4,
+                                BuiltInDataTypeKind.Vector2i => InputElementFormat.Int2,
+                                BuiltInDataTypeKind.Vector3i => InputElementFormat.Int3,
+                                BuiltInDataTypeKind.Vector4i => InputElementFormat.Int4,
+                                BuiltInDataTypeKind.Vector2ui => InputElementFormat.UInt2,
+                                BuiltInDataTypeKind.Vector3ui => InputElementFormat.UInt3,
+                                BuiltInDataTypeKind.Vector4ui => InputElementFormat.UInt4,
+                                BuiltInDataTypeKind.Color3 => InputElementFormat.Float3,
+                                BuiltInDataTypeKind.Color4 => InputElementFormat.Float4,
                                 _ => throw new NotSupportedException("Invalid type for shader stream input")
                             },
                             _ => throw new NotSupportedException("Invalid type for shader stream input")
@@ -270,7 +327,8 @@ void RunMaterialOptions(MaterialOptions opts)
                     {
                         if (annotation.Identifier.Value == "semantic")
                         {
-                            if (annotation.Arguments.ElementAtOrDefault(0) is UserDefinedConstantExpression semantic)
+                            if (annotation.Arguments
+                                    .ElementAtOrDefault(0) is UserDefinedConstantExpression semantic)
                                 description.SemanticName = semantic.Identifier.Name;
 
                             if (annotation.Arguments.ElementAtOrDefault(1) is ILiteral semanticIndex)
@@ -300,22 +358,22 @@ void RunMaterialOptions(MaterialOptions opts)
                         }
                     }
 
-                    materialReflection.InputAttributes.Add(description);
+                    materialReflection.InputElements.Add(description);
                 }
+
+                materialReflection.ShaderByteCode.Data = Encoding.UTF8.GetBytes(code);
             }
+                break;
 
-            materialReflection.ShaderByteCode.Data = Encoding.UTF8.GetBytes(code);
+            default:
+                Console.Error.WriteLine("Unsupported shader translation output is not supported.");
+                Environment.Exit(1);
+                return;
         }
-            break;
 
-        default:
-            Console.Error.WriteLine("Unsupported shader translation output is not supported.");
-            Environment.Exit(1);
-            return;
+        materialReflection.Serialize(Path.Join(opts.OutputDirectory,
+            $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.{variantName}.spslmb"));
     }
-
-    materialReflection.Serialize(Path.Join(opts.OutputDirectory,
-        $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.spslmb"));
 }
 
 void RunPipelineOptions(PipelineOptions opts)
