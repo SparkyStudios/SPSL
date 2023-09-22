@@ -1,6 +1,8 @@
-﻿using System.Text;
+﻿using System.Collections;
+using System.Text;
 using CommandLine;
 using SPSL.CommandLine;
+using SPSL.Language.Analysis.Symbols;
 using SPSL.Language.Parsing.AST;
 using SPSL.Language.Parsing.Common;
 using SPSL.Language.Utils;
@@ -65,8 +67,8 @@ void RunShaderOptions(ShaderOptions opts)
     RunBaseOptions(opts);
     RunShadingOptions(opts, out var permutations);
 
-    // Build AST
-    Ast ast = Ast.FromShaderFile(opts.InputFile, opts.LibDirectories);
+    // Scan source code
+    SourceCode.Shader(opts.InputFile, opts.LibDirectories, out Ast ast, out SymbolTable symbolTable);
 
     switch (opts.Generator)
     {
@@ -83,7 +85,8 @@ void RunShaderOptions(ShaderOptions opts)
                 new()
                 {
                     Shaders = opts.Shaders.Select(name => new NamespacedReference(name)),
-                    Permutations = permutations
+                    Permutations = permutations,
+                    SymbolTable = symbolTable
                 }
             );
 
@@ -106,8 +109,8 @@ void RunMaterialOptions(MaterialOptions opts)
     RunBaseOptions(opts);
     RunShadingOptions(opts, out var permutations);
 
-    // Build AST
-    Ast ast = Ast.FromMaterialFile(opts.InputFile, opts.LibDirectories);
+    // Scan source code
+    SourceCode.Material(opts.InputFile, opts.LibDirectories, out Ast ast, out SymbolTable symbolTable);
 
     Namespace ns;
     Material material;
@@ -267,7 +270,8 @@ void RunMaterialOptions(MaterialOptions opts)
         {
             Shaders = materialShaders,
             Namespaces = namespaces,
-            Permutations = variantPermutations
+            Permutations = variantPermutations,
+            SymbolTable = symbolTable
         };
 
         switch (opts.Generator)
@@ -361,9 +365,22 @@ void RunMaterialOptions(MaterialOptions opts)
                     materialReflection.InputElements.Add(description);
                 }
 
+                foreach (var permutation in variantPermutations)
+                {
+                    materialReflection.Permutations.Add(permutation.Key, permutation.Value);
+                    hlsl.UsedPermutations.Remove(permutation.Key);
+                }
+
+                foreach (DictionaryEntry permutation in hlsl.UsedPermutations)
+                {
+                    Console.Error.WriteLine(
+                        $"A value for the permutation '{permutation.Key}' was not specified in the variant '{variantName}'. The default value was used instead.");
+                    materialReflection.Permutations.Add(permutation.Key, permutation.Value);
+                }
+
                 materialReflection.ShaderByteCode.Data = Encoding.UTF8.GetBytes(code);
-            }
                 break;
+            }
 
             default:
                 Console.Error.WriteLine("Unsupported shader translation output is not supported.");

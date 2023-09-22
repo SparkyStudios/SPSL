@@ -1,9 +1,10 @@
 ﻿using System.Collections;
 using SPSL.Language.Analysis.Common;
+using SPSL.Language.Core;
 
 namespace SPSL.Language.Analysis.Symbols;
 
-public class SymbolTable : Symbol
+public class SymbolTable : Symbol, ILanguageFeature<SymbolTable>
 {
     #region Fields
 
@@ -132,19 +133,17 @@ public class SymbolTable : Symbol
         return this;
     }
 
-    public Symbol? LookupInCurrentAndChildTables(string name)
+    public Symbol? LookupInCurrentAndChildTables(string name, SymbolType type = SymbolType.Unknown)
     {
         Symbol? symbol = Lookup(name);
 
-        if (symbol != null)
-            return symbol;
+        if (symbol != null) return type == SymbolType.Unknown || symbol.Type == type ? symbol : null;
 
         // Check all children tables recursively 
         foreach (SymbolTable childTable in Symbols.OfType<SymbolTable>())
         {
             symbol = childTable.LookupInCurrentAndChildTables(name);
-            if (symbol != null)
-                return symbol;
+            if (symbol != null) return type == SymbolType.Unknown || symbol.Type == type ? symbol : null;
         }
 
         return null;

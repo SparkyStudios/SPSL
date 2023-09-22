@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Runtime.Serialization;
 using MessagePack;
 using SPSL.Language.Parsing.Common;
@@ -40,6 +41,12 @@ public class MaterialReflection
     [DataMember(Order = 4)]
     public Dictionary<ShaderStage, string> EntryPoints { get; } = new();
 
+    /// <summary>
+    /// The list of permutation values for this material.
+    /// </summary>
+    [DataMember(Order = 5)]
+    public Hashtable Permutations { get; } = new();
+    
     public MaterialReflection(string name)
     {
         Name = name;

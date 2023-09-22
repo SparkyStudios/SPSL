@@ -1,5 +1,8 @@
+using System.Collections;
 using System.Text;
 using Antlr4.StringTemplate;
+using SPSL.Language.Analysis.Common;
+using SPSL.Language.Analysis.Symbols;
 using SPSL.Language.Parsing.AST;
 using SPSL.Language.Parsing.Common;
 using SPSL.Language.Utils;
@@ -12,9 +15,11 @@ namespace SPSL.Translation.HLSL;
 
 public class TranslatorConfiguration
 {
-    public IEnumerable<NamespacedReference>? Shaders { get; set; }
-    public IEnumerable<NamespacedReference>? Namespaces { get; set; }
-    public Dictionary<string, string> Permutations { get; set; } = new();
+    public IEnumerable<NamespacedReference>? Shaders { get; init; }
+    public IEnumerable<NamespacedReference>? Namespaces { get; init; }
+    public Dictionary<string, string> Permutations { get; init; } = new();
+
+    public required SymbolTable SymbolTable { get; init; }
 }
 
 public class Translator
@@ -155,6 +160,8 @@ public class Translator
     private readonly TranslatorConfiguration _configuration;
 
     public Stream ShaderStream => _shaderStream;
+
+    public Hashtable UsedPermutations { get; } = new();
 
     private string TranslateShaderFragment(NamespacedReference name, Namespace ns, Ast ast,
         IDictionary<int, uint>? conflicts, IEnumerable<IBlockChild>? overriddenFunctions)
@@ -1872,8 +1879,42 @@ public class Translator
 
         StringBuilder output = new();
 
-        if (_configuration.Permutations.TryGetValue(permutationName.Identifier.Value, out string? value))
+        if (_configuration.Permutations.TryGetValue(permutationName.Identifier.Value, out string? pValue))
+            return RenderPermutationValue(pValue);
+
+        Symbol? symbol = _configuration.SymbolTable.LookupInCurrentAndChildTables
+        (
+            permutationName.Identifier.Value,
+            SymbolType.Permutation
+        );
+
+        if (symbol == null)
         {
+            output.AppendLine("// <spsl-error>");
+            output.AppendLine(
+                $"// Shader permutation not found: {permutationName.Identifier.Value}.");
+            output.AppendLine("// </spsl-error>");
+            output.AppendLine();
+        }
+        else
+        {
+            if (ast.ResolveNode(symbol.Source, symbol.Start) is not PermutationVariable permutationVariable)
+            {
+                output.AppendLine("// <spsl-error>");
+                output.AppendLine(
+                    $"// Shader permutation not found: {permutationName.Identifier.Value}.");
+                output.AppendLine("// </spsl-error>");
+                output.AppendLine();
+            }
+            else return RenderPermutationValue(DeclarationString.From(permutationVariable.Initializer));
+        }
+
+        return output.ToString();
+
+        string RenderPermutationValue(string value)
+        {
+            UsedPermutations.Add(permutationName.Identifier.Value, value);
+
             if (value != DeclarationString.From(permutationValue))
             {
                 return permuteStatement.Else is { Children.Count: > 0 }
@@ -1883,16 +1924,6 @@ public class Translator
 
             return Translate(permuteStatement.Block, ns, ast);
         }
-
-        Template template = _hlslTemplate.GetInstanceOf("permute_block");
-        template.Add("condition", Translate(permuteStatement.Condition, ns, ast));
-        template.Add("block", Translate(permuteStatement.Block, ns, ast));
-
-        if (permuteStatement.Else is { Children.Count: > 0 })
-            template.Add("otherwise", Translate(permuteStatement.Else, ns, ast));
-
-        output.Append(template.Render());
-        return output.ToString();
     }
 
     public string Translate(NamespacedReference reference, Namespace ns, Ast ast)

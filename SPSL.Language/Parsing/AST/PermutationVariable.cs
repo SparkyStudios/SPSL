@@ -87,7 +87,8 @@ public class PermutationVariable : INamespaceChild, IAnnotated, IBlockChild, ISe
     {
         return Name.ResolveNode(source, offset) ?? Initializer.ResolveNode(source, offset) ??
             EnumerationValues.FirstOrDefault(v => v.ResolveNode(source, offset) != null)
-                ?.ResolveNode(source, offset);
+                ?.ResolveNode(source, offset) ??
+            (Source == source && offset >= Start && offset <= End ? this as INode : null);
     }
 
     #endregion
