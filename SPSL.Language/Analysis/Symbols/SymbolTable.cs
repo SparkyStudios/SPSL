@@ -137,7 +137,12 @@ public class SymbolTable : Symbol, ILanguageFeature<SymbolTable>
     {
         Symbol? symbol = Lookup(name);
 
-        if (symbol != null) return type == SymbolType.Unknown || symbol.Type == type ? symbol : null;
+        if (symbol != null)
+            return type == SymbolType.Unknown || symbol.Type == type
+                ? symbol
+                : symbol is SymbolTable table
+                    ? table.LookupInCurrentAndChildTables(name, type)
+                    : null;
 
         // Check all children tables recursively 
         foreach (SymbolTable childTable in Symbols.OfType<SymbolTable>())

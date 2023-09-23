@@ -1,7 +1,10 @@
 ﻿using System.Collections;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using CommandLine;
 using SPSL.CommandLine;
+using SPSL.CommandLine.Utils;
 using SPSL.Language.Analysis.Symbols;
 using SPSL.Language.Parsing.AST;
 using SPSL.Language.Parsing.Common;
@@ -19,6 +22,8 @@ parser.ParseArguments<ShaderOptions, MaterialOptions, PipelineOptions>(args)
 
 return 0;
 
+#region Setup
+
 void SetupParser(ParserSettings settings)
 {
     settings.AllowMultiInstance = false;
@@ -27,6 +32,10 @@ void SetupParser(ParserSettings settings)
     settings.CaseSensitive = true;
     settings.HelpWriter = Console.Out;
 }
+
+#endregion
+
+#region CLI Commands
 
 void RunBaseOptions(BaseOptions opts)
 {
@@ -223,7 +232,7 @@ void RunMaterialOptions(MaterialOptions opts)
 
     if (permutations.Any())
     {
-        CompileMaterialVariant("default", permutations);
+        CompileMaterialVariant("custom", permutations, out _);
     }
     else
     {
@@ -243,24 +252,68 @@ void RunMaterialOptions(MaterialOptions opts)
                     )
                 );
 
-                CompileMaterialVariant(variant.Name.Value, variantPermutations);
+                CompileMaterialVariant(variant.Name.Value, variantPermutations, out _);
             }
         }
-        else
+
+        if (opts.GenerateVariants)
         {
-            Console.Error.WriteLine
-            (
-                "Your material has no variants, and the compilation of all possible variants is not yet supported. " +
-                "Please add a variant to your material or specify the permutation values through the --permutations option."
+            VariantGenerator generator = new(ast, symbolTable);
+            JsonObject genVariants = new();
+
+            // Generate the default variant
+            CompileMaterialVariant("default", new(), out var usedPermutations);
+            genVariants.Add("default", new JsonObject
+                (
+                    usedPermutations.Select(p =>
+                        new KeyValuePair<string, JsonNode?>(p.Key, JsonValue.Create(p.Value))
+                    )
+                )
             );
-            Environment.Exit(1);
+
+            foreach (string permutation in usedPermutations.Keys)
+                generator.Add(permutation);
+
+            for (uint i = 0, l = generator.GetVariantCount(); i < l; i++)
+            {
+                var variantPermutations = new Dictionary<string, string>(generator.GetVariant(i)
+                    .Select(p => new KeyValuePair<string, string>(p.Name, p.Value)));
+                var hashCode = variantPermutations.GetHashCode().ToString();
+
+                CompileMaterialVariant
+                (
+                    hashCode,
+                    variantPermutations,
+                    out _
+                );
+
+                genVariants.Add(hashCode, new JsonObject
+                    (
+                        variantPermutations.Select(p =>
+                            new KeyValuePair<string, JsonNode?>(p.Key, JsonValue.Create(p.Value))
+                        )
+                    )
+                );
+            }
+
+            using var stream = new FileStream(Path.Join(opts.OutputDirectory,
+                $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.variants.json"), FileMode.Create);
+            using var writer = new Utf8JsonWriter(stream);
+
+            genVariants.WriteTo(writer);
         }
     }
 
     return;
 
-    void CompileMaterialVariant(string variantName, Dictionary<string, string> variantPermutations)
+    void CompileMaterialVariant
+    (
+        string variantName,
+        Dictionary<string, string> variantPermutations,
+        out Dictionary<string, string> usedPermutations
+    )
     {
+        usedPermutations = new();
         MaterialReflection materialReflection = new(material.Name.Value);
 
         foreach (var entryPoint in materialEntryPoints)
@@ -368,6 +421,7 @@ void RunMaterialOptions(MaterialOptions opts)
                 foreach (var permutation in variantPermutations)
                 {
                     materialReflection.Permutations.Add(permutation.Key, permutation.Value);
+                    usedPermutations.Add(permutation.Key, permutation.Value);
                     hlsl.UsedPermutations.Remove(permutation.Key);
                 }
 
@@ -376,6 +430,7 @@ void RunMaterialOptions(MaterialOptions opts)
                     Console.Error.WriteLine(
                         $"A value for the permutation '{permutation.Key}' was not specified in the variant '{variantName}'. The default value was used instead.");
                     materialReflection.Permutations.Add(permutation.Key, permutation.Value);
+                    usedPermutations.Add((string)permutation.Key, (string)permutation.Value!);
                 }
 
                 materialReflection.ShaderByteCode.Data = Encoding.UTF8.GetBytes(code);
@@ -395,6 +450,8 @@ void RunMaterialOptions(MaterialOptions opts)
 
 void RunPipelineOptions(PipelineOptions opts)
 {
-    Console.WriteLine("Node Graph compiler is not yet implemented.");
+    Console.Error.WriteLine("Node Graph compiler is not yet implemented.");
     Environment.Exit(1);
 }
+
+#endregion

@@ -90,6 +90,7 @@ public static class DeclarationString
         expression switch
         {
             IConstantExpression constantExpression => From(constantExpression),
+            BasicExpression basicExpression => From(basicExpression),
             _ => throw new NotImplementedException()
         };
 
@@ -100,6 +101,9 @@ public static class DeclarationString
             UserDefinedConstantExpression custom => From(custom),
             _ => throw new NotImplementedException()
         };
+
+    public static string From(BasicExpression expression) =>
+        From(expression.Identifier);
 
     public static string From(IPrimitiveExpression expression) =>
         expression switch
@@ -170,7 +174,8 @@ public static class DeclarationString
         StringBuilder sb = new();
 
         if (parameter.Flow != DataFlow.Unspecified)
-            sb.Append($"{parameter.Flow switch {
+            sb.Append($"{parameter.Flow switch
+            {
                 DataFlow.In => "in",
                 DataFlow.Out => "out",
                 DataFlow.InOut => "inout",
@@ -236,7 +241,8 @@ public static class DeclarationString
             sb.Append("abstract ");
 
         if (shader.Stage != ShaderStage.Unspecified)
-            sb.Append($"{shader.Stage switch {
+            sb.Append($"{shader.Stage switch
+            {
                 ShaderStage.Vertex => "vertex",
                 ShaderStage.Hull => "hull",
                 ShaderStage.Domain => "domain",
@@ -306,12 +312,14 @@ public static class DeclarationString
         StringBuilder sb = new();
 
         if (buffer.Storage != BufferStorage.Undefined)
-            sb.Append($"{buffer.Storage switch {
+            sb.Append($"{buffer.Storage switch
+            {
                 BufferStorage.Coherent => "coherent",
                 _ => string.Empty
             }} ");
 
-        sb.Append($"{buffer.Access switch {
+        sb.Append($"{buffer.Access switch
+        {
             BufferAccess.Constant => "const",
             BufferAccess.ReadOnly => "readonly",
             BufferAccess.WriteOnly => "writeonly",
@@ -331,12 +339,14 @@ public static class DeclarationString
         StringBuilder sb = new();
 
         if (buffer.Storage != BufferStorage.Undefined)
-            sb.Append($"{buffer.Storage switch {
+            sb.Append($"{buffer.Storage switch
+            {
                 BufferStorage.Coherent => "coherent",
                 _ => string.Empty
             }} ");
 
-        sb.Append($"{buffer.Access switch {
+        sb.Append($"{buffer.Access switch
+        {
             BufferAccess.Constant => "const",
             BufferAccess.ReadOnly => "readonly",
             BufferAccess.WriteOnly => "writeonly",
@@ -703,7 +713,8 @@ public static class DeclarationString
     /// When the given <see cref="StreamProperty"/> has an unknown or invalid stream property data flow.
     /// </exception>
     public static string From(StreamProperty property)
-        => $"{property.DataFlow switch {
+        => $"{property.DataFlow switch
+        {
             StreamPropertyFlow.Input => "input",
             StreamPropertyFlow.Output => "output",
             StreamPropertyFlow.Transient => "transient",

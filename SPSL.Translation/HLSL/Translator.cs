@@ -1914,15 +1914,26 @@ public class Translator
         string RenderPermutationValue(string value)
         {
             UsedPermutations.Add(permutationName.Identifier.Value, value);
-
-            if (value != DeclarationString.From(permutationValue))
+            bool isMatch = expression.Operator switch
             {
-                return permuteStatement.Else is { Children.Count: > 0 }
-                    ? Translate(permuteStatement.Else, ns, ast)
-                    : string.Empty;
-            }
+                // Bool and Enum values
+                Op.Equals => value == DeclarationString.From(permutationValue),
+                Op.NotEquals => value != DeclarationString.From(permutationValue),
 
-            return Translate(permuteStatement.Block, ns, ast);
+                // Integer values
+                Op.GreaterThan => int.Parse(value) > int.Parse(DeclarationString.From(permutationValue)),
+                Op.GreaterThanOrEqual => int.Parse(value) >= int.Parse(DeclarationString.From(permutationValue)),
+                Op.LessThan => int.Parse(value) < int.Parse(DeclarationString.From(permutationValue)),
+                Op.LessThanOrEqual => int.Parse(value) <= int.Parse(DeclarationString.From(permutationValue)),
+                _ => false
+            };
+
+            if (isMatch)
+                return Translate(permuteStatement.Block, ns, ast);
+
+            return permuteStatement.Else is { Children.Count: > 0 }
+                ? Translate(permuteStatement.Else, ns, ast)
+                : string.Empty;
         }
     }
 

@@ -1,31 +1,16 @@
 using CommandLine;
+using SPSL.CommandLine.Utils;
 
 namespace SPSL.CommandLine;
-
-public class PermutationValue
-{
-    public string Name { get; }
-    public string Value { get; }
-
-    public PermutationValue(string option)
-    {
-        string[] parts = option.Split('=', 2);
-
-        Name = parts[0].Trim();
-        Value = parts[1].Trim();
-    }
-
-    public override string ToString()
-    {
-        return $"{Name}={Value}";
-    }
-}
 
 public abstract class ShadingOptions : BaseOptions
 {
     [Option('g', "generator", HelpText = "Specifies the shader generator to use.", Default = ShaderSourceGenerator.HLSL, Required = false)]
     public ShaderSourceGenerator Generator { get; set; } = ShaderSourceGenerator.HLSL;
 
-    [Option('p', "permutations", HelpText = "Specifies the permutations to apply to the shader code.", Required = false, Separator = ',')]
+    [Option('p', "permutations", HelpText = "Create a variant by explicitly specifying a set of permutation values.", Required = false, Separator = ',', SetName = "Variants")]
     public IEnumerable<PermutationValue> Permutations { get; set; } = Enumerable.Empty<PermutationValue>();
+    
+    [Option('m', "generate-variants", HelpText = "Instructs the compiler to generate all the possible variants. A file with the extension .variants.json will be created, and will contain the list the list of generated variant names and its permutation values.", Required = false, SetName = "Variants")]
+    public bool GenerateVariants { get; set; } = false;
 }
