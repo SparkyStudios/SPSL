@@ -117,7 +117,7 @@ public class MaterialMemberVisitor : SPSLBaseVisitor<IMaterialMember?>
                 c => new MaterialStateComponent
                 (
                     c.Name.ToIdentifier(_fileSource),
-                    c.initializationExpression().Accept(new ExpressionVisitor(_fileSource))!
+                    c.Value.ToIdentifier(_fileSource)
                 )
                 {
                     Start = c.Start.StartIndex,

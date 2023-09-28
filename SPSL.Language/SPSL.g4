@@ -711,7 +711,7 @@ materialState
   ;
 
 materialStateComponent
-  : Name = IDENTIFIER OP_ASSIGN Value = initializationExpression TOK_SEMICOLON
+  : Name = IDENTIFIER OP_ASSIGN Value = IDENTIFIER TOK_SEMICOLON
   ;
 
 // Uniform block for GLSL CBuffer for HLSL

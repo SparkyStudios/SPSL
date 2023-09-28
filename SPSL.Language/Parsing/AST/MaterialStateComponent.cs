@@ -10,7 +10,7 @@ public class MaterialStateComponent : IBlockChild
     /// <summary>
     /// The value of the <see cref="MaterialStateComponent"/>.
     /// </summary>
-    public IExpression Value { get; }
+    public Identifier Value { get; }
 
     #endregion
 
@@ -21,7 +21,7 @@ public class MaterialStateComponent : IBlockChild
     /// </summary>
     /// <param name="name">The component's name.</param>
     /// <param name="value">The component's value.</param>
-    public MaterialStateComponent(Identifier name, IExpression value)
+    public MaterialStateComponent(Identifier name, Identifier value)
     {
         name.Parent = this;
         value.Parent = this;

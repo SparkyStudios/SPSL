@@ -4257,12 +4257,12 @@ public partial class SPSLParser : Parser {
 
 	public partial class MaterialStateComponentContext : ParserRuleContext {
 		public IToken Name;
-		public InitializationExpressionContext Value;
+		public IToken Value;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode OP_ASSIGN() { return GetToken(SPSLParser.OP_ASSIGN, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode TOK_SEMICOLON() { return GetToken(SPSLParser.TOK_SEMICOLON, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(SPSLParser.IDENTIFIER, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public InitializationExpressionContext initializationExpression() {
-			return GetRuleContext<InitializationExpressionContext>(0);
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] IDENTIFIER() { return GetTokens(SPSLParser.IDENTIFIER); }
+		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER(int i) {
+			return GetToken(SPSLParser.IDENTIFIER, i);
 		}
 		public MaterialStateComponentContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
@@ -4299,7 +4299,7 @@ public partial class SPSLParser : Parser {
 			State = 720;
 			Match(OP_ASSIGN);
 			State = 721;
-			_localctx.Value = initializationExpression();
+			_localctx.Value = Match(IDENTIFIER);
 			State = 722;
 			Match(TOK_SEMICOLON);
 			}
@@ -11087,9 +11087,9 @@ public partial class SPSLParser : Parser {
 		707,710,1,0,0,0,708,706,1,0,0,0,708,709,1,0,0,0,709,711,1,0,0,0,710,708,
 		1,0,0,0,711,718,5,122,0,0,712,713,5,9,0,0,713,714,5,178,0,0,714,715,5,
 		143,0,0,715,716,5,178,0,0,716,718,5,128,0,0,717,702,1,0,0,0,717,712,1,
-		0,0,0,718,79,1,0,0,0,719,720,5,178,0,0,720,721,5,143,0,0,721,722,3,160,
-		80,0,722,723,5,128,0,0,723,81,1,0,0,0,724,726,5,169,0,0,725,724,1,0,0,
-		0,725,726,1,0,0,0,726,730,1,0,0,0,727,729,3,68,34,0,728,727,1,0,0,0,729,
+		0,0,0,718,79,1,0,0,0,719,720,5,178,0,0,720,721,5,143,0,0,721,722,5,178,
+		0,0,722,723,5,128,0,0,723,81,1,0,0,0,724,726,5,169,0,0,725,724,1,0,0,0,
+		725,726,1,0,0,0,726,730,1,0,0,0,727,729,3,68,34,0,728,727,1,0,0,0,729,
 		732,1,0,0,0,730,728,1,0,0,0,730,731,1,0,0,0,731,734,1,0,0,0,732,730,1,
 		0,0,0,733,735,5,62,0,0,734,733,1,0,0,0,734,735,1,0,0,0,735,737,1,0,0,0,
 		736,738,7,5,0,0,737,736,1,0,0,0,737,738,1,0,0,0,738,739,1,0,0,0,739,740,

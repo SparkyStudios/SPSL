@@ -415,6 +415,9 @@ void RunMaterialOptions(MaterialOptions opts)
                         }
                     }
 
+                    if (description.SemanticName.StartsWith("SV_"))
+                        continue; // Skip built-in semantics
+
                     materialReflection.InputElements.Add(description);
                 }
 
@@ -433,6 +436,23 @@ void RunMaterialOptions(MaterialOptions opts)
                     usedPermutations.Add((string)permutation.Key, (string)permutation.Value!);
                 }
 
+                foreach (MaterialState state in material.Children.OfType<MaterialState>())
+                {
+                    if (state.Value is not null)
+                    {
+                        materialReflection.States.Add(new(state.Name.Value, state.Value));
+                    }
+                    else
+                    {
+                        Hashtable components = new();
+
+                        foreach (MaterialStateComponent component in state.Children.OfType<MaterialStateComponent>())
+                            components.Add(component.Name.Value, component.Value.Value);
+
+                        materialReflection.States.Add(new(state.Name.Value, components));
+                    }
+                }
+
                 materialReflection.ShaderByteCode.Data = Encoding.UTF8.GetBytes(code);
                 break;
             }
@@ -444,7 +464,7 @@ void RunMaterialOptions(MaterialOptions opts)
         }
 
         materialReflection.Serialize(Path.Join(opts.OutputDirectory,
-            $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.{variantName}.spslmb"));
+            $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.{variantName}.spslb"));
     }
 }
 

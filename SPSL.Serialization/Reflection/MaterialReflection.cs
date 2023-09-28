@@ -47,6 +47,12 @@ public class MaterialReflection
     [DataMember(Order = 5)]
     public Hashtable Permutations { get; } = new();
     
+    /// <summary>
+    /// The list of material states as provided in the SPSL code.
+    /// </summary>
+    [DataMember(Order = 6)]
+    public ICollection<MaterialStateBinding> States { get; } = new List<MaterialStateBinding>();
+    
     public MaterialReflection(string name)
     {
         Name = name;
@@ -55,8 +61,6 @@ public class MaterialReflection
     public void Serialize(string filePath)
     {
         using FileStream stream = File.Open(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-        using StreamWriter writer = new(stream);
-
-        MessagePackSerializer.SerializeToJson(writer, this);
+        MessagePackSerializer.Serialize(stream, this);
     }
 }
