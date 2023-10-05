@@ -1,12 +1,13 @@
 using CommandLine;
 using SPSL.CommandLine.Utils;
+using SPSL.Serialization;
 
 namespace SPSL.CommandLine;
 
 public abstract class ShadingOptions : BaseOptions
 {
-    [Option('g', "generator", HelpText = "Specifies the shader generator to use.", Default = ShaderSourceGenerator.HLSL, Required = false)]
-    public ShaderSourceGenerator Generator { get; set; } = ShaderSourceGenerator.HLSL;
+    [Option('g', "generator", HelpText = "Specifies the shader generator to use.", Default = ShaderSourceLanguage.HLSL, Required = false)]
+    public ShaderSourceLanguage Language { get; set; } = ShaderSourceLanguage.HLSL;
 
     [Option('p', "permutations", HelpText = "Create a variant by explicitly specifying a set of permutation values.", Required = false, Separator = ',', SetName = "Variants")]
     public IEnumerable<PermutationValue> Permutations { get; set; } = Enumerable.Empty<PermutationValue>();

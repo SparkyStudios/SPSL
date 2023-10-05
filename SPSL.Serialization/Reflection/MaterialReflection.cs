@@ -46,16 +46,28 @@ public class MaterialReflection
     /// </summary>
     [DataMember(Order = 5)]
     public Hashtable Permutations { get; } = new();
-    
+
     /// <summary>
     /// The list of material states as provided in the SPSL code.
     /// </summary>
     [DataMember(Order = 6)]
     public ICollection<MaterialStateBinding> States { get; } = new List<MaterialStateBinding>();
-    
-    public MaterialReflection(string name)
+
+    /// <summary>
+    /// The language in which the <see cref="ShaderByteCode"/> was written.
+    /// </summary>
+    [DataMember(Order = 7)]
+    public ShaderSourceLanguage SourceLanguage { get; }
+
+    public MaterialReflection()
+        : this(string.Empty, ShaderSourceLanguage.HLSL)
+    {
+    }
+
+    public MaterialReflection(string name, ShaderSourceLanguage sourceLanguage)
     {
         Name = name;
+        SourceLanguage = sourceLanguage;
     }
 
     public void Serialize(string filePath)

@@ -156,6 +156,11 @@ public enum InputElementFormat : byte
     /// Four 16-bit floating point values.
     /// </summary>
     Half4,
+    
+    /// <summary>
+    /// Packed 32-bit unsigned normalized integer.
+    /// </summary>
+    R10G10B10A2UNorm,
 
     Default = Float4
 };

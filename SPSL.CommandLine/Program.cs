@@ -9,6 +9,7 @@ using SPSL.Language.Analysis.Symbols;
 using SPSL.Language.Parsing.AST;
 using SPSL.Language.Parsing.Common;
 using SPSL.Language.Utils;
+using SPSL.Serialization;
 using SPSL.Serialization.Reflection;
 using SPSL.Translation.HLSL;
 using Parser = CommandLine.Parser;
@@ -79,15 +80,15 @@ void RunShaderOptions(ShaderOptions opts)
     // Scan source code
     SourceCode.Shader(opts.InputFile, opts.LibDirectories, out Ast ast, out SymbolTable symbolTable);
 
-    switch (opts.Generator)
+    switch (opts.Language)
     {
-        case ShaderSourceGenerator.GLSL:
+        case ShaderSourceLanguage.GLSL:
             Console.Error.WriteLine("GLSL output is not supported.");
             Environment.Exit(1);
             break;
 
         // ---- Translate to HLSL
-        case ShaderSourceGenerator.HLSL:
+        case ShaderSourceLanguage.HLSL:
         {
             Translator hlsl = new
             (
@@ -314,7 +315,7 @@ void RunMaterialOptions(MaterialOptions opts)
     )
     {
         usedPermutations = new();
-        MaterialReflection materialReflection = new(material.Name.Value);
+        MaterialReflection materialReflection = new(variantName, opts.Language);
 
         foreach (var entryPoint in materialEntryPoints)
             materialReflection.EntryPoints.Add(entryPoint.Key, entryPoint.Value);
@@ -327,22 +328,19 @@ void RunMaterialOptions(MaterialOptions opts)
             SymbolTable = symbolTable
         };
 
-        switch (opts.Generator)
+        switch (opts.Language)
         {
-            case ShaderSourceGenerator.GLSL:
+            case ShaderSourceLanguage.GLSL:
                 Console.Error.WriteLine("GLSL output is not supported.");
                 Environment.Exit(1);
                 return;
 
             // ---- Translate to HLSL
-            case ShaderSourceGenerator.HLSL:
+            case ShaderSourceLanguage.HLSL:
             {
                 Translator hlsl = new(config);
 
                 string code = hlsl.Translate(ast);
-                using var stream = new StreamWriter(Path.Join(opts.OutputDirectory,
-                    $"{Path.GetFileNameWithoutExtension(opts.InputFile)}.{variantName}.hlsl"));
-                stream.Write(code);
 
                 foreach (StreamProperty property in hlsl.ShaderStream.Inputs)
                 {
