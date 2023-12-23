@@ -20,7 +20,7 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
     private readonly StaticAnalyzerService _staticAnalyzerService;
     private readonly DocumentDiagnosticService _documentDiagnosticService;
 
-    private readonly DocumentSelector _documentSelector;
+    private readonly TextDocumentSelector _documentSelector;
 
     public TextDocumentSyncHandler
     (
@@ -30,7 +30,7 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
         SyntaxAnalyzerService syntaxAnalyzerService,
         StaticAnalyzerService staticAnalyzerService,
         DocumentDiagnosticService documentDiagnosticService,
-        DocumentSelector documentSelector
+        TextDocumentSelector documentSelector
     )
     {
         _router = router;
@@ -91,9 +91,9 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
     }
 
     TextDocumentOpenRegistrationOptions
-        IRegistration<TextDocumentOpenRegistrationOptions, SynchronizationCapability>.GetRegistrationOptions
+        IRegistration<TextDocumentOpenRegistrationOptions, TextSynchronizationCapability>.GetRegistrationOptions
         (
-            SynchronizationCapability capability,
+            TextSynchronizationCapability capability,
             ClientCapabilities clientCapabilities
         )
     {
@@ -104,9 +104,9 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
     }
 
     TextDocumentChangeRegistrationOptions
-        IRegistration<TextDocumentChangeRegistrationOptions, SynchronizationCapability>.GetRegistrationOptions
+        IRegistration<TextDocumentChangeRegistrationOptions, TextSynchronizationCapability>.GetRegistrationOptions
         (
-            SynchronizationCapability capability,
+            TextSynchronizationCapability capability,
             ClientCapabilities clientCapabilities
         )
     {
@@ -118,9 +118,9 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
     }
 
     TextDocumentSaveRegistrationOptions
-        IRegistration<TextDocumentSaveRegistrationOptions, SynchronizationCapability>.GetRegistrationOptions
+        IRegistration<TextDocumentSaveRegistrationOptions, TextSynchronizationCapability>.GetRegistrationOptions
         (
-            SynchronizationCapability capability,
+            TextSynchronizationCapability capability,
             ClientCapabilities clientCapabilities
         )
     {
@@ -132,9 +132,9 @@ public class TextDocumentSyncHandler : ITextDocumentSyncHandler
     }
 
     TextDocumentCloseRegistrationOptions
-        IRegistration<TextDocumentCloseRegistrationOptions, SynchronizationCapability>.GetRegistrationOptions
+        IRegistration<TextDocumentCloseRegistrationOptions, TextSynchronizationCapability>.GetRegistrationOptions
         (
-            SynchronizationCapability capability,
+            TextSynchronizationCapability capability,
             ClientCapabilities clientCapabilities
         )
     {

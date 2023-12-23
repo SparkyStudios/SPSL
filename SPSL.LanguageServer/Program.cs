@@ -134,9 +134,9 @@ static void ConfigureServices(IServiceCollection services)
     services.AddSingleton<DocumentDiagnosticService>();
     services.AddSingleton<WorkspaceService>();
 
-    services.AddSingleton(new DocumentSelector
+    services.AddSingleton(new TextDocumentSelector
     (
-        new DocumentFilter
+        new TextDocumentFilter
         {
             Pattern = "**/*.spsl*",
             Scheme = "file",

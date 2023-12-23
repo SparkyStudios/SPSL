@@ -14,11 +14,11 @@ public class DefinitionHandler : IDefinitionHandler
     private readonly WorkspaceService _workspaceService;
     private readonly DocumentManagerService _documentManagerService;
 
-    private readonly DocumentSelector _documentSelector;
+    private readonly TextDocumentSelector _documentSelector;
 
     public DefinitionHandler
     (
-        DocumentSelector documentSelector,
+        TextDocumentSelector documentSelector,
         WorkspaceService workspaceService,
         DocumentManagerService documentManagerService
     )
@@ -28,7 +28,7 @@ public class DefinitionHandler : IDefinitionHandler
         _documentManagerService = documentManagerService;
     }
 
-    public Task<LocationOrLocationLinks> Handle(DefinitionParams request, CancellationToken cancellationToken)
+    public Task<LocationOrLocationLinks?> Handle(DefinitionParams request, CancellationToken cancellationToken)
     {
         Document document = _documentManagerService.GetData(request.TextDocument.Uri);
         int offset = document.OffsetAt(request.Position);
@@ -40,7 +40,7 @@ public class DefinitionHandler : IDefinitionHandler
         );
 
         if (node == null)
-            return Task.FromResult<LocationOrLocationLinks>(new());
+            return Task.FromResult<LocationOrLocationLinks?>(null);
 
         switch (node)
         {
@@ -48,7 +48,7 @@ public class DefinitionHandler : IDefinitionHandler
             {
                 Symbol? symbol = _workspaceService.WorkspaceSymbolTable.LookupInCurrentAndChildTables(identifier.Value);
                 if (symbol == null)
-                    return Task.FromResult<LocationOrLocationLinks>(new());
+                    return Task.FromResult<LocationOrLocationLinks?>(null);
 
                 // TODO: According to the parent of the identifier, we should find the definition of the symbol.
                 // For now, we just return the symbol itself.
@@ -56,7 +56,7 @@ public class DefinitionHandler : IDefinitionHandler
                 Document symbolDocument =
                     _documentManagerService.GetData(DocumentUri.From(symbol.Source));
 
-                return Task.FromResult<LocationOrLocationLinks>
+                return Task.FromResult<LocationOrLocationLinks?>
                 (
                     new
                     (
@@ -77,7 +77,7 @@ public class DefinitionHandler : IDefinitionHandler
             }
         }
 
-        return Task.FromResult<LocationOrLocationLinks>(new());
+        return Task.FromResult<LocationOrLocationLinks?>(null);
     }
 
     public DefinitionRegistrationOptions GetRegistrationOptions

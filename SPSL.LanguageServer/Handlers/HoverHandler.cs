@@ -17,14 +17,14 @@ public class HoverHandler : IHoverHandler
     private readonly DocumentManagerService _documentManagerService;
     private readonly AstProviderService _astProviderService;
 
-    private readonly DocumentSelector _documentSelector;
+    private readonly TextDocumentSelector _documentSelector;
 
     public HoverHandler
     (
         SymbolProviderService symbolProviderService,
         DocumentManagerService documentManagerService,
         AstProviderService astProviderService,
-        DocumentSelector documentSelector
+        TextDocumentSelector documentSelector
     )
     {
         _symbolProviderService = symbolProviderService;

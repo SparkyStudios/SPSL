@@ -10,6 +10,6 @@
     <ProjectReference Include="..\SPSL.Language\SPSL.Language.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.7" />
+    <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
   </ItemGroup>
 </Project>

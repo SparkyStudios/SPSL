@@ -14,14 +14,14 @@ public class SignatureHelpHandler : ISignatureHelpHandler
     private readonly AstProviderService _astProviderService;
     private readonly SymbolProviderService _symbolProviderService;
 
-    private readonly DocumentSelector _documentSelector;
+    private readonly TextDocumentSelector _documentSelector;
 
     public SignatureHelpHandler
     (
         DocumentManagerService documentManagerService,
         AstProviderService astProviderService,
         SymbolProviderService symbolProviderService,
-        DocumentSelector documentSelector
+        TextDocumentSelector documentSelector
     )
     {
         _documentManagerService = documentManagerService;

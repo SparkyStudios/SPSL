@@ -26,7 +26,7 @@ public class Annotation : INode, ISemanticallyEquatable, IEquatable<Annotation>
     /// Checks whether the annotation is a 'semantic' annotation.
     /// 
     /// Semantic annotations are annotations used on stream properties to specify the semantics
-    /// of the generated property.
+    /// of input attributes.
     /// </summary>
     public bool IsSemantic => Identifier.Value is "semantic" or "position" or "texcoord" or "normal" or "tangent"
         or "bitangent" or "color" or "boneweights" or "boneindices";
@@ -38,6 +38,18 @@ public class Annotation : INode, ISemanticallyEquatable, IEquatable<Annotation>
     /// </summary>
     public bool IsEntry => Identifier.Value is "entry";
 
+    /// <summary>
+    /// Checks whether the annotation is a 'precision' annotation.
+    ///
+    /// Precision annotations are used to specify the precision of an input attribute.
+    /// </summary>
+    public bool IsPrecision => Identifier.Value is "precision";
+    
+    /// <summary>
+    /// Checks whether the annotation is a built-in SPSL annotation.
+    /// </summary>
+    public bool IsBuiltInAnnotation => IsSemantic || IsEntry || IsPrecision;
+    
     #endregion
 
     #region Constructors

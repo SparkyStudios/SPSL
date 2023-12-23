@@ -38,13 +38,13 @@ public class DocumentColorHandler : IDocumentColorHandler
     private readonly TokenProviderService _tokenProviderService;
     private readonly DocumentManagerService _documentManagerService;
 
-    private readonly DocumentSelector _documentSelector;
+    private readonly TextDocumentSelector _documentSelector;
 
     public DocumentColorHandler
     (
         TokenProviderService tokenProviderService,
         DocumentManagerService documentManagerService,
-        DocumentSelector documentSelector
+        TextDocumentSelector documentSelector
     )
     {
         _tokenProviderService = tokenProviderService;
@@ -52,7 +52,7 @@ public class DocumentColorHandler : IDocumentColorHandler
         _documentSelector = documentSelector;
     }
 
-    public Task<Container<ColorInformation>> Handle
+    public Task<Container<ColorInformation>?> Handle
     (
         DocumentColorParams request,
         CancellationToken cancellationToken
@@ -60,7 +60,7 @@ public class DocumentColorHandler : IDocumentColorHandler
     {
         ParserRuleContext? context = _tokenProviderService.GetData(request.TextDocument.Uri);
         if (context == null)
-            return Task.FromResult<Container<ColorInformation>>(new());
+            return Task.FromResult<Container<ColorInformation>?>(null);
 
         Document document = _documentManagerService.GetData(request.TextDocument.Uri);
 
@@ -87,7 +87,7 @@ public class DocumentColorHandler : IDocumentColorHandler
             })
             .ToList();
 
-        return Task.FromResult<Container<ColorInformation>>(result);
+        return Task.FromResult<Container<ColorInformation>?>(result);
     }
 
     public DocumentColorRegistrationOptions GetRegistrationOptions
