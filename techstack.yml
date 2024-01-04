@@ -1,7 +1,8 @@
 repo_name: SparkyStudios/SPSL
 report_id: 81b25b3aecabe25d39b65423dc37a228
+version: 0.1
 repo_type: Public
-timestamp: '2023-11-09T17:10:11+00:00'
+timestamp: '2024-01-04T15:09:17+00:00'
 requested_by: na2axl
 provider: github
 branch: main
@@ -16,6 +17,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Languages
   image_url: https://img.stackshare.io/service/1015/1200px-C_Sharp_wordmark.svg.png
+  detection_source_url: https://github.com/SparkyStudios/SPSL
   detection_source: Repo Metadata
 - name: ".NET"
   description: A free, cross-platform, open source developer platform for building
@@ -27,6 +29,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Frameworks (Full Stack)
   image_url: https://img.stackshare.io/service/1014/IoPy1dce_400x400.png
+  detection_source_url: https://github.com/SparkyStudios/SPSL/blob/main/SPSL.Serialization/SPSL.Serialization.csproj
   detection_source: SPSL.Serialization/SPSL.Serialization.csproj
   last_updated_by: Axel Nana
   last_updated_on: 2023-07-19 13:19:18.000000000 Z
@@ -41,8 +44,8 @@ tools:
   category: Languages & Frameworks
   sub_category: Frameworks (Full Stack)
   image_url: https://img.stackshare.io/service/6403/default_91fc1f0ee315262794273aa1387eaf8fed8436e6.png
-  detection_source_url: SPSL.CommandLine/SPSL.CommandLine.csproj
-  detection_source: SPSL.Translation/SPSL.Translation.csproj
+  detection_source_url: https://github.com/SparkyStudios/SPSL/blob/main/SPSL.CommandLine/SPSL.CommandLine.csproj
+  detection_source: SPSL.CommandLine/SPSL.CommandLine.csproj
   last_updated_by: Axel Nana
   last_updated_on: 2023-01-26 22:44:15.000000000 Z
 - name: ASP.NET Core
@@ -56,8 +59,8 @@ tools:
   category: Languages & Frameworks
   sub_category: Frameworks (Full Stack)
   image_url: https://img.stackshare.io/service/11331/asp.net-core.png
-  detection_source_url: SPSL.CommandLine/SPSL.CommandLine.csproj
-  detection_source: SPSL.Translation/SPSL.Translation.csproj
+  detection_source_url: https://github.com/SparkyStudios/SPSL/blob/main/SPSL.CommandLine/SPSL.CommandLine.csproj
+  detection_source: SPSL.CommandLine/SPSL.CommandLine.csproj
   last_updated_by: Axel Nana
   last_updated_on: 2023-01-26 22:44:15.000000000 Z
 - name: Git
@@ -68,6 +71,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Version Control System
   image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source_url: https://github.com/SparkyStudios/SPSL
   detection_source: Repo Metadata
 - name: NuGet
   description: The package manager for .NET
@@ -77,6 +81,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Package Managers
   image_url: https://img.stackshare.io/service/2637/6I3oEOP4_400x400.jpg
+  detection_source_url: https://github.com/SparkyStudios/SPSL/blob/main/SPSL.Serialization/SPSL.Serialization.csproj
   detection_source: SPSL.Serialization/SPSL.Serialization.csproj
   last_updated_by: Axel Nana
   last_updated_on: 2023-07-19 13:19:18.000000000 Z
@@ -89,6 +94,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Integrated Development Environment
   image_url: https://img.stackshare.io/service/1451/SR2hUhQN.png
+  detection_source_url: https://github.com/SparkyStudios/SPSL/blob/main/SPSL.sln
   detection_source: SPSL.sln
   last_updated_by: Axel Nana
   last_updated_on: 2023-08-25 18:10:55.000000000 Z
@@ -99,6 +105,7 @@ tools:
   open_source: false
   hosted_saas: false
   image_url: https://img.stackshare.io/service/8585/a159037c4838e54e93d9f630a295c396_normal.jpeg
+  detection_source_url: https://github.com/SparkyStudios/SPSL
   detection_source: Repo Metadata
 - name: Antlr4.Runtime.Standard
   description: The .NET Core C# ANTLR 4 runtime from the ANTLR Organization
@@ -110,7 +117,7 @@ tools:
   category: Libraries
   sub_category: NuGet Packages
   image_url: https://img.stackshare.io/package/13867/default_f71362d5cdd81a1583eb441b931fae9d72ff1211.png
-  detection_source_url: SPSL.Language/SPSL.Language.csproj
+  detection_source_url: https://github.com/SparkyStudios/SPSL/blob/main/SPSL.Language/SPSL.Language.csproj
   detection_source: SPSL.Language/SPSL.Language.csproj
   last_updated_by: Axel Nana
   last_updated_on: 2023-07-02 17:19:06.000000000 Z
@@ -124,7 +131,7 @@ tools:
   category: Libraries
   sub_category: NuGet Packages
   image_url: https://img.stackshare.io/package/13122/default_a5e8cd728170fc92850284a53a17ff7deb73f318.png
-  detection_source_url: SPSL.CommandLine/SPSL.CommandLine.csproj
+  detection_source_url: https://github.com/SparkyStudios/SPSL/blob/main/SPSL.CommandLine/SPSL.CommandLine.csproj
   detection_source: SPSL.CommandLine/SPSL.CommandLine.csproj
   last_updated_by: Axel Nana
   last_updated_on: 2023-03-27 19:40:36.000000000 Z
@@ -138,7 +145,7 @@ tools:
   category: Libraries
   sub_category: NuGet Packages
   image_url: https://img.stackshare.io/package/13089/default_baa6c1c3e725b18a803052f0d13efd0ca49e5d50.png
-  detection_source_url: SPSL.Serialization/SPSL.Serialization.csproj
+  detection_source_url: https://github.com/SparkyStudios/SPSL/blob/main/SPSL.Serialization/SPSL.Serialization.csproj
   detection_source: SPSL.Serialization/SPSL.Serialization.csproj
   last_updated_by: Axel Nana
   last_updated_on: 2023-07-22 16:43:34.000000000 Z
