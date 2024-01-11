@@ -32,7 +32,7 @@ Full tech stack [here](/techstack.md)
 # Tech Stack File
 ![](https://img.stackshare.io/repo.svg "repo") [SparkyStudios/SPSL](https://github.com/SparkyStudios/SPSL)![](https://img.stackshare.io/public_badge.svg "public")
 <br/><br/>
-|11<br/>Tools used|01/05/24 <br/>Report generated|
+|11<br/>Tools used|01/11/24 <br/>Report generated|
 |------|------|
 </div>
 
@@ -127,9 +127,9 @@ Full tech stack [here](/techstack.md)
 
 |NAME|VERSION|LAST UPDATED|LAST UPDATED BY|LICENSE|VULNERABILITIES|
 |:------|:------|:------|:------|:------|:------|
-|[Antlr4.Runtime.Standard](https://www.nuget.org/Antlr4.Runtime.Standard)|v4.13.0|07/02/23|Axel Nana |BSD-3-Clause|N/A|
+|[Antlr4.Runtime.Standard](https://www.nuget.org/Antlr4.Runtime.Standard)|v4.13.1|12/23/23|Axel Nana |BSD-3-Clause|N/A|
 |[CommandLineParser](https://www.nuget.org/CommandLineParser)|v2.9.1|03/27/23|Axel Nana |MIT|N/A|
-|[MessagePack](https://www.nuget.org/MessagePack)|v2.5.124|07/22/23|Axel Nana |MIT|N/A|
+|[MessagePack](https://www.nuget.org/MessagePack)|v2.5.140|12/23/23|Axel Nana |MIT|N/A|
 
 <br/>
 <div align='center'>
